@@ -12,10 +12,8 @@ import { Calculator } from './components/Calculator';
 import { BlueprintGrid } from './components/BlueprintGrid';
 import { Testimonials } from './components/Testimonials';
 import { BookDemo } from './components/BookDemo';
+import { Logo } from './components/Logo';
 import { Feature, FAQItem, PricingTier } from './types';
-
-// Logo URL
-const LOGO_URL = "https://r2-us-west.photoai.com/1740076263-d1df52b1b36e94f71a06757134316d29-1.png";
 
 type View = 'home' | 'book-demo';
 
@@ -57,7 +55,7 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
             className="flex-shrink-0 flex items-center gap-2 cursor-pointer" 
             onClick={() => handleNav('hero')}
           >
-            <img src={LOGO_URL} alt="Trade Receptionist" className="h-8 md:h-10 w-auto object-contain" />
+            <Logo className="h-10" variant="color" />
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -667,7 +665,7 @@ const Footer = ({ onBookDemo }: { onBookDemo: () => void }) => (
             <div className="grid md:grid-cols-4 gap-8 mb-12">
                 <div className="col-span-1 md:col-span-2">
                     <div className="flex items-center gap-2 mb-4 text-white">
-                        <img src={LOGO_URL} alt="Trade Receptionist" className="h-8 w-auto brightness-0 invert" />
+                        <Logo className="h-8 w-auto text-white" variant="white" />
                     </div>
                     <p className="max-w-xs text-sm mb-6">
                         The UK's #1 AI receptionist for tradespeople. Stop missing calls, start booking more jobs.
