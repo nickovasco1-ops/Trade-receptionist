@@ -134,7 +134,7 @@ const Hero = ({ onBookDemo }: { onBookDemo: () => void }) => {
             <div className="text-center lg:text-left pointer-events-none md:pointer-events-auto">
               <Badge>Trusted by 500+ UK Trades</Badge>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-tradeBlue-900 tracking-tight leading-[1.1] mb-6">
-                Never miss a <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-orange-500">job again.</span>
+                Never miss a <span className="bg-brand-600 text-white px-4 py-1 rounded-xl -rotate-2 inline-block shadow-lg transform transition-transform hover:rotate-0 mx-3">job</span> again.
               </h1>
               <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                 The AI receptionist built for UK trades. It answers calls, qualifies leads, and books jobs 24/7 — for a fraction of the cost of hiring.
@@ -316,7 +316,7 @@ const ComparisonSection = () => (
 
         {/* Rows */}
         {[
-          { label: "Cost per month", us: "£49 fixed", them: "£500+", bad: "£0 (but costly)" },
+          { label: "Cost per month", us: "£29 fixed", them: "£500+", bad: "£0 (but costly)" },
           { label: "Availability", us: "24/7/365", them: "9am - 5pm", bad: "Always on" },
           { label: "Response Time", us: "Instant", them: "Variable", bad: "Hours/Days" },
           { label: "Books Appointments", us: true, them: true, bad: false },
@@ -436,42 +436,6 @@ const HowItWorks = () => (
         </div>
       ))}
     </div>
-
-    {/* Video Demo Section */}
-    <div className="flex flex-col items-center justify-center relative">
-        {/* Decorative background glow behind phone */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-50/50 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-        
-        <div className="relative mx-auto border-gray-900 bg-gray-900 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] md:w-[320px] md:h-[640px] shadow-2xl flex flex-col overflow-hidden">
-            {/* iPhone Dynamic Island / Notch */}
-            <div className="absolute top-0 inset-x-0 h-6 bg-transparent z-20 flex justify-center pointer-events-none">
-                <div className="w-24 h-6 bg-black rounded-b-xl"></div>
-            </div>
-            
-            {/* Video Player */}
-            <div className="w-full h-full bg-black rounded-[2rem] overflow-hidden relative">
-                <video 
-                    className="w-full h-full object-cover" 
-                    autoPlay 
-                    muted 
-                    loop 
-                    playsInline
-                    poster="https://r2-us-west.photoai.com/1740076263-d1df52b1b36e94f71a06757134316d29-1.png"
-                >
-                    {/* Placeholder URL - replace with your uploaded video path */}
-                    <source src="https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smart-phone-with-a-green-screen-32943-large.mp4" type="video/mp4" />
-                </video>
-                
-                {/* Overlay Gradient for legibility if needed, or remove */}
-                <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"></div>
-            </div>
-        </div>
-        
-        <div className="mt-8 text-center">
-            <p className="font-semibold text-tradeBlue-900">See it in action</p>
-            <p className="text-slate-500 text-sm">Watch how notifications appear instantly</p>
-        </div>
-    </div>
   </Section>
 );
 
@@ -542,26 +506,46 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
 
   const plans: PricingTier[] = [
     {
-      name: "Sole Trader",
-      price: billing === 'monthly' ? "£49" : "£39",
-      period: "per month",
-      description: "Perfect for one-man bands.",
-      features: ["100 mins call time", "24/7 Answering", "SMS Summaries", "Google Calendar Sync", "1 Mobile Number"],
+      name: "Starter",
+      price: billing === 'monthly' ? "£29" : "£24",
+      period: "per month (+VAT)",
+      description: "Solo Traders",
+      features: [
+          "60 AI Minutes (~25 Calls)", 
+          "24/7 Answering", 
+          "SMS Summaries", 
+          "Google Calendar Sync"
+      ],
+      buttonText: "Start Free Trial"
     },
     {
-      name: "Growing Team",
-      price: billing === 'monthly' ? "£99" : "£79",
-      period: "per month",
-      description: "For teams of 2-5 people.",
+      name: "Pro",
+      price: billing === 'monthly' ? "£59" : "£49",
+      period: "per month (+VAT)",
+      description: "Busy Professionals",
       isPopular: true,
-      features: ["300 mins call time", "Everything in Sole Trader", "Call Transfer Logic", "CRM Integration", "Priority Support"],
+      features: [
+          "150 AI Minutes (~65 Calls)", 
+          "Everything in Starter", 
+          "Call Transfer Logic", 
+          "CRM Integration", 
+          "Priority Support"
+      ],
+      buttonText: "Start Free Trial"
     },
     {
-      name: "Established",
-      price: billing === 'monthly' ? "£199" : "£159",
-      period: "per month",
-      description: "High volume businesses.",
-      features: ["Unlimited mins", "Everything in Team", "Multiple Departments", "White Label Dashboard", "Dedicated Account Mgr"],
+      name: "Agency",
+      price: billing === 'monthly' ? "£119" : "£99",
+      period: "per month (+VAT)",
+      description: "Growing Teams",
+      features: [
+          "350 AI Minutes (~150 Calls)", 
+          "Everything in Pro", 
+          "Multiple Departments", 
+          "White Label Dashboard", 
+          "Dedicated Account Mgr"
+      ],
+      buttonText: "Contact Sales"
     }
   ];
 
@@ -569,7 +553,7 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
     <Section id="pricing" bg="white">
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold text-tradeBlue-900 mb-4">Simple, transparent pricing.</h2>
-        <p className="text-slate-600 mb-8">No contracts. Cancel anytime. 14-day free trial.</p>
+        <p className="text-slate-600 mb-8">No contracts. Cancel anytime. 7-day free trial.</p>
         
         <div className="inline-flex bg-slate-100 p-1 rounded-full relative">
           <button 
@@ -587,19 +571,19 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
         </div>
       </div>
 
-      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-8 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar">
+      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-8 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-6">
         {plans.map((plan, i) => (
           <div key={i} className={`snap-center flex-shrink-0 w-[85vw] md:w-auto relative flex flex-col p-8 rounded-3xl border ${plan.isPopular ? 'border-brand-500 bg-white ring-4 ring-brand-500/10' : 'border-slate-200 bg-white'}`}>
              {plan.isPopular && (
                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                 Most Popular
+                 MOST POPULAR
                </div>
              )}
              <h3 className="text-lg font-bold text-tradeBlue-900">{plan.name}</h3>
              <p className="text-sm text-slate-500 mb-6">{plan.description}</p>
              <div className="flex items-baseline gap-1 mb-6">
                 <span className="text-4xl font-extrabold text-tradeBlue-900">{plan.price}</span>
-                <span className="text-slate-500 text-sm">/mo</span>
+                <span className="text-slate-500 text-sm">{plan.period}</span>
              </div>
              
              <ul className="space-y-4 mb-8 flex-1">
@@ -611,12 +595,27 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
                 ))}
              </ul>
 
-             <Button variant={plan.isPopular ? 'primary' : 'outline'} fullWidth onClick={onBookDemo}>
-               {plan.isPopular ? "Start free trial" : "Book a demo"}
+             <Button 
+                variant={plan.isPopular ? 'primary' : 'outline'} 
+                fullWidth 
+                onClick={plan.buttonText === "Contact Sales" ? () => window.alert('Opening Sales Chat...') : onBookDemo}
+            >
+               {plan.buttonText || (plan.isPopular ? "Start free trial" : "Book a demo")}
              </Button>
           </div>
         ))}
       </div>
+
+      {/* ROI Text Block */}
+      <div className="max-w-4xl mx-auto mt-12 bg-slate-900 rounded-2xl p-8 text-center shadow-xl">
+        <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Why £59?</h3>
+        <p className="text-slate-300 text-lg leading-relaxed">
+            Because a missed job costs you <span className="text-brand-400 font-bold">£150</span> on average. 
+            If this app answers just <span className="text-white font-bold underline decoration-brand-500 decoration-2 underline-offset-4">ONE</span> call you would have missed, 
+            it pays for itself for 3 months.
+        </p>
+      </div>
+
     </Section>
   );
 };
@@ -713,7 +712,7 @@ const FinalCTA = ({ onBookDemo }: { onBookDemo: () => void }) => (
             
             <div className="relative z-10 max-w-2xl mx-auto">
                 <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to hang up on admin?</h2>
-                <p className="text-lg text-slate-300 mb-10">Join 500+ UK trades businesses saving 10+ hours a week. Try it free for 14 days, no credit card required.</p>
+                <p className="text-lg text-slate-300 mb-10">Join 500+ UK trades businesses saving 10+ hours a week. Try it free for 7 days, no credit card required.</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <Button variant="primary" size="lg" onClick={() => window.alert('Start Free Trial')}>Start free trial</Button>
                     <Button variant="ghost" className="text-white hover:bg-white/10" size="lg" onClick={onBookDemo}>Book a demo</Button>

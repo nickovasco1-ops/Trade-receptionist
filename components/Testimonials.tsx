@@ -64,9 +64,6 @@ export const Testimonials: React.FC = () => {
       <div className="text-center max-w-3xl mx-auto mb-16">
         <Badge>Community</Badge>
         <h2 className="text-3xl md:text-4xl font-bold text-tradeBlue-900 mb-4">Trusted by trades across the UK.</h2>
-        <div className="inline-block px-4 py-1.5 bg-yellow-50 border border-yellow-100 rounded-full text-yellow-800 text-xs font-medium mb-6">
-          ⚠️ Sample testimonials for demonstration purposes
-        </div>
         <p className="text-lg text-slate-600">
           Join 500+ professionals who have stopped missing calls and started booking more work.
         </p>
