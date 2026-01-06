@@ -4,7 +4,8 @@ import {
   Menu, X, CheckCircle2, ArrowRight,
   Clock, Euro, Smartphone, Battery,
   Wrench, Zap, Hammer, Droplets,
-  ChevronDown, ChevronUp, Star, XCircle
+  ChevronDown, ChevronUp, Star, XCircle,
+  Instagram, Facebook, Twitter
 } from 'lucide-react';
 import { Button, Section, GlassCard, Badge, Card } from './components/UI';
 import { AudioPlayer } from './components/AudioPlayer';
@@ -17,14 +18,21 @@ import { Feature, FAQItem, PricingTier } from './types';
 
 type View = 'home' | 'book-demo';
 
+// --- Custom Icons ---
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z"/>
+  </svg>
+);
+
 // --- Sticky Bottom Mobile Bar ---
 const StickyBottomBar = ({ onBookDemo }: { onBookDemo: () => void }) => (
   <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-lg border-t border-slate-200 z-50 md:hidden shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] flex gap-3 pb-safe">
-    <Button variant="secondary" fullWidth size="md" onClick={() => window.alert('Opening App Store...')}>
-      Download app
+    <Button variant="outline" fullWidth size="md" onClick={() => window.alert('Opening App Store...')}>
+      Download App
     </Button>
-    <Button variant="primary" fullWidth size="md" onClick={onBookDemo}>
-      Book demo
+    <Button variant="primary" fullWidth size="md" onClick={() => window.alert('Start Free Trial')}>
+      7-Day Free Trial
     </Button>
   </div>
 );
@@ -67,7 +75,7 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
 
           <div className="hidden md:flex items-center space-x-4">
             <Button variant="ghost" size="sm">Log in</Button>
-            <Button variant="primary" size="sm" onClick={() => window.alert('Placeholder: Start Free Trial flow')}>Start free trial</Button>
+            <Button variant="primary" size="sm" onClick={() => window.alert('Placeholder: Start Free Trial flow')}>Start 7-Day Free Trial</Button>
           </div>
 
           <div className="flex items-center md:hidden">
@@ -88,8 +96,8 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
              <button className="text-lg font-medium text-left text-brand-600" onClick={() => handleNav('book-demo')}>Book a Demo</button>
              <div className="h-px bg-slate-100 my-2"></div>
              <div className="flex flex-col gap-3">
-                <Button variant="secondary" fullWidth onClick={() => window.alert('Opening App Store...')}>Download the app</Button>
-                <Button variant="primary" fullWidth onClick={() => window.alert('Start Free Trial')}>Start free trial</Button>
+                <Button variant="secondary" fullWidth onClick={() => window.alert('Opening App Store...')}>Download App</Button>
+                <Button variant="primary" fullWidth onClick={() => window.alert('Start Free Trial')}>Start Free Trial</Button>
              </div>
           </div>
         </div>
@@ -132,20 +140,20 @@ const Hero = ({ onBookDemo }: { onBookDemo: () => void }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <div className="text-center lg:text-left pointer-events-none md:pointer-events-auto">
-              <Badge>Trusted by 500+ UK Trades</Badge>
+              <Badge>#1 AI App for UK Trades</Badge>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-tradeBlue-900 tracking-tight leading-[1.1] mb-6">
-                Never miss a <span className="bg-brand-600 text-white px-4 py-1 rounded-xl -rotate-2 inline-block shadow-lg transform transition-transform hover:rotate-0 mx-3">job</span> again.
+                Never miss a <span className="bg-brand-600 text-white px-4 py-1 rounded-xl -rotate-2 inline-block shadow-lg transform transition-transform hover:rotate-0 mx-3">call</span> again.
               </h1>
               <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                The AI receptionist built for UK trades. It answers calls, qualifies leads, and books jobs 24/7 — for a fraction of the cost of hiring.
+                The mobile-first AI receptionist built for UK trades. Answers calls, qualifies leads, and books jobs 24/7. Setup in just 5 minutes.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10 pointer-events-auto">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto" onClick={() => window.alert('Start Free Trial')}>
-                  Start free trial
+                  Start 7-Day Free Trial
                 </Button>
-                <Button variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 backdrop-blur-sm" onClick={onBookDemo}>
-                  Book a demo
+                <Button variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 backdrop-blur-sm" onClick={() => window.alert('Opening App Store...')}>
+                  Download App
                 </Button>
               </div>
 
@@ -242,7 +250,7 @@ const Hero = ({ onBookDemo }: { onBookDemo: () => void }) => {
 const PainPoints = () => (
   <Section bg="gray">
     <div className="text-center max-w-3xl mx-auto mb-16">
-      <h2 className="text-3xl md:text-4xl font-bold text-tradeBlue-900 mb-4">The cost of a missed call? <br/>It’s more than just a job.</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-tradeBlue-900 mb-4">Missed calls cost you jobs. <br/>It’s that simple.</h2>
       <p className="text-lg text-slate-600">You’re on the tools, under a sink, or on a roof. You can’t answer. But voicemails don't pay the bills.</p>
     </div>
 
@@ -423,9 +431,9 @@ const HowItWorks = () => (
        <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-slate-200 -z-0"></div>
 
       {[
-        { step: "01", title: "You divert calls", desc: "Set up call forwarding to your dedicated Trade Receptionist number when you're busy or off the clock." },
-        { step: "02", title: "AI Answers & Books", desc: "We answer instantly, qualify the lead based on your rules, and book it into your diary." },
-        { step: "03", title: "You get the job", desc: "You receive an instant text summary and calendar invite. All you have to do is show up." }
+        { step: "01", title: "Download the app", desc: "Available on iOS and Android. Create your account in minutes." },
+        { step: "02", title: "Divert your calls", desc: "Set up call forwarding to your dedicated Trade Receptionist number when you're busy." },
+        { step: "03", title: "Never miss a call", desc: "We answer instantly, qualify the lead based on your rules, and book it into your diary." }
       ].map((item, i) => (
         <div key={i} className="relative z-10 flex flex-col items-center text-center">
             <div className="w-24 h-24 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center mb-6">
@@ -491,9 +499,14 @@ const Features = () => {
                     <p className="text-lg text-slate-600 mb-8">
                         Stop playing phone tag. Let Trade Receptionist handle the admin while you handle the tools. It's like having an office manager who never sleeps.
                     </p>
-                    <Button variant="outline" className="gap-2">
-                        View all integrations <ArrowRight className="w-4 h-4" />
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                         <Button variant="outline" className="gap-2" onClick={() => window.alert('Opening App Store...')}>
+                            Download App
+                        </Button>
+                         <Button variant="ghost" className="gap-2 text-brand-600">
+                            View all integrations <ArrowRight className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
             </div>
         </Section>
@@ -516,7 +529,7 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
           "SMS Summaries", 
           "Google Calendar Sync"
       ],
-      buttonText: "Start Free Trial"
+      buttonText: "Start 7-Day Free Trial"
     },
     {
       name: "Pro",
@@ -531,7 +544,7 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
           "CRM Integration", 
           "Priority Support"
       ],
-      buttonText: "Start Free Trial"
+      buttonText: "Start 7-Day Free Trial"
     },
     {
       name: "Agency",
@@ -598,9 +611,9 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
              <Button 
                 variant={plan.isPopular ? 'primary' : 'outline'} 
                 fullWidth 
-                onClick={plan.buttonText === "Contact Sales" ? () => window.alert('Opening Sales Chat...') : onBookDemo}
+                onClick={plan.buttonText === "Contact Sales" ? () => window.alert('Opening Sales Chat...') : () => window.alert('Start Free Trial')}
             >
-               {plan.buttonText || (plan.isPopular ? "Start free trial" : "Book a demo")}
+               {plan.buttonText || (plan.isPopular ? "Start 7-Day Free Trial" : "Book a demo")}
              </Button>
           </div>
         ))}
@@ -624,8 +637,9 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
 const FAQ = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
     const faqs: FAQItem[] = [
-        { question: "Will it sound robotic?", answer: "Not at all. We use advanced voice AI that sounds human, pauses naturally, and understands nuances. Most callers don't realise they're speaking to an AI." },
-        { question: "What if the AI can't answer a question?", answer: "If the AI gets stumped or the caller asks for a human, it can take a detailed message or patch the call through to your mobile immediately." },
+        { question: "Will I miss calls with this app?", answer: "No. Our AI answers 100% of calls 24/7, ensuring you never miss a job opportunity, even when you're sleeping or on site." },
+        { question: "Will it sound robotic?", answer: "Not at all. We use advanced voice AI that sounds human, pauses naturally, and understands UK accents and nuances. Most callers don't realise they're speaking to an AI." },
+        { question: "How long does setup take?", answer: "You can be up and running in 5 minutes. Simply download the app, set your preferences, and divert your calls." },
         { question: "Does it integrate with my calendar?", answer: "Yes, we integrate with Google Calendar, Outlook, and popular trade management software to ensure we never double-book you." },
         { question: "Is it GDPR compliant?", answer: "Absolutely. All data is stored securely, and we include standard call recording consent messaging to keep you compliant with UK laws." },
     ];
@@ -667,12 +681,12 @@ const Footer = ({ onBookDemo }: { onBookDemo: () => void }) => (
                         <Logo className="h-8 w-auto text-white" variant="white" />
                     </div>
                     <p className="max-w-xs text-sm mb-6">
-                        The UK's #1 AI receptionist for tradespeople. Stop missing calls, start booking more jobs.
+                        The UK's #1 AI receptionist app for tradespeople. Never miss a call again.
                     </p>
                     <div className="flex items-center gap-4">
                         {/* Placeholder Badges */}
-                        <div className="h-10 w-32 bg-slate-800/50 rounded-lg border border-slate-700 flex items-center justify-center text-xs font-medium">App Store</div>
-                        <div className="h-10 w-32 bg-slate-800/50 rounded-lg border border-slate-700 flex items-center justify-center text-xs font-medium">Google Play</div>
+                        <div className="h-10 w-32 bg-slate-800/50 rounded-lg border border-slate-700 flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-slate-700 transition-colors">App Store</div>
+                        <div className="h-10 w-32 bg-slate-800/50 rounded-lg border border-slate-700 flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-slate-700 transition-colors">Google Play</div>
                     </div>
                 </div>
                 <div>
@@ -694,8 +708,16 @@ const Footer = ({ onBookDemo }: { onBookDemo: () => void }) => (
             </div>
             <div className="border-t border-tradeBlue-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-xs">&copy; 2024 Trade Receptionist Ltd. All rights reserved. London, UK.</p>
-                <div className="flex gap-4">
-                   {/* Social Icons would go here */}
+                <div className="flex gap-6 items-center">
+                   <a href="https://instagram.com/tradereceptionist" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                      <Instagram className="w-5 h-5" />
+                   </a>
+                   <a href="https://tiktok.com/@tradereceptionist" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                      <TikTokIcon className="w-5 h-5" />
+                   </a>
+                   <a href="https://www.facebook.com/share/16QddwsMk8/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                      <Facebook className="w-5 h-5" />
+                   </a>
                 </div>
             </div>
         </div>
@@ -711,11 +733,11 @@ const FinalCTA = ({ onBookDemo }: { onBookDemo: () => void }) => (
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 rounded-full blur-[100px] opacity-20"></div>
             
             <div className="relative z-10 max-w-2xl mx-auto">
-                <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to hang up on admin?</h2>
+                <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to never miss another call?</h2>
                 <p className="text-lg text-slate-300 mb-10">Join 500+ UK trades businesses saving 10+ hours a week. Try it free for 7 days, no credit card required.</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <Button variant="primary" size="lg" onClick={() => window.alert('Start Free Trial')}>Start free trial</Button>
-                    <Button variant="ghost" className="text-white hover:bg-white/10" size="lg" onClick={onBookDemo}>Book a demo</Button>
+                    <Button variant="primary" size="lg" onClick={() => window.alert('Start Free Trial')}>Start 7-Day Free Trial</Button>
+                    <Button variant="ghost" className="text-white hover:bg-white/10" size="lg" onClick={() => window.alert('Opening App Store...')}>Download App</Button>
                 </div>
             </div>
         </div>
