@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface LogoProps {
   className?: string;
@@ -6,40 +6,27 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
+  // Status: 'loading', 'loaded', or 'error'
+  const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const isWhite = variant === 'white';
   
   const textColor = isWhite ? 'text-white' : 'text-slate-900';
   const highlightColor = isWhite ? '#ffedd5' : '#ea580c';
   const iconBg = isWhite ? 'rgba(255,255,255,0.2)' : '#ea580c';
 
-  // Robustly handle image loading. 
-  // We default to the SVG fallback (which always works) and only switch 
-  // to the image if the browser successfully loads it. 
-  // This prevents broken image icons or alt text from ever appearing in production.
-  useEffect(() => {
-    const img = new Image();
-    img.src = '/logo.png';
-    img.onload = () => setImageLoaded(true);
-    // If it fails (404 on Vercel, etc), we just stay on the SVG fallback.
-  }, []);
-
+  // The Fallback SVG - Always looks professional
   const FallbackLogo = (
     <div 
-      className={`flex items-center gap-2.5 font-sans select-none ${className}`} 
+      className={`flex items-center gap-2.5 font-sans select-none h-full w-full ${className}`} 
       style={{ display: 'flex', alignItems: 'center' }}
     >
       <div 
         className="flex items-center justify-center rounded-xl flex-shrink-0 shadow-sm"
         style={{ 
             backgroundColor: iconBg,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
             width: '32px',
             height: '32px',
-            minWidth: '32px',
-            minHeight: '32px'
+            minWidth: '32px'
         }}
       >
         <svg 
@@ -62,18 +49,28 @@ export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' })
     </div>
   );
 
-  if (imageLoaded) {
-    return (
-      <div className={`relative flex items-center ${className}`}>
-        <img 
-          src="/logo.png" 
-          alt="Trade Receptionist" 
-          className="h-full w-auto object-contain"
-          style={{ maxHeight: '100%' }}
-        />
-      </div>
-    );
-  }
-
-  return FallbackLogo;
+  return (
+    <div className={`relative flex items-center ${className}`}>
+      {/* 
+         STRATEGY:
+         1. Always attempt to load the image, but keep it HIDDEN (display: none) initially.
+         2. If 'onLoad' fires, it means the browser has the data. We switch status to 'loaded'.
+         3. If 'onError' fires (404 or bad path), we switch status to 'error'.
+         
+         Result: The user NEVER sees a broken image icon. They see the Fallback until the split-second the real logo is ready.
+      */}
+      <img 
+        src="/logo.png?v=1" 
+        alt="Trade Receptionist" 
+        className={`h-full w-auto object-contain transition-opacity duration-300 ${imgStatus === 'loaded' ? 'block opacity-100' : 'hidden opacity-0'}`}
+        // 'eager' ensures the browser prioritizes checking this file immediately
+        loading="eager" 
+        onLoad={() => setImgStatus('loaded')}
+        onError={() => setImgStatus('error')}
+      />
+      
+      {/* Show Fallback if we are loading OR if there was an error */}
+      {imgStatus !== 'loaded' && FallbackLogo}
+    </div>
+  );
 };

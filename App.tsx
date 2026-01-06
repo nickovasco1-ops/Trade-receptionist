@@ -60,12 +60,15 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           <button 
-            className="flex-shrink-0 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none relative z-50" 
+            className="flex-shrink-0 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none relative z-50 h-10" 
             onClick={() => handleNav('hero')}
             aria-label="Go to home"
           >
-            {/* Added h-10 explicitly to control image height via wrapper */}
-            <Logo variant="color" className="h-10" />
+            {/* 
+              Strict height enforcement (h-full) on the Logo ensures it scales 
+              correctly within this h-10 button container. 
+            */}
+            <Logo variant="color" className="h-full" />
           </button>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -701,9 +704,12 @@ const Footer = ({ onBookDemo }: { onBookDemo: () => void }) => (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-4 gap-8 mb-12">
                 <div className="col-span-1 md:col-span-2">
-                    <div className="flex items-center gap-2 mb-4 text-white">
-                        {/* Added h-8 explicitly to control image height via wrapper */}
-                        <Logo className="h-8 w-auto text-white" variant="white" />
+                    <div className="flex items-center gap-2 mb-4 text-white h-8">
+                        {/* 
+                           Constraint Wrapper: h-8
+                           This ensures the Footer Logo scales appropriately.
+                        */}
+                        <Logo className="h-full w-auto text-white" variant="white" />
                     </div>
                     <p className="max-w-xs text-sm mb-6">
                         The UK's #1 AI receptionist app for tradespeople. Never miss a call again.
