@@ -64,7 +64,8 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
             onClick={() => handleNav('hero')}
             aria-label="Go to home"
           >
-            <Logo variant="color" />
+            {/* Added h-10 explicitly to control image height via wrapper */}
+            <Logo variant="color" className="h-10" />
           </button>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -634,42 +635,64 @@ const Pricing = ({ onBookDemo }: { onBookDemo: () => void }) => {
   );
 };
 
-// --- FAQ ---
+// --- FAQ Section ---
 const FAQ = () => {
-    const [openIndex, setOpenIndex] = useState<number | null>(0);
-    const faqs: FAQItem[] = [
-        { question: "Will I miss calls with this app?", answer: "No. Our AI answers 100% of calls 24/7, ensuring you never miss a job opportunity, even when you're sleeping or on site." },
-        { question: "Will it sound robotic?", answer: "Not at all. We use advanced voice AI that sounds human, pauses naturally, and understands UK accents and nuances. Most callers don't realise they're speaking to an AI." },
-        { question: "How long does setup take?", answer: "You can be up and running in 5 minutes. Simply download the app, set your preferences, and divert your calls." },
-        { question: "Does it integrate with my calendar?", answer: "Yes, we integrate with Google Calendar, Outlook, and popular trade management software to ensure we never double-book you." },
-        { question: "Is it GDPR compliant?", answer: "Absolutely. All data is stored securely, and we include standard call recording consent messaging to keep you compliant with UK laws." },
-    ];
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-    return (
-        <Section id="faq" bg="gray">
-            <div className="max-w-3xl mx-auto">
-                <h2 className="text-3xl font-bold text-tradeBlue-900 text-center mb-10">Frequently asked questions</h2>
-                <div className="space-y-4">
-                    {faqs.map((faq, i) => (
-                        <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                            <button 
-                                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                                className="w-full flex items-center justify-between p-6 text-left"
-                            >
-                                <span className="font-semibold text-tradeBlue-900">{faq.question}</span>
-                                {openIndex === i ? <ChevronUp className="text-slate-400"/> : <ChevronDown className="text-slate-400"/>}
-                            </button>
-                            {openIndex === i && (
-                                <div className="px-6 pb-6 pt-0 text-slate-600 leading-relaxed border-t border-slate-100 mt-2 pt-4">
-                                    {faq.answer}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+  const faqs: FAQItem[] = [
+    {
+      question: "Do I need to change my phone number?",
+      answer: "No. You simply set up call forwarding on your existing mobile or landline. We provide you with a unique forwarding number during setup. It takes about 2 minutes."
+    },
+    {
+      question: "How does the AI know my prices?",
+      answer: "During onboarding, you provide a simple knowledge base (e.g., 'Boiler service is £80', 'Call out fee is £60'). The AI uses this to answer questions intelligently."
+    },
+    {
+      question: "What if it's an emergency?",
+      answer: "You can set rules for urgent keywords (like 'gas leak' or 'flooding'). The AI can instantly transfer these calls to your mobile or a backup number."
+    },
+    {
+      question: "Does it work with my calendar?",
+      answer: "Yes. We integrate with Google Calendar, Outlook, and major trade software like ServiceM8. The AI only books slots that are actually available."
+    },
+    {
+      question: "Is there a contract?",
+      answer: "No contracts. It's a monthly rolling subscription. You can cancel anytime with one click in the app."
+    }
+  ];
+
+  return (
+    <Section bg="gray" id="faq">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-tradeBlue-900 mb-4">Frequently Asked Questions</h2>
+        <p className="text-slate-600">Everything you need to know about getting started.</p>
+      </div>
+
+      <div className="max-w-3xl mx-auto space-y-4">
+        {faqs.map((faq, i) => (
+          <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <button 
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className="w-full flex items-center justify-between p-6 text-left focus:outline-none hover:bg-slate-50 transition-colors"
+            >
+                <span className="font-bold text-tradeBlue-900 pr-8">{faq.question}</span>
+                {openIndex === i ? (
+                    <ChevronUp className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                )}
+            </button>
+            {openIndex === i && (
+                <div className="px-6 pb-6 text-slate-600 leading-relaxed border-t border-slate-100 pt-4">
+                    {faq.answer}
                 </div>
-            </div>
-        </Section>
-    );
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
 };
 
 // --- Footer ---
@@ -679,6 +702,7 @@ const Footer = ({ onBookDemo }: { onBookDemo: () => void }) => (
             <div className="grid md:grid-cols-4 gap-8 mb-12">
                 <div className="col-span-1 md:col-span-2">
                     <div className="flex items-center gap-2 mb-4 text-white">
+                        {/* Added h-8 explicitly to control image height via wrapper */}
                         <Logo className="h-8 w-auto text-white" variant="white" />
                     </div>
                     <p className="max-w-xs text-sm mb-6">

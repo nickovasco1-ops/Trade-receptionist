@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LogoProps {
   className?: string;
@@ -6,31 +6,25 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' }) => {
-  const [imgError, setImgError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const isWhite = variant === 'white';
   
-  // Custom brand styles for fallback
   const textColor = isWhite ? 'text-white' : 'text-slate-900';
   const highlightColor = isWhite ? '#ffedd5' : '#ea580c';
   const iconBg = isWhite ? 'rgba(255,255,255,0.2)' : '#ea580c';
 
-  // If the image hasn't failed yet, try to render it.
-  // Note: We use a height class (h-10) by default to ensure it fits well in navbars.
-  if (!imgError) {
-    return (
-      <div className={`flex items-center ${className}`}>
-        <img 
-          src="/logo.png" 
-          alt="Trade Receptionist" 
-          className="h-10 w-auto object-contain max-w-full"
-          onError={() => setImgError(true)}
-        />
-      </div>
-    );
-  }
+  // Robustly handle image loading. 
+  // We default to the SVG fallback (which always works) and only switch 
+  // to the image if the browser successfully loads it. 
+  // This prevents broken image icons or alt text from ever appearing in production.
+  useEffect(() => {
+    const img = new Image();
+    img.src = '/logo.png';
+    img.onload = () => setImageLoaded(true);
+    // If it fails (404 on Vercel, etc), we just stay on the SVG fallback.
+  }, []);
 
-  // Fallback SVG Logo if 'logo.png' is missing or fails to load
-  return (
+  const FallbackLogo = (
     <div 
       className={`flex items-center gap-2.5 font-sans select-none ${className}`} 
       style={{ display: 'flex', alignItems: 'center' }}
@@ -42,15 +36,15 @@ export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' })
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            width: '36px',
-            height: '36px',
-            minWidth: '36px',
-            minHeight: '36px'
+            width: '32px',
+            height: '32px',
+            minWidth: '32px',
+            minHeight: '32px'
         }}
       >
         <svg 
-          width="20" 
-          height="20" 
+          width="18" 
+          height="18" 
           viewBox="0 0 24 24" 
           fill="none" 
           stroke="white" 
@@ -67,4 +61,19 @@ export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' })
       </span>
     </div>
   );
+
+  if (imageLoaded) {
+    return (
+      <div className={`relative flex items-center ${className}`}>
+        <img 
+          src="/logo.png" 
+          alt="Trade Receptionist" 
+          className="h-full w-auto object-contain"
+          style={{ maxHeight: '100%' }}
+        />
+      </div>
+    );
+  }
+
+  return FallbackLogo;
 };
