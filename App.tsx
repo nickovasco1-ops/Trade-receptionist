@@ -56,15 +56,16 @@ const Header = ({ currentView, onViewChange }: { currentView: View, onViewChange
   };
 
   return (
-    <nav className="fixed top-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 transition-all duration-300">
+    <nav className="fixed top-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 transition-all duration-300 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
-          <div 
-            className="flex-shrink-0 flex items-center gap-2 cursor-pointer" 
+          <button 
+            className="flex-shrink-0 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none relative z-50" 
             onClick={() => handleNav('hero')}
+            aria-label="Go to home"
           >
-            <Logo className="h-10" variant="color" />
-          </div>
+            <Logo variant="color" />
+          </button>
           
           <div className="hidden md:flex items-center space-x-8">
             <button onClick={() => handleNav('how-it-works')} className="text-slate-600 hover:text-tradeBlue-900 font-medium text-sm transition-colors">How it works</button>

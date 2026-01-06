@@ -1,83 +1,70 @@
 import React, { useState } from 'react';
-import { PhoneCall } from 'lucide-react';
 
 interface LogoProps {
   className?: string;
   variant?: 'color' | 'white';
 }
 
-export const Logo: React.FC<LogoProps> = ({ className = "h-10", variant = 'color' }) => {
-  // --- ROBUST PATH STRATEGY ---
-  const getCandidates = () => {
-    const candidates: string[] = [];
-    
-    // 1. PRIMARY: Try resolving 'logo.png' relative to THIS file (components/Logo.tsx)
-    // This tells Vite to bundle the file if it exists in the same folder.
-    try {
-      const localAsset = new URL('./logo.png', import.meta.url).href;
-      candidates.push(localAsset);
-    } catch (e) {
-      // Ignore
-    }
+export const Logo: React.FC<LogoProps> = ({ className = "", variant = 'color' }) => {
+  const [imgError, setImgError] = useState(false);
+  const isWhite = variant === 'white';
+  
+  // Custom brand styles for fallback
+  const textColor = isWhite ? 'text-white' : 'text-slate-900';
+  const highlightColor = isWhite ? '#ffedd5' : '#ea580c';
+  const iconBg = isWhite ? 'rgba(255,255,255,0.2)' : '#ea580c';
 
-    // 2. ROOT FALLBACK: Try resolving from project root (../logo.png)
-    try {
-      const rootAsset = new URL('../logo.png', import.meta.url).href;
-      candidates.push(rootAsset);
-    } catch (e) {
-      // Ignore
-    }
-
-    // 3. PUBLIC FOLDER: Standard Vite Base URL
-    const viteBase = (import.meta as any).env?.BASE_URL;
-    if (viteBase && typeof viteBase === 'string') {
-      const prefix = viteBase.endsWith('/') ? viteBase : `${viteBase}/`;
-      candidates.push(`${prefix}logo.png`);
-    }
-
-    // 4. ABSOLUTE: Final fallback
-    candidates.push('/logo.png');
-
-    return candidates;
-  };
-
-  const [candidates] = useState<string[]>(getCandidates());
-  const [srcIndex, setSrcIndex] = useState(0);
-  const [hasError, setHasError] = useState(false);
-
-  const handleError = () => {
-    const nextIndex = srcIndex + 1;
-    if (nextIndex < candidates.length) {
-      setSrcIndex(nextIndex);
-    } else {
-      setHasError(true);
-    }
-  };
-
-  // --- FALLBACK SVG RENDER ---
-  if (hasError) {
-    const textColor = variant === 'white' ? 'text-white' : 'text-slate-900';
-    const highlightColor = variant === 'white' ? 'text-brand-300' : 'text-brand-600';
-    const iconBg = variant === 'white' ? 'bg-white/10' : 'bg-brand-600';
-
+  // If the image hasn't failed yet, try to render it.
+  // Note: We use a height class (h-10) by default to ensure it fits well in navbars.
+  if (!imgError) {
     return (
-      <div className={`flex items-center gap-2 font-bold text-xl tracking-tight select-none ${textColor} ${className}`}>
-        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${iconBg} shadow-sm flex-shrink-0`}>
-          <PhoneCall className="w-4 h-4 text-white" />
-        </div>
-        <span>Trade<span className={highlightColor}>Receptionist</span></span>
+      <div className={`flex items-center ${className}`}>
+        <img 
+          src="/logo.png" 
+          alt="Trade Receptionist" 
+          className="h-10 w-auto object-contain max-w-full"
+          onError={() => setImgError(true)}
+        />
       </div>
     );
   }
 
-  // --- PRIMARY IMAGE RENDER ---
+  // Fallback SVG Logo if 'logo.png' is missing or fails to load
   return (
-    <img 
-      src={candidates[srcIndex]} 
-      alt="Trade Receptionist Logo" 
-      className={`${className} w-auto object-contain transition-opacity duration-300`}
-      onError={handleError}
-      style={{ minHeight: '32px', minWidth: '32px', display: 'block' }}
-    />
+    <div 
+      className={`flex items-center gap-2.5 font-sans select-none ${className}`} 
+      style={{ display: 'flex', alignItems: 'center' }}
+    >
+      <div 
+        className="flex items-center justify-center rounded-xl flex-shrink-0 shadow-sm"
+        style={{ 
+            backgroundColor: iconBg,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '36px',
+            height: '36px',
+            minWidth: '36px',
+            minHeight: '36px'
+        }}
+      >
+        <svg 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        >
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+        </svg>
+      </div>
+      
+      <span className={`font-extrabold text-xl tracking-tight leading-none ${textColor}`} style={{ whiteSpace: 'nowrap' }}>
+        Trade<span style={{ color: highlightColor }}>Receptionist</span>
+      </span>
+    </div>
   );
 };

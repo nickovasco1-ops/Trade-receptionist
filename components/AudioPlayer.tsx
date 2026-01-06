@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 // --- SCRIPT & CONFIG ---
-// Exact script from en-GB Director Notes
 const CALL_SCRIPT = `
 Caller (Jess): Hi—sorry, I’m hoping you can help. Our boiler’s just gone off and the house is freezing.
 Receptionist (Sam): Oh no—right, okay. You’ve done the right thing calling. Is it showing an error code, or is it completely dead?
@@ -35,7 +34,6 @@ export const AudioPlayer: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Audio Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -43,7 +41,6 @@ export const AudioPlayer: React.FC = () => {
   const startTimeRef = useRef<number>(0);
   const pausedTimeRef = useRef<number>(0);
 
-  // Canvas Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -63,11 +60,9 @@ export const AudioPlayer: React.FC = () => {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioContextClass();
-      
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       analyser.connect(ctx.destination);
-      
       audioContextRef.current = ctx;
       analyserRef.current = analyser;
     }
@@ -101,20 +96,13 @@ export const AudioPlayer: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // @ts-ignore
-      const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) ? process.env.API_KEY : '';
-      if (!apiKey) throw new Error("API Key missing.");
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      // Inject Director Notes to force en-GB accent delivery
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const directedPrompt = `
       [DIRECTOR NOTES: 
       - Language MUST be English (United Kingdom), locale en-GB.
-      - Accent MUST be a natural London / South East England accent (everyday, not posh RP, not Cockney).
-      - Character Sam: Female, 30–45. Sound like a real UK trade receptionist. Warm, brisk, competent. No robotic rhythm.
-      - Character Jess: Female, neutral British accent, slightly stressed caller.
-      - Performance: Use natural micro-pauses, everyday British pronunciation, and follow the overlapping/self-correction markers in the script precisely.]
+      - Accent MUST be a natural London / South East England accent.
+      - Character Sam: Female, warm, professional trade receptionist.
+      - Character Jess: Female, stressed customer.]
 
       ${CALL_SCRIPT}
       `;
@@ -123,7 +111,7 @@ export const AudioPlayer: React.FC = () => {
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: directedPrompt }] }],
         config: {
-          responseModalities: ['AUDIO'],
+          responseModalities: [Modality.AUDIO],
           speechConfig: {
             multiSpeakerVoiceConfig: {
               speakerVoiceConfigs: [
@@ -220,16 +208,13 @@ export const AudioPlayer: React.FC = () => {
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    const bars = 40;
-    const barWidth = rect.width / bars;
-    const gap = 2;
-    let dataArray: Uint8Array | null = null;
-
     const renderFrame = () => {
       ctx.clearRect(0, 0, rect.width, rect.height);
-      if (analyserRef.current && !dataArray) {
-        dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      }
+      const bars = 40;
+      const barWidth = rect.width / bars;
+      const gap = 2;
+      
+      const dataArray = analyserRef.current ? new Uint8Array(analyserRef.current.frequencyBinCount) : null;
       if (isPlaying && analyserRef.current && dataArray) {
         analyserRef.current.getByteFrequencyData(dataArray);
         if (audioContextRef.current) {
@@ -237,6 +222,7 @@ export const AudioPlayer: React.FC = () => {
             setCurrentTime(Math.min(curr, duration));
         }
       }
+
       for (let i = 0; i < bars; i++) {
         let barHeight = 4;
         if (isPlaying && dataArray) {
@@ -273,7 +259,7 @@ export const AudioPlayer: React.FC = () => {
             </div>
             <div>
               <p className="font-semibold text-lg">New Job Inquiry</p>
-              <p className="text-slate-400 text-sm">AI Receptionist • London, UK</p>
+              <p className="text-slate-400 text-sm">AI Receptionist • en-GB</p>
             </div>
           </div>
           <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-300">
