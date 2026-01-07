@@ -31,19 +31,20 @@ export const Button: React.FC<ButtonProps> = ({
     setPosition({ x: 0, y: 0 });
   };
 
-  const baseStyles = "inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none relative z-10";
+  // Added tracking-wide for premium feel
+  const baseStyles = "inline-flex items-center justify-center rounded-full font-bold tracking-wide transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none relative z-10";
   
   const variants = {
-    primary: "bg-brand-600 text-white hover:bg-brand-500 shadow-lg shadow-brand-500/20",
-    secondary: "bg-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-900/10",
+    primary: "bg-brand-600 text-white hover:bg-brand-500 shadow-lg shadow-brand-500/25 border border-transparent",
+    secondary: "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10 border border-transparent",
     outline: "border-2 border-slate-200 bg-transparent text-slate-700 hover:border-slate-300 hover:bg-slate-50",
     ghost: "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/50"
   };
 
   const sizes = {
-    sm: "h-9 px-4 text-sm",
-    md: "h-11 px-6 text-base",
-    lg: "h-14 px-8 text-lg"
+    sm: "h-10 px-5 text-xs uppercase",
+    md: "h-12 px-7 text-sm",
+    lg: "h-14 px-9 text-base"
   };
 
   const width = fullWidth ? "w-full" : "";
@@ -64,13 +65,13 @@ export const Button: React.FC<ButtonProps> = ({
 
 // --- Cards ---
 export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm ${className}`}>
+  <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm transition-all duration-300 ${className}`}>
     {children}
   </div>
 );
 
 export const GlassCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`backdrop-blur-xl bg-white/70 border border-white/40 shadow-xl shadow-brand-900/5 rounded-3xl ${className}`}>
+  <div className={`backdrop-blur-xl bg-white/80 border border-white/50 shadow-xl shadow-brand-900/5 rounded-3xl ${className}`}>
     {children}
   </div>
 );
@@ -88,9 +89,10 @@ export const Section: React.FC<{
     gradient: "bg-gradient-to-b from-white to-brand-50/30"
   };
 
+  // Increased padding from py-16/24 to py-20/32 for more polished vertical rhythm
   return (
-    <section id={id} className={`py-16 md:py-24 ${bgStyles[bg]} ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id={id} className={`py-20 md:py-32 ${bgStyles[bg]} ${className}`}>
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
         {children}
       </div>
     </section>
@@ -99,7 +101,7 @@ export const Section: React.FC<{
 
 // --- Badge ---
 export const Badge: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-900 mb-4">
+  <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 mb-6 tracking-wide uppercase border border-brand-100/50">
     {children}
   </span>
 );
