@@ -69,6 +69,19 @@ export const AudioPlayer: React.FC = () => {
     return audioContextRef.current;
   };
 
+  // iOS Helper: Play silent buffer to unlock audio subsystem
+  const unlockAudioContext = (ctx: AudioContext) => {
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    // Create and play a tiny silent buffer
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  };
+
   const decodePCMToAudioBuffer = (pcmData: Uint8Array, audioCtx: AudioContext): AudioBuffer => {
     const sampleRate = 24000;
     const numChannels = 1;
@@ -83,11 +96,16 @@ export const AudioPlayer: React.FC = () => {
 
   const generateAudio = async () => {
     setError(null);
-    const ctx = initAudioContext();
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
+    
+    // Check API Key first
+    if (!process.env.API_KEY) {
+        setError("Missing API Key. Please check deployment settings.");
+        return;
     }
 
+    // Context is already initialized in handleTogglePlay, but we ensure it here too
+    const ctx = initAudioContext();
+    
     if (isGenerated && audioBufferRef.current) {
       playAudio();
       return;
@@ -192,8 +210,14 @@ export const AudioPlayer: React.FC = () => {
   };
 
   const handleTogglePlay = () => {
-    if (isPlaying) stopAudio();
-    else generateAudio();
+    if (isPlaying) {
+      stopAudio();
+    } else {
+      // CRITICAL FOR MOBILE: Initialize and unlock AudioContext inside the user interaction event
+      const ctx = initAudioContext();
+      unlockAudioContext(ctx);
+      generateAudio();
+    }
   };
 
   useEffect(() => {
