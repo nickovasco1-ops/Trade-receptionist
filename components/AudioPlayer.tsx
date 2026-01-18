@@ -3,13 +3,9 @@ import { Play, Pause, Volume2, Loader2, RefreshCw, AlertCircle } from 'lucide-re
 import { GoogleGenAI, Modality } from "@google/genai";
 
 // --- CONFIGURATION ---
-// INSTRUCTIONS: 
-// 1. Run the app and click "Play Sample Call".
-// 2. Open your browser console (F12).
-// 3. Copy the long string that appears after "PASTE THE STRING BELOW...".
-// 4. Paste it inside the quotes below.
-// 5. The app will now play instantly without using the API.
-const CACHED_AUDIO_BASE64 = ""; 
+// The audio sample is now hardcoded for instant playback.
+// To regenerate: make this string empty "" and use the API.
+const CACHED_AUDIO_BASE64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4f/h/+H/AAAAAOH/AADh/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4f/h/+H/4f8AAOH/4f/h/+H/4f/h/+H/4f/h/+H/4f/h/+H/4f/h/+H/4f/h/8H/4f/h/+H/wf/B/8H/wf/B/8H/wf/B/8H/wf/h/8H/wf/h/+H/4f/h/8H/wf/B/8H/4f/B/+H/4f/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/of/B/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/gf+B/6H/of+h/6H/of+B/6H/of+h/6H/of+B/4H/gf+B/4H/gf+B/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/6H/of+h/8H/of/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/wf/B/8H/"; 
 
 const CALL_SCRIPT = `
 Caller (Jess): Hi—sorry, I’m hoping you can help. Our boiler’s just gone off and the house is freezing.
