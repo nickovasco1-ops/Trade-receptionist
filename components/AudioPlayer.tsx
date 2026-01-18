@@ -2,7 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// --- SCRIPT & CONFIG ---
+// --- CONFIGURATION ---
+// INSTRUCTIONS: 
+// 1. Run the app and click "Play Sample Call".
+// 2. Open your browser console (F12).
+// 3. Copy the long string that appears after "PASTE THE STRING BELOW...".
+// 4. Paste it inside the quotes below.
+// 5. The app will now play instantly without using the API.
+const CACHED_AUDIO_BASE64 = ""; 
+
 const CALL_SCRIPT = `
 Caller (Jess): Hi—sorry, I’m hoping you can help. Our boiler’s just gone off and the house is freezing.
 Receptionist (Sam): Oh no—right, okay. You’ve done the right thing calling. Is it showing an error code, or is it completely dead?
@@ -96,14 +104,6 @@ export const AudioPlayer: React.FC = () => {
 
   const generateAudio = async () => {
     setError(null);
-    
-    // Check API Key first
-    if (!process.env.API_KEY) {
-        setError("Missing API Key. Please check deployment settings.");
-        return;
-    }
-
-    // Context is already initialized in handleTogglePlay, but we ensure it here too
     const ctx = initAudioContext();
     
     if (isGenerated && audioBufferRef.current) {
@@ -114,7 +114,27 @@ export const AudioPlayer: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // 1. CHECK FOR HARDCODED AUDIO FIRST
+      if (CACHED_AUDIO_BASE64) {
+        console.log("Using hardcoded audio cache...");
+        const binaryString = atob(CACHED_AUDIO_BASE64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const decodedBuffer = decodePCMToAudioBuffer(bytes, ctx);
+        audioBufferRef.current = decodedBuffer;
+        setDuration(decodedBuffer.duration);
+        setIsGenerated(true);
+        setIsLoading(false);
+        playAudio();
+        return;
+      }
+
+      // 2. FETCH FROM API IF NO CACHE
+      // Trying the first key provided by the user: AIzaSyAaLTghL1moUlpcayIt6VV1gaLIaw0iYLs
+      const ai = new GoogleGenAI({ apiKey: "AIzaSyAaLTghL1moUlpcayIt6VV1gaLIaw0iYLs" });
       const directedPrompt = `
       [DIRECTOR NOTES: 
       - Language MUST be English (United Kingdom), locale en-GB.
@@ -148,7 +168,13 @@ export const AudioPlayer: React.FC = () => {
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) throw new Error("No audio data received.");
+      if (!base64Audio) throw new Error("No audio data received from API.");
+
+      // --- LOGGING FOR USER TO COPY ---
+      console.log("%c PASTE THE STRING BELOW INTO 'CACHED_AUDIO_BASE64' IN AudioPlayer.tsx", "background: #222; color: #bada55; font-size: 14px; padding: 4px;");
+      console.log(base64Audio);
+      console.log("%c ----------------------------------------------------------------", "background: #222; color: #bada55");
+      // --------------------------------
 
       const binaryString = atob(base64Audio);
       const len = binaryString.length;
@@ -168,7 +194,13 @@ export const AudioPlayer: React.FC = () => {
     } catch (err: any) {
       console.error("Audio generation failed:", err);
       setIsLoading(false);
-      setError(err.message || "Failed to generate audio.");
+      // More descriptive error for the user
+      let errorMessage = "Failed to generate audio.";
+      if (err.message) errorMessage = err.message;
+      if (err.toString().includes('403') || err.toString().includes('key')) {
+        errorMessage = "API Key Invalid or Expired. Please check your key.";
+      }
+      setError(errorMessage);
     }
   };
 
