@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, Loader2, Mail, User, Briefcase } from 'lucide-react';
+import { X, CheckCircle2, Loader2, Mail, User, Briefcase, ArrowRight } from 'lucide-react';
 import { Button } from './UI';
 
 interface WaitlistModalProps {
@@ -8,25 +8,18 @@ interface WaitlistModalProps {
 }
 
 export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose }) => {
-  // --- CONFIGURATION ---
-  // Fixed: Removed the appended placeholder text from the URL
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5zNDf8j0lZwCgg4SieLWr_spZYJ8lieJirv7BYe1mthpr5fbAxOof4xaOUmIJq9GK/exec";
+  const SCRIPT_URL =
+    'https://script.google.com/macros/s/AKfycbz5zNDf8j0lZwCgg4SieLWr_spZYJ8lieJirv7BYe1mthpr5fbAxOof4xaOUmIJq9GK/exec';
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', role: '' });
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-
     try {
-      // Using URLSearchParams for a standard form-data post
       const params = new URLSearchParams();
       params.append('name', formData.name);
       params.append('email', formData.email);
@@ -34,128 +27,195 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
       await fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // Required for Google Script redirects
+        mode: 'no-cors',
         cache: 'no-cache',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
       });
 
-      // Because 'no-cors' doesn't return a readable response, we assume success if no error is thrown
       setStatus('success');
       setFormData({ name: '', email: '', role: '' });
     } catch (err) {
-      console.error("Waitlist error:", err);
+      console.error('Waitlist error:', err);
       setStatus('error');
     }
   };
 
+  const inputClass =
+    'w-full pl-12 pr-4 h-14 rounded-xl outline-none transition-all duration-200 text-offwhite text-[15px] font-body ' +
+    'placeholder-offwhite/20 font-medium';
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+  };
+
+  const inputFocusStyle = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.boxShadow = '0 0 0 1.5px rgba(255,107,43,0.50)';
+  };
+  const inputBlurStyle = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.08)';
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-tradeBlue-900/60 backdrop-blur-md animate-in fade-in duration-300" 
+      <div
+        className="absolute inset-0 animate-fade-in"
+        style={{
+          background: 'rgba(2,13,24,0.80)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
         onClick={status === 'loading' ? undefined : onClose}
       />
-      
-      {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-        <button 
+
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-md rounded-card overflow-hidden animate-fade-up"
+        style={{
+          background: '#0A2340',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.6)',
+        }}
+      >
+        {/* Close */}
+        <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-slate-400 hover:text-tradeBlue-900 transition-colors z-10"
+          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/80 transition-colors z-10 p-1"
+          aria-label="Close"
         >
-          <X className="w-6 h-6" />
+          <X className="w-5 h-5" />
         </button>
 
+        {/* Orange top accent strip */}
+        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #FF6B2B, #FF8C55)' }} />
+
         {status === 'success' ? (
-          <div className="p-12 text-center animate-in zoom-in-90 duration-500">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
+          <div className="p-10 text-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+              style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.20)' }}
+            >
+              <CheckCircle2 className="w-8 h-8 text-orange-soft" />
             </div>
-            <h3 className="text-3xl font-extrabold text-tradeBlue-900 mb-4 tracking-tight">You're on the list!</h3>
-            <p className="text-slate-600 mb-8 leading-relaxed font-medium">
-              Thank you for joining. We'll be in touch very soon with your early access details.
+            <h3 className="font-display text-2xl font-bold text-offwhite mb-3 tracking-tight">
+              You're on the list!
+            </h3>
+            <p className="text-offwhite/50 mb-8 leading-relaxed text-[15px]">
+              We'll be in touch very soon with your early access details. In the meantime, spread the word to fellow tradespeople.
             </p>
-            <Button variant="primary" fullWidth onClick={onClose}>Close</Button>
+            <Button variant="outline" fullWidth onClick={onClose}>
+              Close
+            </Button>
           </div>
         ) : (
-          <div className="p-8 md:p-12">
-            <div className="mb-8">
-              <h3 className="text-3xl font-extrabold text-tradeBlue-900 mb-2 tracking-tight">Join the Waitlist</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Be the first to use the platform for free. We're launching in limited batches.
+          <div className="p-8">
+            <div className="mb-7">
+              <h3 className="font-display text-[26px] font-bold text-offwhite mb-1.5 tracking-tight">
+                Join the Waitlist
+              </h3>
+              <p className="text-offwhite/40 text-[14px] leading-relaxed">
+                Be the first to use the platform for free. Launching in limited batches.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-900 uppercase tracking-widest pl-1">Full Name</label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                  Full Name
+                </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
                   <input
                     type="text"
                     required
-                    placeholder="e.g. John Doe"
-                    className="w-full pl-12 pr-4 h-14 bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 rounded-2xl outline-none transition-all font-medium"
+                    placeholder="e.g. John Smith"
+                    className={inputClass}
+                    style={inputStyle}
                     value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    onFocus={inputFocusStyle}
+                    onBlur={inputBlurStyle}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-900 uppercase tracking-widest pl-1">Email Address</label>
+              {/* Email */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                  Email Address
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
                   <input
                     type="email"
                     required
-                    placeholder="john@example.com"
-                    className="w-full pl-12 pr-4 h-14 bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 rounded-2xl outline-none transition-all font-medium"
+                    placeholder="john@example.co.uk"
+                    className={inputClass}
+                    style={inputStyle}
                     value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    onFocus={inputFocusStyle}
+                    onBlur={inputBlurStyle}
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-900 uppercase tracking-widest pl-1">Your Trade / Role (Optional)</label>
+              {/* Trade / Role */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                  Your Trade <span className="text-offwhite/20">(Optional)</span>
+                </label>
                 <div className="relative">
-                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="e.g. Plumber, Site Manager"
-                    className="w-full pl-12 pr-4 h-14 bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 rounded-2xl outline-none transition-all font-medium"
+                    className={inputClass}
+                    style={inputStyle}
                     value={formData.role}
-                    onChange={e => setFormData({...formData, role: e.target.value})}
+                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                    onFocus={inputFocusStyle}
+                    onBlur={inputBlurStyle}
                   />
                 </div>
               </div>
 
               {status === 'error' && (
-                <p className="text-sm text-red-600 font-bold bg-red-50 p-3 rounded-xl border border-red-100">
-                  Oops! Something went wrong. Please try again or email us.
-                </p>
+                <div
+                  className="text-[13px] font-semibold text-orange-soft p-3 rounded-xl"
+                  style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.15)' }}
+                >
+                  Something went wrong. Please try again or email hello@tradereceptionist.co.uk
+                </div>
               )}
 
-              <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  fullWidth 
-                  size="lg" 
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  fullWidth
+                  size="lg"
                   disabled={status === 'loading'}
-                  className="h-16 text-lg"
+                  className="mt-1"
                 >
                   {status === 'loading' ? (
-                    <><Loader2 className="w-6 h-6 animate-spin mr-2" /> Saving...</>
-                  ) : 'Secure My Spot'}
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Saving your spot…
+                    </>
+                  ) : (
+                    <>
+                      Secure My Spot
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
-            
-            <p className="mt-6 text-center text-xs text-slate-400 font-medium">
-              We hate spam as much as you do. Your data is secure.
+
+            <p className="mt-5 text-center text-[12px] text-offwhite/20">
+              No spam. Your data is never sold. Unsubscribe any time.
             </p>
           </div>
         )}

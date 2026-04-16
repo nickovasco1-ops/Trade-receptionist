@@ -1,75 +1,128 @@
 import React, { useState } from 'react';
-import { Section, Button, Card } from './UI';
+import { Section, Button, Badge } from './UI';
+import { Mail, User, MessageSquare, ArrowRight } from 'lucide-react';
 
 export const ContactUs: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate sending email via mailto for frontend-only solution
     const subject = encodeURIComponent(`New Enquiry from ${formData.name}`);
-    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
-    window.location.href = `mailto:hello@tradereceptionist.com?subject=${subject}&body=${body}`;
+    const body = encodeURIComponent(
+      `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
+    );
+    window.location.href = `mailto:hello@tradereceptionist.co.uk?subject=${subject}&body=${body}`;
+  };
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+  };
+
+  const inputClass =
+    'w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 ' +
+    'text-offwhite text-[15px] font-body placeholder-offwhite/20 font-medium';
+
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.boxShadow = '0 0 0 1.5px rgba(255,107,43,0.50)';
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.08)';
   };
 
   return (
     <Section bg="white" id="contact">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-tradeBlue-900 mb-6 tracking-tight">Contact Us</h2>
-          <p className="text-lg md:text-xl text-slate-500 max-w-xl mx-auto leading-relaxed">
-            Have a question? Send us a message and we’ll get back to you shortly.
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-12">
+          <Badge>Talk to Our Team</Badge>
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-4 tracking-[-0.02em]">
+            Got a question?
+          </h2>
+          <p className="text-[17px] text-offwhite/50 leading-relaxed">
+            We'll get back to you within one business day — usually same day.
           </p>
         </div>
-        <Card className="p-8 md:p-12 shadow-xl border-slate-100/60 bg-white">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="block text-sm font-bold text-slate-900 tracking-wide">Name</label>
+
+        <div
+          className="rounded-card p-8 md:p-10"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)',
+          }}
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid md:grid-cols-2 gap-5">
+              <div>
+                <label htmlFor="name" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                  Your Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
                   <input
                     type="text"
                     id="name"
                     required
-                    className="w-full px-4 py-4 rounded-xl bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium"
-                    placeholder="Your name"
+                    placeholder="John Smith"
+                    className={inputClass + ' pl-11'}
+                    style={inputStyle}
                     value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-bold text-slate-900 tracking-wide">Email</label>
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
                   <input
                     type="email"
                     id="email"
                     required
-                    className="w-full px-4 py-4 rounded-xl bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium"
-                    placeholder="name@company.com"
+                    placeholder="john@example.co.uk"
+                    className={inputClass + ' pl-11'}
+                    style={inputStyle}
                     value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
                 </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="message" className="block text-sm font-bold text-slate-900 tracking-wide">Message</label>
-              <textarea
-                id="message"
-                required
-                rows={5}
-                className="w-full px-4 py-4 rounded-xl bg-slate-50 border-0 ring-1 ring-slate-200 focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all resize-none placeholder:text-slate-400 font-medium"
-                placeholder="How can we help?"
-                value={formData.message}
-                onChange={e => setFormData({...formData, message: e.target.value})}
-              />
+
+            <div>
+              <label htmlFor="message" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                Message
+              </label>
+              <div className="relative">
+                <MessageSquare className="absolute left-4 top-4 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                <textarea
+                  id="message"
+                  required
+                  rows={5}
+                  placeholder="How can we help?"
+                  className={inputClass + ' pl-11 resize-none'}
+                  style={inputStyle}
+                  value={formData.message}
+                  onChange={e => setFormData({ ...formData, message: e.target.value })}
+                  onFocus={onFocus as any}
+                  onBlur={onBlur as any}
+                />
+              </div>
             </div>
+
             <div className="pt-2">
-                <Button type="submit" fullWidth size="lg">Send Message</Button>
+              <Button type="submit" fullWidth size="lg">
+                Send Message
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
           </form>
-        </Card>
+        </div>
       </div>
     </Section>
   );

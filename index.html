@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+
     <!-- Primary SEO -->
     <title>Trade Receptionist | Never Miss a Call | #1 AI App for UK Trades</title>
     <meta name="title" content="Trade Receptionist | Never Miss a Call | #1 AI App for UK Trades">
@@ -14,11 +14,11 @@
     <meta name="revisit-after" content="7 days" />
     <meta name="author" content="Trade Receptionist Ltd" />
 
-    <!-- Geo-Targeting (Crucial for UK Rank) -->
+    <!-- Geo-Targeting -->
     <meta name="geo.region" content="GB" />
     <meta name="geo.placename" content="London" />
-    
-    <!-- Open Graph / Facebook / LinkedIn -->
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.tradereceptionist.co.uk/" />
     <meta property="og:title" content="Trade Receptionist | Never Miss a Call Again" />
@@ -32,58 +32,279 @@
     <meta property="twitter:description" content="Stop losing £1000s to voicemail. Get the AI receptionist app that sounds human and works 24/7." />
     <meta property="twitter:image" content="https://image2url.com/r2/bucket2/images/1767744278349-91123512-574d-4fca-8510-c4c3c15cc910.png" />
 
-    <!-- Favicon (SVG Data URI for reliability) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ea580c'><path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'/></svg>" type="image/svg+xml" />
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF6B2B'><path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'/></svg>" type="image/svg+xml" />
     <link rel="canonical" href="https://www.tradereceptionist.co.uk/" />
 
     <!-- Performance: Preconnect -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
+
+    <!-- Industrial Luminescence: Space Grotesk (display) + Manrope (body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans:    ['Manrope', 'sans-serif'],
+              body:    ['Manrope', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
             },
             colors: {
+              void:  '#020D18',
+              navy: {
+                DEFAULT: '#051426',
+                mid:     '#0A2340',
+                high:    '#0F3060',
+              },
+              orange: {
+                DEFAULT: '#FF6B2B',
+                glow:    '#FF8C55',
+                soft:    '#ffb59a',
+              },
+              accent: {
+                DEFAULT: '#99cbff',
+                glow:    '#60A5FA',
+              },
+              offwhite: '#F0F4F8',
+              /* Legacy aliases — kept so unchanged components don't break */
               brand: {
-                50: '#fff7ed',
+                50:  '#fff7ed',
                 100: '#ffedd5',
-                500: '#f97316',
-                600: '#ea580c',
+                200: '#fed7aa',
+                500: '#FF6B2B',
+                600: '#FF6B2B',
                 900: '#7c2d12',
               },
               tradeBlue: {
-                50: '#f0f7ff',
-                100: '#e0effe',
-                200: '#bae0fd',
-                300: '#7cc7fb',
-                400: '#36aaf7',
-                500: '#0c8de9',
-                600: '#006ec4',
-                700: '#01589e',
-                800: '#064b84',
-                900: '#002855',
-                950: '#082f49',
-              }
-            }
+                50:  '#f0f7ff',
+                900: '#051426',
+                950: '#020D18',
+              },
+            },
+            borderRadius: {
+              card: '16px',
+              btn:  '14px',
+            },
+            transitionTimingFunction: {
+              mechanical: 'cubic-bezier(0.34, 1.2, 0.64, 1)',
+              precision:  'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            },
           }
         }
       }
     </script>
+
     <style>
+      /* ─── Industrial Luminescence CSS Variables ─── */
+      :root {
+        --color-void:         #020D18;
+        --color-navy:         #051426;
+        --color-navy-mid:     #0A2340;
+        --color-navy-high:    #0F3060;
+        --color-orange:       #FF6B2B;
+        --color-orange-glow:  #FF8C55;
+        --color-orange-soft:  #ffb59a;
+        --color-accent:       #99cbff;
+        --color-offwhite:     #F0F4F8;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: var(--color-navy);
+        color: var(--color-offwhite);
+        font-family: 'Manrope', sans-serif;
+      }
+
+      ::selection {
+        background: rgba(255, 107, 43, 0.30);
+        color: #F0F4F8;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--color-orange);
+        outline-offset: 3px;
+      }
+
+      /* ─── Scrollbar ─── */
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+      /* ─── Glass Utilities ─── */
+      .glass {
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+      }
+      .glass-elevated {
+        background: rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(32px);
+        -webkit-backdrop-filter: blur(32px);
+      }
+      .glass-deep {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+
+      /* ─── Blueprint Grid ─── */
+      .blueprint-grid {
+        background-image:
+          linear-gradient(rgba(153, 203, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(153, 203, 255, 0.035) 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+
+      /* ─── Gradient Text ─── */
+      .text-gradient-orange {
+        background: linear-gradient(135deg, #FF6B2B 0%, #ffb59a 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .text-gradient-blue {
+        background: linear-gradient(135deg, #99cbff 0%, #60A5FA 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      /* ─── Glow Shadows ─── */
+      .shadow-orange-glow {
+        box-shadow: 0 0 24px rgba(255, 107, 43, 0.35), 0 4px 16px rgba(255, 107, 43, 0.20);
+      }
+      .shadow-orange-glow-lg {
+        box-shadow: 0 0 40px rgba(255, 107, 43, 0.50), 0 8px 24px rgba(255, 107, 43, 0.30);
+      }
+      .shadow-blue-glow {
+        box-shadow: 0 0 20px rgba(153, 203, 255, 0.25), 0 4px 12px rgba(153, 203, 255, 0.15);
+      }
+
+      /* ─── Range Input: Orange Track ─── */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.10);
+        cursor: pointer;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #FF6B2B;
+        box-shadow: 0 0 12px rgba(255, 107, 43, 0.50);
+        cursor: pointer;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #FF6B2B;
+        box-shadow: 0 0 12px rgba(255, 107, 43, 0.50);
+        cursor: pointer;
+        border: none;
+      }
+
+      /* ─── Keyframe Animations ─── */
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes pulseGlow {
+        0%,  100% { box-shadow: 0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20); }
+        50%        { box-shadow: 0 0 48px rgba(255,107,43,0.60), 0 8px 24px rgba(255,107,43,0.40); }
+      }
+      @keyframes floatUp {
+        0%,  100% { transform: translateY(0px);  }
+        50%        { transform: translateY(-6px); }
+      }
+      @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(20px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes gaugeArc {
+        from { stroke-dashoffset: 251.3; }
+        to   { stroke-dashoffset: var(--gauge-offset, 0); }
+      }
+      @keyframes incomingPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,43,0.4); }
+        50%       { box-shadow: 0 0 0 8px rgba(255,107,43,0); }
+      }
+      @keyframes marquee {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-50%); }
+      }
+
+      /* ─── Utility Animation Classes ─── */
+      .animate-fade-up    { animation: fadeUp 0.4s cubic-bezier(0,0,0.2,1) both; }
+      .animate-fade-in    { animation: fadeIn 0.5s ease both; }
+      .animate-float      { animation: floatUp 4s ease-in-out infinite; }
+      .animate-pulse-glow { animation: pulseGlow 2.5s ease-in-out infinite; }
+      .animate-marquee    { animation: marquee 30s linear infinite; }
+
+      /* ─── Stagger Delays ─── */
+      .stagger-1 { animation-delay:   0ms; }
+      .stagger-2 { animation-delay:  80ms; }
+      .stagger-3 { animation-delay: 160ms; }
+      .stagger-4 { animation-delay: 240ms; }
+      .stagger-5 { animation-delay: 320ms; }
+
+      /* ─── Mobile Safe Area ─── */
+      .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px); }
+
+      /* ─── Section Fade Overlays ─── */
+      .section-fade-top    { background: linear-gradient(180deg, var(--color-void) 0%, transparent 100%); }
+      .section-fade-bottom { background: linear-gradient(0deg, var(--color-void) 0%, transparent 100%); }
+
+      /* ─── Pricing Popular Ring ─── */
+      .popular-ring {
+        box-shadow: 0 0 0 1px rgba(255,107,43,0.30),
+                    0 20px 60px rgba(2,13,24,0.50),
+                    0 0 40px rgba(255,107,43,0.08);
+      }
+
+      /* ─── Glass Card Ring ─── */
+      .glass-ring {
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.08),
+                    0 8px 32px rgba(2,13,24,0.40);
+      }
+      .glass-ring-hover:hover {
+        box-shadow: 0 0 0 1px rgba(255,107,43,0.15),
+                    0 20px 60px rgba(2,13,24,0.50);
+      }
+
+      /* ─── Accordion transition ─── */
+      .accordion-body {
+        overflow: hidden;
+        transition: max-height 400ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* ─── Comparison table tonal rows ─── */
+      .table-row-alt:nth-child(odd) {
+        background: rgba(255,255,255,0.02);
+      }
     </style>
 
-    <!-- GOD TIER SEO: Structured Data (Schema.org) -->
+    <!-- Schema.org Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -139,7 +360,7 @@
               "name": "Does it sound robotic?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Not at all. We use advanced voice AI that sounds human, pauses naturally, and understands UK accents and nuances."
+                "text": "Not at all. We use advanced voice AI that sounds human, pauses naturally, and understands UK accents."
               }
             },
             {
@@ -147,7 +368,7 @@
               "name": "How long does setup take?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "You can be up and running in 5 minutes. Download the app, set your rules, and divert your calls."
+                "text": "You can be up and running in under 5 minutes. Download the app, set your rules, and divert your calls."
               }
             }
           ]
@@ -167,9 +388,8 @@
 }
 </script>
   </head>
-  <body class="bg-gray-50 text-slate-900">
+  <body class="bg-navy text-offwhite font-body">
     <div id="root"></div>
-    <!-- Vite Entry Point -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
