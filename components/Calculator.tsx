@@ -17,10 +17,10 @@ export const Calculator: React.FC = () => {
         boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)',
       }}
     >
-      {/* Header strip */}
+      {/* Header strip — tonal elevation separates from body, no border needed */}
       <div
         className="px-8 py-6 flex items-center gap-3"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'rgba(255,255,255,0.03)' }}
       >
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"

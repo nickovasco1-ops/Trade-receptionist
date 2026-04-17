@@ -116,9 +116,8 @@ export const Testimonials: React.FC = () => {
               {t.tag}
             </span>
 
-            {/* Avatar + name */}
-            <div className="flex items-center gap-3 pt-5"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {/* Avatar + name — spacing creates visual separation, no border needed */}
+            <div className="flex items-center gap-3 pt-5">
               <img
                 src={t.avatarUrl}
                 alt={t.name}

@@ -5,8 +5,55 @@ import {
   Clock, Banknote, Smartphone,
   Wrench, Zap, Hammer, Droplets,
   ChevronDown, ChevronUp, Star, XCircle,
-  Instagram, Facebook, Mic, Play,
+  Instagram, Facebook, Mic, Play, Shield, Award,
 } from 'lucide-react';
+
+// ─── Scroll Animation Hook ────────────────────────────────────────────────────
+function useInView(threshold = 0.12) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // If element is already visible on mount (above fold), mark as in view immediately
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) { setInView(true); return; }
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) { setInView(true); obs.unobserve(el); }
+      },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+
+  return { ref, inView };
+}
+
+// ─── Fade-Up Wrapper ─────────────────────────────────────────────────────────
+const FadeUp: React.FC<{
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}> = ({ children, delay = 0, className = '' }) => {
+  const { ref, inView } = useInView();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'translateY(0)' : 'translateY(22px)',
+        transition: `opacity 500ms cubic-bezier(0,0,0.2,1) ${delay}ms, transform 500ms cubic-bezier(0,0,0.2,1) ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 import { Button, Section, GlassCard, Badge, Card, StatusGauge } from './components/UI';
 import { AudioPlayer } from './components/AudioPlayer';
 import { Calculator } from './components/Calculator';
@@ -28,11 +75,19 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 // ─── Sticky Mobile Bar ────────────────────────────────────────────────────────
 const StickyBottomBar = ({ onWaitlist }: { onWaitlist: () => void }) => (
-  <div className="fixed bottom-0 left-0 right-0 p-3 pb-safe z-50 md:hidden"
-    style={{ background: 'rgba(5,20,38,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+  <div
+    className="fixed bottom-0 left-0 right-0 p-3 pb-safe z-50 md:hidden"
+    style={{
+      background: 'rgba(5,20,38,0.96)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      boxShadow: '0 -1px 0 rgba(255,255,255,0.04)',
+    }}
+  >
     <div className="flex gap-3 max-w-md mx-auto">
-      <Button variant="outline" fullWidth size="md" onClick={() => window.alert('Opening App Store...')}>
-        Download App
+      <Button variant="outline" fullWidth size="md"
+        onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
+        Hear Demo
       </Button>
       <Button variant="primary" fullWidth size="md" onClick={onWaitlist}>
         Start Free Trial
@@ -156,10 +211,12 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                 {label}
               </button>
             ))}
-            <div className="h-px bg-white/[0.06] my-2" />
-            <div className="flex flex-col gap-3">
-              <Button variant="outline" fullWidth onClick={() => { window.alert('Opening App Store...'); setIsOpen(false); }}>
-                Download App
+            <div className="flex flex-col gap-3 pt-2">
+              <Button variant="outline" fullWidth onClick={() => {
+                setIsOpen(false);
+                setTimeout(() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' }), 100);
+              }}>
+                Hear Live Demo
               </Button>
               <Button variant="primary" fullWidth onClick={() => { onWaitlist(); setIsOpen(false); }}>
                 Start Free Trial
@@ -402,139 +459,182 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
   );
 };
 
-// ─── Social Proof Strip ───────────────────────────────────────────────────────
-const SocialProof = () => (
-  <div className="bg-navy-mid py-8" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-        {/* Stars */}
-        <div className="flex items-center gap-3">
-          <div className="flex gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-current text-orange" />
-            ))}
+// ─── Social Proof Marquee ─────────────────────────────────────────────────────
+const TRUST_ITEMS = [
+  { icon: Star, text: '4.9 / 5 Rating', highlight: true },
+  { icon: CheckCircle2, text: 'Gas Safe Partner' },
+  { icon: CheckCircle2, text: 'NICEIC Approved' },
+  { icon: CheckCircle2, text: 'FMB Member' },
+  { icon: CheckCircle2, text: '24 / 7 Answering' },
+  { icon: CheckCircle2, text: 'Natural UK Voice' },
+  { icon: CheckCircle2, text: '5-Minute Setup' },
+  { icon: Shield,       text: 'No Contracts' },
+  { icon: CheckCircle2, text: 'Google Calendar Sync' },
+  { icon: Award,        text: '500+ UK Trades' },
+  { icon: CheckCircle2, text: 'WhatsApp Summaries' },
+  { icon: CheckCircle2, text: 'Emergency Routing' },
+];
+
+const SocialProof = () => {
+  // Duplicate for seamless loop
+  const items = [...TRUST_ITEMS, ...TRUST_ITEMS];
+
+  return (
+    <div
+      className="bg-navy-mid py-6 overflow-hidden"
+      style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(255,255,255,0.04)' }}
+    >
+      <div
+        className="flex gap-10 w-max animate-marquee"
+        style={{ animationDuration: '40s' }}
+      >
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-2.5 flex-shrink-0">
+            <item.icon
+              className={`w-3.5 h-3.5 flex-shrink-0 ${item.highlight ? 'fill-current text-orange' : 'text-orange-soft/60'}`}
+            />
+            <span
+              className={`text-[13px] font-semibold whitespace-nowrap tracking-[0.02em] ${
+                item.highlight ? 'text-offwhite/70' : 'text-offwhite/35'
+              }`}
+            >
+              {item.text}
+            </span>
+            <span className="text-offwhite/10 ml-4">·</span>
           </div>
-          <span className="font-bold text-[14px] text-offwhite">4.9/5</span>
-          <span className="text-[13px] text-offwhite/40">from 500+ UK tradespeople</span>
-        </div>
-
-        {/* Dividers + quick trust marks */}
-        <div className="flex items-center gap-6 text-[12px] font-bold tracking-[0.10em] uppercase text-offwhite/30">
-          {['Gas Safe Partner', 'NICEIC Approved', 'FMB Member'].map((badge, i) => (
-            <React.Fragment key={badge}>
-              {i > 0 && <span className="text-offwhite/10">·</span>}
-              <span className="text-offwhite/40">{badge}</span>
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div className="text-[13px] text-offwhite/40 font-medium text-center sm:text-right">
-          Trusted across 200+ UK postcodes
-        </div>
+        ))}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Pain Points ──────────────────────────────────────────────────────────────
+const PAIN_ITEMS = [
+  {
+    icon: Banknote,
+    title: 'Lost Revenue',
+    stat: '£4,200/yr',
+    desc: '67% of callers hang up on voicemail. They ring the next tradesperson on the list. That job is gone.',
+  },
+  {
+    icon: Clock,
+    title: 'Admin Overload',
+    stat: '8 hrs/week',
+    desc: 'Evenings spent returning calls, chasing leads, and organising your diary — instead of resting.',
+  },
+  {
+    icon: Star,
+    title: 'Reputation Damage',
+    stat: '#1 complaint',
+    desc: 'Slow response time is the top reason customers leave negative reviews. Speed wins high-value jobs.',
+  },
+];
+
 const PainPoints = () => (
   <Section bg="gray">
-    <div className="text-center max-w-2xl mx-auto mb-16">
+    <FadeUp className="text-center max-w-2xl mx-auto mb-16">
       <Badge>The Cost of Silence</Badge>
       <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em] leading-[1.1]">
         Missed calls cost you jobs.{' '}
         <span className="text-offwhite/40">It's that simple.</span>
       </h2>
-    </div>
+    </FadeUp>
 
     <div className="grid md:grid-cols-3 gap-6">
-      {[
-        {
-          icon: Banknote,
-          title: 'Lost Revenue',
-          stat: '£4,200/yr',
-          desc: '67% of callers hang up on voicemail. They ring the next tradesperson on the list. That job is gone.',
-        },
-        {
-          icon: Clock,
-          title: 'Admin Overload',
-          stat: '8 hrs/week',
-          desc: 'Evenings spent returning calls, chasing leads, and organising your diary — instead of resting.',
-        },
-        {
-          icon: Star,
-          title: 'Reputation Damage',
-          stat: '#1 complaint',
-          desc: 'Slow response time is the top reason customers leave negative reviews. Speed wins high-value jobs.',
-        },
-      ].map((item, i) => (
-        <div
-          key={i}
-          className="glass glass-ring glass-ring-hover rounded-card p-8 group transition-all duration-300"
-          style={{ transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)' }}
-        >
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-all duration-300"
-            style={{ background: 'rgba(255,107,43,0.10)' }}>
-            <item.icon className="w-6 h-6 text-orange" />
+      {PAIN_ITEMS.map((item, i) => (
+        <FadeUp key={i} delay={i * 90}>
+          <div
+            className="glass glass-ring glass-ring-hover rounded-card p-8 group transition-all duration-300 h-full"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)' }}
+          >
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-all duration-300"
+              style={{ background: 'rgba(255,107,43,0.10)' }}
+            >
+              <item.icon className="w-6 h-6 text-orange" />
+            </div>
+            <div className="font-display text-3xl font-bold text-orange-soft mb-2 tracking-[-0.02em]">
+              {item.stat}
+            </div>
+            <h3 className="font-display text-xl font-bold text-offwhite mb-3 tracking-tight">
+              {item.title}
+            </h3>
+            <p className="text-offwhite/55 leading-relaxed text-[15px]">{item.desc}</p>
           </div>
-          <div className="font-display text-3xl font-bold text-orange-soft mb-2 tracking-[-0.02em]">
-            {item.stat}
-          </div>
-          <h3 className="font-display text-xl font-bold text-offwhite mb-3 tracking-tight">
-            {item.title}
-          </h3>
-          <p className="text-offwhite/55 leading-relaxed text-[15px]">{item.desc}</p>
-        </div>
+        </FadeUp>
       ))}
     </div>
   </Section>
 );
 
 // ─── How It Works ─────────────────────────────────────────────────────────────
+const HOW_STEPS = [
+  {
+    step: '01',
+    title: 'Download the App',
+    desc: 'Available on iOS and Android. Create your account in under 5 minutes — no IT skills needed.',
+  },
+  {
+    step: '02',
+    title: 'Divert Your Calls',
+    desc: "Forward calls to your dedicated Trade Receptionist number when you're on-site or busy.",
+  },
+  {
+    step: '03',
+    title: 'Never Miss Work',
+    desc: 'We answer instantly, qualify the lead by your rules, and drop the job details straight into your diary.',
+  },
+];
+
 const HowItWorks = () => (
   <Section id="how-it-works" bg="white">
-    <div className="text-center mb-16">
+    <FadeUp className="text-center mb-16">
       <Badge>Simple Process</Badge>
       <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em]">
         Three steps to zero missed calls
       </h2>
-    </div>
+    </FadeUp>
 
     <div className="grid md:grid-cols-3 gap-8 relative">
-      {[
-        {
-          step: '01',
-          title: 'Download the app',
-          desc: 'Available on iOS and Android. Create your account in under 5 minutes — no IT skills needed.',
-          color: 'text-orange',
-        },
-        {
-          step: '02',
-          title: 'Divert your calls',
-          desc: 'Forward calls to your dedicated Trade Receptionist number when you\'re on-site or busy.',
-          color: 'text-orange-glow',
-        },
-        {
-          step: '03',
-          title: 'Never miss work',
-          desc: 'We answer instantly, qualify the lead by your rules, and drop the job details straight into your diary.',
-          color: 'text-orange-soft',
-        },
-      ].map((item, i) => (
-        <div key={i} className="flex flex-col items-center text-center group">
-          <div
-            className="w-24 h-24 rounded-card flex items-center justify-center mb-8 transition-all duration-300 group-hover:-translate-y-1"
-            style={{
-              background: 'rgba(255,107,43,0.07)',
-              boxShadow: '0 0 0 1px rgba(255,107,43,0.12)',
-              transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
-            }}
-          >
-            <span className={`font-display text-4xl font-bold tracking-tight ${item.color}`}>{item.step}</span>
+      {/* Connector line — desktop only */}
+      <div
+        className="hidden md:block absolute top-12 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px pointer-events-none"
+        style={{
+          background: 'linear-gradient(90deg, rgba(255,107,43,0.25) 0%, rgba(255,107,43,0.5) 50%, rgba(255,107,43,0.25) 100%)',
+        }}
+      />
+
+      {HOW_STEPS.map((item, i) => (
+        <FadeUp key={i} delay={i * 100} className="flex flex-col items-center text-center group">
+          <div className="relative mb-8">
+            {/* Step number circle */}
+            <div
+              className="w-24 h-24 rounded-card flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1.5"
+              style={{
+                background: 'rgba(255,107,43,0.07)',
+                boxShadow: '0 0 0 1px rgba(255,107,43,0.18), 0 0 24px rgba(255,107,43,0.06)',
+                transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
+              }}
+            >
+              <span className="font-display text-4xl font-bold tracking-tight text-gradient-orange">
+                {item.step}
+              </span>
+            </div>
+            {/* Connector dot */}
+            {i < 2 && (
+              <div
+                className="hidden md:block absolute top-12 -right-8 w-3 h-3 rounded-full"
+                style={{
+                  background: 'rgba(255,107,43,0.4)',
+                  transform: 'translateX(50%)',
+                  boxShadow: '0 0 6px rgba(255,107,43,0.4)',
+                }}
+              />
+            )}
           </div>
           <h3 className="font-display text-xl font-bold text-offwhite mb-3 tracking-tight">{item.title}</h3>
           <p className="text-offwhite/55 leading-relaxed text-[15px] max-w-xs">{item.desc}</p>
-        </div>
+        </FadeUp>
       ))}
     </div>
   </Section>
@@ -544,10 +644,10 @@ const HowItWorks = () => (
 const ROISection = () => (
   <Section id="roi" bg="gray">
     <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-      <div className="order-2 lg:order-1">
+      <FadeUp className="order-2 lg:order-1">
         <Calculator />
-      </div>
-      <div className="order-1 lg:order-2">
+      </FadeUp>
+      <FadeUp delay={80} className="order-1 lg:order-2">
         <Badge>ROI Calculator</Badge>
         <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-6 tracking-[-0.02em] leading-[1.1]">
           Do the maths.{' '}
@@ -568,7 +668,7 @@ const ROISection = () => (
             </li>
           ))}
         </ul>
-      </div>
+      </FadeUp>
     </div>
   </Section>
 );
@@ -594,9 +694,9 @@ const ComparisonSection = () => (
           boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
         }}
       >
-        {/* Column headers */}
-        <div className="grid grid-cols-4 gap-4 mb-6 pb-6"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* Column headers — tonal background separates from rows */}
+        <div className="grid grid-cols-4 gap-4 mb-6 pb-6 rounded-xl px-2"
+          style={{ background: 'rgba(255,255,255,0.02)' }}>
           <div />
           <div className="text-center">
             <span className="font-display font-bold text-lg text-offwhite">Trade Receptionist</span>
@@ -1084,8 +1184,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
-  <footer className="bg-void pt-20 pb-12"
-    style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+  <footer className="bg-void pt-20 pb-12">
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
       <div className="grid md:grid-cols-4 gap-12 mb-16">
         <div className="col-span-1 md:col-span-2">
@@ -1125,8 +1224,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2rem' }}>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8">
         <p className="text-[13px] text-offwhite/25">
           &copy; 2025 Trade Receptionist Ltd. All rights reserved. Registered in England & Wales.
         </p>
