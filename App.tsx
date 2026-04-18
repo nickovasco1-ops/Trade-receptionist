@@ -1119,7 +1119,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       price: billing === 'monthly' ? '£29' : '£24',
       period: 'per month (+VAT)',
       description: 'Solo traders',
-      features: ['60 AI Minutes (~25 Calls)', '24/7 Answering', 'SMS Summaries', 'Google Calendar Sync'],
+      features: ['Up to 100 Calls/Month', '24/7 Answering', 'SMS Summaries', 'Google Calendar Sync'],
       buttonText: 'Start Free Trial',
     },
     {
@@ -1128,7 +1128,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       period: 'per month (+VAT)',
       description: 'Busy professionals',
       isPopular: true,
-      features: ['150 AI Minutes (~65 Calls)', 'Everything in Starter', 'Call Transfer Logic', 'CRM Integration', 'Priority Support'],
+      features: ['Up to 300 Calls/Month', 'Everything in Starter', 'Call Transfer Logic', 'CRM Integration', 'Priority Support'],
       buttonText: 'Start Free Trial',
     },
     {
@@ -1136,7 +1136,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       price: billing === 'monthly' ? '£119' : '£99',
       period: 'per month (+VAT)',
       description: 'Growing teams',
-      features: ['350 AI Minutes (~150 Calls)', 'Everything in Pro', 'Multiple Departments', 'White-Label Dashboard', 'Dedicated Account Mgr'],
+      features: ['Unlimited Calls', 'Everything in Pro', 'Multiple Departments', 'White-Label Dashboard', 'Dedicated Account Mgr'],
       buttonText: 'Start Free Trial',
     },
   ];

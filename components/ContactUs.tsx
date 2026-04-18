@@ -112,8 +112,8 @@ export const ContactUs: React.FC = () => {
                   style={inputStyle}
                   value={formData.message}
                   onChange={e => setFormData({ ...formData, message: e.target.value })}
-                  onFocus={onFocus as any}
-                  onBlur={onBlur as any}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
                 />
               </div>
             </div>
