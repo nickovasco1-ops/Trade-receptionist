@@ -22,7 +22,7 @@ export const BookDemo: React.FC = () => {
   ];
 
   return (
-    <div className="pt-24 min-h-screen flex flex-col bg-navy">
+    <div className="pt-36 min-h-screen flex flex-col bg-navy">
       <Section bg="white" className="flex-grow">
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-12">
