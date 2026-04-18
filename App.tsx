@@ -191,16 +191,15 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="flex justify-between h-24 items-center">
+        <div className="flex justify-between h-36 items-center">
           {/* Logo */}
           <button
-            className="flex-shrink-0 h-full py-2 flex items-center focus:outline-none"
+            className="flex-shrink-0 flex items-center focus:outline-none"
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
           >
-            <div className="h-full w-[220px] md:w-[340px] flex items-center">
-              <Logo className="h-full w-full" />
-            </div>
+            <Logo height={120} className="hidden md:block" />
+            <Logo height={90} className="md:hidden" />
           </button>
 
           {/* Desktop nav */}
@@ -306,7 +305,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
   return (
     <section
       id="hero"
-      className="relative pt-36 pb-24 md:pt-48 md:pb-36 overflow-hidden"
+      className="relative pt-44 pb-24 md:pt-56 md:pb-36 overflow-hidden"
       style={{
         background:
           'radial-gradient(ellipse at 15% 60%, rgba(255,107,43,0.09) 0%, transparent 55%),' +
@@ -1402,8 +1401,8 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
       <div className="grid md:grid-cols-4 gap-12 mb-16">
         <div className="col-span-1 md:col-span-2">
-          <div className="w-[140px] mb-6">
-            <Logo className="w-full" />
+          <div className="mb-6">
+            <Logo height={100} />
           </div>
           <p className="text-[15px] text-offwhite/35 leading-relaxed max-w-xs">
             The UK's #1 AI receptionist for tradespeople. Never miss a call. Never lose a job.
