@@ -4,8 +4,8 @@ import {
   Menu, X, CheckCircle2, ArrowRight,
   Clock, Banknote, Smartphone,
   Wrench, Zap, Hammer, Droplets,
-  ChevronDown, ChevronUp, Star, XCircle,
-  Instagram, Facebook, Mic, Play, Shield, Award,
+  ChevronDown, Star, XCircle,
+  Instagram, Facebook, Mic, Play,
 } from 'lucide-react';
 
 // ─── Scroll Animation Hook ────────────────────────────────────────────────────
@@ -38,32 +38,79 @@ const FadeUp: React.FC<{
   children: React.ReactNode;
   delay?: number;
   className?: string;
-}> = ({ children, delay = 0, className = '' }) => {
+  onMouseMove?: React.MouseEventHandler<HTMLDivElement>;
+}> = ({ children, delay = 0, className = '', onMouseMove }) => {
   const { ref, inView } = useInView();
   return (
     <div
       ref={ref}
       className={className}
+      onMouseMove={onMouseMove}
       style={{
         opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(22px)',
-        transition: `opacity 500ms cubic-bezier(0,0,0.2,1) ${delay}ms, transform 500ms cubic-bezier(0,0,0.2,1) ${delay}ms`,
+        transform: inView ? 'translateY(0)' : 'translateY(16px)',
+        transition: `opacity 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`,
       }}
     >
       {children}
     </div>
   );
 };
-import { Button, Section, GlassCard, Badge, Card, StatusGauge } from './components/UI';
-import { AudioPlayer } from './components/AudioPlayer';
-import { Calculator } from './components/Calculator';
+
+// ─── Animated Counter ────────────────────────────────────────────────────────
+const AnimatedCounter: React.FC<{
+  endValue: number;
+  suffix?: string;
+  decimals?: number;
+  duration?: number;
+}> = ({ endValue, suffix = '', decimals = 0, duration = 1600 }) => {
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const [display, setDisplay] = useState(decimals > 0 ? (0).toFixed(decimals) : '0');
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    const el = spanRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || startedRef.current) return;
+      startedRef.current = true;
+      const startTime = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 4);
+        const current = eased * endValue;
+        setDisplay(decimals > 0 ? current.toFixed(decimals) : Math.round(current).toString());
+        if (progress < 1) requestAnimationFrame(tick);
+        else setDisplay(decimals > 0 ? endValue.toFixed(decimals) : endValue.toString());
+      };
+      requestAnimationFrame(tick);
+      obs.disconnect();
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [endValue, duration, decimals]);
+
+  return <span ref={spanRef}>{display}{suffix}</span>;
+};
+
+import { Button, Section, Badge, Card, StatusGauge } from './components/UI';
 import { BlueprintGrid } from './components/BlueprintGrid';
-import { Testimonials } from './components/Testimonials';
-import { BookDemo } from './components/BookDemo';
 import { Logo } from './components/Logo';
-import { ContactUs } from './components/ContactUs';
 import { WaitlistModal } from './components/WaitlistModal';
-import { Feature, FAQItem, PricingTier } from './types';
+import { FAQItem, PricingTier } from './types';
+
+// Lazy-loaded below-fold components — keeps initial JS bundle lean
+const AudioPlayer  = React.lazy(() => import('./components/AudioPlayer').then(m => ({ default: m.AudioPlayer })));
+const Calculator   = React.lazy(() => import('./components/Calculator').then(m => ({ default: m.Calculator })));
+const Testimonials = React.lazy(() => import('./components/Testimonials').then(m => ({ default: m.Testimonials })));
+const BookDemo     = React.lazy(() => import('./components/BookDemo').then(m => ({ default: m.BookDemo })));
+const ContactUs    = React.lazy(() => import('./components/ContactUs').then(m => ({ default: m.ContactUs })));
+
+const LazyFallback = () => (
+  <div className="flex justify-center items-center py-16">
+    <div className="w-8 h-8 rounded-full" style={{ boxShadow: '0 0 0 2px rgba(255,107,43,0.3)', animation: 'spin 1s linear infinite' }} />
+  </div>
+);
 
 type View = 'home' | 'book-demo';
 
@@ -132,7 +179,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 
   return (
     <nav
-      className="fixed top-0 w-full z-50 transition-all duration-500"
+      className="fixed top-0 w-full z-50"
       style={{
         background: scrolled
           ? 'rgba(5,20,38,0.92)'
@@ -140,36 +187,44 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         boxShadow: scrolled ? '0 1px 0 rgba(255,255,255,0.05)' : 'none',
+        transition: 'background 300ms ease, box-shadow 300ms ease',
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="flex justify-between h-20 items-center">
+        <div className="flex justify-between h-24 items-center">
           {/* Logo */}
           <button
-            className="flex-shrink-0 h-full py-4 flex items-center focus:outline-none"
+            className="flex-shrink-0 h-full py-2 flex items-center focus:outline-none"
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
           >
-            <div className="h-full w-[150px] md:w-[180px] flex items-center">
+            <div className="h-full w-[220px] md:w-[340px] flex items-center">
               <Logo className="h-full w-full" />
             </div>
           </button>
 
           {/* Desktop nav */}
           <div className="hidden xl:flex items-center gap-8">
-            {navLinks.map(({ label, target }) => (
-              <button
-                key={target}
-                onClick={() => handleNav(target)}
-                className={`font-semibold text-[14px] tracking-wide transition-colors duration-200 ${
-                  currentView === 'book-demo' && target === 'book-demo'
-                    ? 'text-orange-soft'
-                    : 'text-offwhite/60 hover:text-offwhite'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {navLinks.map(({ label, target }) => {
+              const isActive = currentView === 'book-demo' && target === 'book-demo';
+              return (
+                <button
+                  key={target}
+                  onClick={() => handleNav(target)}
+                  className={`relative font-semibold text-[14px] tracking-wide pb-1 ${
+                    isActive ? 'text-orange-soft' : 'text-offwhite/60 hover:text-offwhite'
+                  }`}
+                  style={{ transition: 'color 200ms ease' }}
+                >
+                  {label}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-orange-soft"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Desktop CTAs */}
@@ -196,9 +251,9 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
         <div
           className="xl:hidden absolute w-full px-6 py-8"
           style={{
-            background: 'rgba(10,35,64,0.97)',
+            background: 'rgba(5,20,38,0.98)',
             backdropFilter: 'blur(24px)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 8px 32px rgba(2,13,24,0.6)',
           }}
         >
           <div className="flex flex-col gap-6">
@@ -272,63 +327,81 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
           {/* Left: Copy */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full glass-deep ring-1 ring-orange-soft/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse" />
-              <span className="text-[12px] font-bold tracking-[0.14em] uppercase text-orange-soft">
-                UK's #1 AI Receptionist for Trades
-              </span>
+            <div className="hero-fade" style={{ animationDelay: '0ms' }}>
+              <div className="inline-flex items-center gap-2 mb-7 px-4 py-2 rounded-full glass-deep ring-1 ring-orange-soft/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse" />
+                <span className="text-[12px] font-bold tracking-[0.14em] uppercase text-orange-soft">
+                  <span>⭐</span> 4.9/5 · 500+ UK Tradespeople
+                </span>
+              </div>
             </div>
 
-            <h1 className="font-display text-[2.8rem] sm:text-6xl lg:text-7xl font-bold leading-[1.04] tracking-[-0.025em] text-offwhite mb-6">
-              Never miss a{' '}
-              <span className="relative inline-block">
-                <span className="text-gradient-orange">call.</span>
+            <h1
+              className="font-display font-bold text-offwhite mb-7"
+              style={{ fontSize: 'clamp(3.5rem, 8.5vw, 8.5rem)', lineHeight: 0.90, letterSpacing: '-0.025em' }}
+            >
+              <span className="line-reveal-wrapper">
+                <span className="line-reveal" style={{ animationDelay: '80ms' }}>
+                  Never miss a{' '}
+                  <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>call.</span>
+                </span>
               </span>
-              <br />
-              Never lose a{' '}
-              <span className="text-gradient-orange">job.</span>
+              <span className="line-reveal-wrapper">
+                <span className="line-reveal" style={{ animationDelay: '230ms' }}>
+                  Never lose a{' '}
+                  <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>job.</span>
+                </span>
+              </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-offwhite/65 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-10 font-body">
-              Your AI receptionist answers every call, qualifies every lead, and books jobs straight into your diary — 24/7, while you're on the tools.
-            </p>
+            <div className="hero-fade" style={{ animationDelay: '390ms' }}>
+              <p className="text-lg md:text-xl text-offwhite/65 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-10 font-body">
+                Your AI receptionist answers every call, qualifies every lead, and books jobs straight into your diary — 24/7, while you're on the tools.
+              </p>
+            </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-              <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
-                Start Free Trial
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button
-                variant="secondary" size="lg"
-                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                <Play className="w-4 h-4 mr-2 text-accent" />
-                Hear a Live Demo
-              </Button>
+            <div className="hero-fade" style={{ animationDelay: '510ms' }}>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
+                  Start Free Trial
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button
+                  variant="secondary" size="lg"
+                  onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  <Play className="w-4 h-4 mr-2 text-accent" />
+                  Hear a Live Demo
+                </Button>
+              </div>
             </div>
 
             {/* Trust badges */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-[13px] font-semibold text-offwhite/50">
-              {[
-                { icon: CheckCircle2, text: 'Works 24/7' },
-                { icon: CheckCircle2, text: 'Natural UK Accent' },
-                { icon: CheckCircle2, text: 'Setup in 5 Minutes' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-1.5">
-                  <Icon className="w-4 h-4 text-orange-soft/70" />
-                  {text}
+            <div className="hero-fade" style={{ animationDelay: '630ms' }}>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-[13px] font-semibold text-offwhite/50">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-orange-soft/70" />
+                  14-day free trial
                 </div>
-              ))}
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-orange-soft/70" />
+                  No card required
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-orange-soft/70" />
+                  Setup in 14 minutes
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right: Phone mockup */}
           <div
-            className="relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-full z-20 cursor-pointer"
+            className="relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-full z-20 cursor-pointer hero-fade"
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            style={{ perspective: '1000px' }}
+            style={{ perspective: '1000px', animationDelay: '150ms' }}
           >
             {/* Floating glow behind phone */}
             <div className="absolute inset-0 rounded-[2.5rem] opacity-40 pointer-events-none"
@@ -427,142 +500,125 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </div>
             </div>
           </div>
+          {/* Live calls counter */}
+          <div className="lg:col-span-2 hero-fade flex justify-center mt-6 lg:mt-10" style={{ animationDelay: '700ms' }}>
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full" style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.15)' }}>
+              <div className="w-2 h-2 rounded-full bg-orange animate-pulse" />
+              <span className="font-body text-[13px] text-offwhite/50">Calls answered today:</span>
+              <span className="font-mono text-[14px] font-bold text-orange-soft"><AnimatedCounter endValue={14293} duration={2000} /></span>
+            </div>
+          </div>
+
         </div>
 
-        {/* Stat strip */}
-        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { value: '24/7', label: 'Always Answering' },
-            { value: '98%', label: 'Calls Handled' },
-            { value: '£4.2k', label: 'Avg. Saved / Year' },
-            { value: '5 min', label: 'Setup Time' },
-          ].map((stat, i) => (
-            <div
-              key={stat.label}
-              className="rounded-card p-5 text-center glass-deep animate-fade-up"
-              style={{
-                animationDelay: `${i * 80}ms`,
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.05)',
-              }}
-            >
-              <div className="font-display text-2xl md:text-3xl font-bold text-offwhite mb-1 tracking-[-0.02em]">
-                {stat.value}
-              </div>
-              <div className="text-[12px] font-semibold tracking-[0.08em] uppercase text-offwhite/35">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
+
+      {/* Scroll cue */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-2 pointer-events-none">
+        <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/25">Scroll</span>
+        <div className="scroll-cue w-px h-10 bg-gradient-to-b from-offwhite/25 to-transparent" />
+      </div>
+
     </section>
   );
 };
 
-// ─── Social Proof Marquee ─────────────────────────────────────────────────────
-const TRUST_ITEMS = [
-  { icon: Star, text: '4.9 / 5 Rating', highlight: true },
-  { icon: CheckCircle2, text: 'Gas Safe Partner' },
-  { icon: CheckCircle2, text: 'NICEIC Approved' },
-  { icon: CheckCircle2, text: 'FMB Member' },
-  { icon: CheckCircle2, text: '24 / 7 Answering' },
-  { icon: CheckCircle2, text: 'Natural UK Voice' },
-  { icon: CheckCircle2, text: '5-Minute Setup' },
-  { icon: Shield,       text: 'No Contracts' },
-  { icon: CheckCircle2, text: 'Google Calendar Sync' },
-  { icon: Award,        text: '500+ UK Trades' },
-  { icon: CheckCircle2, text: 'WhatsApp Summaries' },
-  { icon: CheckCircle2, text: 'Emergency Routing' },
-];
+// ───Social Proof Strip ───────────────────────────────────────────────────────
+const SocialProof = () => (
+  <div className="relative py-12 overflow-hidden"
+    style={{
+      background: 'linear-gradient(180deg, #051426 0%, #0A2340 15%, #0A2340 85%, #051426 100%)',
+    }}
+  >
 
-const SocialProof = () => {
-  // Duplicate for seamless loop
-  const items = [...TRUST_ITEMS, ...TRUST_ITEMS];
+    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
 
-  return (
-    <div
-      className="bg-navy-mid py-6 overflow-hidden"
-      style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(255,255,255,0.04)' }}
-    >
-      <div
-        className="flex gap-10 w-max animate-marquee"
-        style={{ animationDuration: '40s' }}
-      >
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-2.5 flex-shrink-0">
-            <item.icon
-              className={`w-3.5 h-3.5 flex-shrink-0 ${item.highlight ? 'fill-current text-orange' : 'text-orange-soft/60'}`}
-            />
-            <span
-              className={`text-[13px] font-semibold whitespace-nowrap tracking-[0.02em] ${
-                item.highlight ? 'text-offwhite/70' : 'text-offwhite/35'
-              }`}
-            >
-              {item.text}
+        <p className="text-[13px] font-bold tracking-[0.12em] uppercase text-offwhite/30 whitespace-nowrap flex-shrink-0 font-body">
+          Trusted by tradespeople across the UK
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-6 flex-1">
+          {['Gas Safe Registered', 'NICEIC Approved', 'FMB Member', 'TrustMark Certified', 'CHAS Registered'].map((badge) => (
+            <span key={badge} className="text-[12px] font-bold tracking-[0.08em] uppercase text-offwhite/25 whitespace-nowrap font-display">
+              {badge}
             </span>
-            <span className="text-offwhite/10 ml-4">·</span>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 flex-shrink-0">
+          {[
+            { metric: '98.7%', label: 'Calls answered' },
+            { metric: '£4,200', label: 'Avg. revenue recovered' },
+            { metric: '14 min', label: 'Avg. setup time' },
+          ].map(({ metric, label }) => (
+            <div key={metric} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
+              <span className="font-mono text-[14px] font-bold text-orange-soft">{metric}</span>
+              <span className="text-[11px] text-offwhite/35 font-body">{label}</span>
+            </div>
+          ))}
+        </div>
+
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 // ─── Pain Points ──────────────────────────────────────────────────────────────
-const PAIN_ITEMS = [
-  {
-    icon: Banknote,
-    title: 'Lost Revenue',
-    stat: '£4,200/yr',
-    desc: '67% of callers hang up on voicemail. They ring the next tradesperson on the list. That job is gone.',
-  },
-  {
-    icon: Clock,
-    title: 'Admin Overload',
-    stat: '8 hrs/week',
-    desc: 'Evenings spent returning calls, chasing leads, and organising your diary — instead of resting.',
-  },
-  {
-    icon: Star,
-    title: 'Reputation Damage',
-    stat: '#1 complaint',
-    desc: 'Slow response time is the top reason customers leave negative reviews. Speed wins high-value jobs.',
-  },
-];
-
 const PainPoints = () => (
-  <Section bg="gray">
-    <FadeUp className="text-center max-w-2xl mx-auto mb-16">
-      <Badge>The Cost of Silence</Badge>
-      <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em] leading-[1.1]">
-        Missed calls cost you jobs.{' '}
-        <span className="text-offwhite/40">It's that simple.</span>
+  <Section bg="gray" id="pain">
+    <FadeUp className="mb-16 max-w-3xl">
+      <Badge>The Cost of Doing Nothing</Badge>
+      <h2
+        className="font-display font-bold text-offwhite"
+        style={{ fontSize: 'clamp(2.5rem, 5.5vw, 5rem)', letterSpacing: '-0.025em', lineHeight: 0.95 }}
+      >
+        Every missed call is money{' '}
+        <span className="text-offwhite/30">walking out the door.</span>
       </h2>
     </FadeUp>
 
-    <div className="grid md:grid-cols-3 gap-6">
-      {PAIN_ITEMS.map((item, i) => (
-        <FadeUp key={i} delay={i * 90}>
-          <div
-            className="glass glass-ring glass-ring-hover rounded-card p-8 group transition-all duration-300 h-full"
-            style={{ transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)' }}
-          >
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-all duration-300"
-              style={{ background: 'rgba(255,107,43,0.10)' }}
-            >
-              <item.icon className="w-6 h-6 text-orange" />
-            </div>
-            <div className="font-display text-3xl font-bold text-orange-soft mb-2 tracking-[-0.02em]">
-              {item.stat}
-            </div>
-            <h3 className="font-display text-xl font-bold text-offwhite mb-3 tracking-tight">
-              {item.title}
-            </h3>
-            <p className="text-offwhite/55 leading-relaxed text-[15px]">{item.desc}</p>
+    <div className="grid md:grid-cols-3 gap-6 md:gap-8 items-start">
+
+      <FadeUp delay={0} className="md:col-span-1">
+        <div className="relative rounded-card p-8 overflow-hidden h-full min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
+          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
+            <StatusGauge value={67} label="" metric="" size="lg" color="orange" />
           </div>
-        </FadeUp>
-      ))}
+          <div className="relative z-10">
+            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>£4,200</div>
+            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Per year, per tradesperson</p>
+            <p className="text-offwhite/50 text-[15px] leading-relaxed">Average annual revenue lost to missed calls. That's nearly £350 every single month walking straight to your competitor.</p>
+          </div>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={80} className="md:col-span-1 md:mt-10">
+        <div className="relative rounded-card p-8 overflow-hidden min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
+          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
+            <StatusGauge value={27} label="" metric="" size="lg" color="orange" />
+          </div>
+          <div className="relative z-10">
+            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>27%</div>
+            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Never ring back</p>
+            <p className="text-offwhite/50 text-[15px] leading-relaxed">Of callers who reach voicemail don't leave a message — and never ring back. They're already calling someone else.</p>
+          </div>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={160} className="md:col-span-1 md:mt-20">
+        <div className="relative rounded-card p-8 overflow-hidden min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
+          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
+            <StatusGauge value={60} label="" metric="" size="lg" color="orange" />
+          </div>
+          <div className="relative z-10">
+            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>3 in 5</div>
+            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Jobs go to first answer</p>
+            <p className="text-offwhite/50 text-[15px] leading-relaxed">Jobs are booked by whoever answers first. Speed isn't a nice-to-have — it's the difference between winning and losing the job.</p>
+          </div>
+        </div>
+      </FadeUp>
+
     </div>
   </Section>
 );
@@ -570,72 +626,73 @@ const PainPoints = () => (
 // ─── How It Works ─────────────────────────────────────────────────────────────
 const HOW_STEPS = [
   {
-    step: '01',
-    title: 'Download the App',
-    desc: 'Available on iOS and Android. Create your account in under 5 minutes — no IT skills needed.',
+    num: '01',
+    icon: Phone,
+    title: 'Divert Your Number',
+    desc: "Forward your calls to Trade Receptionist when you're busy or on-site. Takes two minutes — no new number, no new SIM.",
   },
   {
-    step: '02',
-    title: 'Divert Your Calls',
-    desc: "Forward calls to your dedicated Trade Receptionist number when you're on-site or busy.",
+    num: '02',
+    icon: Mic,
+    title: 'We Answer Every Call',
+    desc: 'Our AI answers instantly in a natural British voice. It qualifies the lead, checks your availability, and books the job.',
   },
   {
-    step: '03',
-    title: 'Never Miss Work',
-    desc: 'We answer instantly, qualify the lead by your rules, and drop the job details straight into your diary.',
+    num: '03',
+    icon: MessageSquare,
+    title: 'You Get a WhatsApp Summary',
+    desc: 'Seconds after every call, you receive a WhatsApp with the caller\'s name, job type, postcode, and urgency. Nothing slips through.',
   },
 ];
 
 const HowItWorks = () => (
   <Section id="how-it-works" bg="white">
-    <FadeUp className="text-center mb-16">
-      <Badge>Simple Process</Badge>
-      <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em]">
-        Three steps to zero missed calls
+    <FadeUp className="mb-16 max-w-2xl">
+      <Badge>Three Steps to Zero Missed Calls</Badge>
+      <h2
+        className="font-display font-bold text-offwhite"
+        style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.02em', lineHeight: 0.97 }}
+      >
+        Up and running in{' '}
+        <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>14 minutes.</span>
       </h2>
     </FadeUp>
 
-    <div className="grid md:grid-cols-3 gap-8 relative">
-      {/* Connector line — desktop only */}
-      <div
-        className="hidden md:block absolute top-12 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px pointer-events-none"
-        style={{
-          background: 'linear-gradient(90deg, rgba(255,107,43,0.25) 0%, rgba(255,107,43,0.5) 50%, rgba(255,107,43,0.25) 100%)',
-        }}
-      />
+    <div className="relative">
+      {/* Step connector — dotted path, not a solid line */}
+      <div className="hidden md:block absolute top-[52px] left-[16.66%] right-[16.66%] pointer-events-none"
+        style={{ height: '2px', background: 'repeating-linear-gradient(90deg, rgba(255,107,43,0.35) 0px, rgba(255,107,43,0.35) 4px, transparent 4px, transparent 12px)' }} />
 
-      {HOW_STEPS.map((item, i) => (
-        <FadeUp key={i} delay={i * 100} className="flex flex-col items-center text-center group">
-          <div className="relative mb-8">
-            {/* Step number circle */}
+      <div className="grid md:grid-cols-3 gap-12 md:gap-8 lg:gap-14 relative z-10">
+        {HOW_STEPS.map((step, i) => (
+          <FadeUp key={i} delay={i * 100} className="flex flex-col items-start">
             <div
-              className="w-24 h-24 rounded-card flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1.5"
+              className="w-[56px] h-[56px] rounded-full flex items-center justify-center mb-8 relative"
               style={{
-                background: 'rgba(255,107,43,0.07)',
-                boxShadow: '0 0 0 1px rgba(255,107,43,0.18), 0 0 24px rgba(255,107,43,0.06)',
-                transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
+                background: i === 0 ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)' : 'rgba(255,255,255,0.06)',
+                boxShadow: i === 0 ? '0 0 24px rgba(255,107,43,0.4)' : '0 0 0 1px rgba(255,255,255,0.08)',
               }}
             >
-              <span className="font-display text-4xl font-bold tracking-tight text-gradient-orange">
-                {item.step}
+              <span
+                className="font-display font-bold leading-none"
+                style={{ fontSize: '20px', color: i === 0 ? '#ffffff' : 'rgba(255,107,43,0.7)', letterSpacing: '-0.02em' }}
+              >
+                {step.num}
               </span>
             </div>
-            {/* Connector dot */}
-            {i < 2 && (
-              <div
-                className="hidden md:block absolute top-12 -right-8 w-3 h-3 rounded-full"
-                style={{
-                  background: 'rgba(255,107,43,0.4)',
-                  transform: 'translateX(50%)',
-                  boxShadow: '0 0 6px rgba(255,107,43,0.4)',
-                }}
-              />
-            )}
-          </div>
-          <h3 className="font-display text-xl font-bold text-offwhite mb-3 tracking-tight">{item.title}</h3>
-          <p className="text-offwhite/55 leading-relaxed text-[15px] max-w-xs">{item.desc}</p>
-        </FadeUp>
-      ))}
+
+            <step.icon className="w-6 h-6 text-orange-soft/50 mb-4" />
+
+            <h3
+              className="font-display font-bold text-offwhite mb-3"
+              style={{ fontSize: 'clamp(1.25rem, 2vw, 1.5rem)', letterSpacing: '-0.01em' }}
+            >
+              {step.title}
+            </h3>
+            <p className="text-offwhite/50 leading-relaxed text-[15px] max-w-xs">{step.desc}</p>
+          </FadeUp>
+        ))}
+      </div>
     </div>
   </Section>
 );
@@ -645,13 +702,18 @@ const ROISection = () => (
   <Section id="roi" bg="gray">
     <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
       <FadeUp className="order-2 lg:order-1">
-        <Calculator />
+        <React.Suspense fallback={<LazyFallback />}>
+          <Calculator />
+        </React.Suspense>
       </FadeUp>
       <FadeUp delay={80} className="order-1 lg:order-2">
-        <Badge>ROI Calculator</Badge>
-        <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-6 tracking-[-0.02em] leading-[1.1]">
-          Do the maths.{' '}
-          <span className="text-offwhite/40">It pays for itself.</span>
+        <Badge>Calculate Your Losses</Badge>
+        <h2
+          className="font-display font-bold text-offwhite mb-6"
+          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+        >
+          See exactly what you're{' '}
+          <span className="text-offwhite/35">losing every month.</span>
         </h2>
         <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
           Missing just 5 calls a week adds up to over £4,000 in lost revenue. Trade Receptionist costs less than a single small job per month.
@@ -676,81 +738,72 @@ const ROISection = () => (
 // ─── Comparison ───────────────────────────────────────────────────────────────
 const ComparisonSection = () => (
   <Section bg="white" id="comparison">
-    <div className="text-center mb-16">
-      <Badge>Side by Side</Badge>
-      <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em]">
-        Stop overpaying for help.
+    <div className="text-center mb-14">
+      <Badge color="blue">The Honest Comparison</Badge>
+      <h2
+        className="font-display font-bold text-offwhite"
+        style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+      >
+        Trade Receptionist vs. the alternatives.
       </h2>
-      <p className="text-[17px] text-offwhite/50 mt-4">
-        Why hire a temp or lose jobs to voicemail when you can have a 24/7 expert?
+      <p className="text-[17px] text-offwhite/45 mt-4 max-w-xl mx-auto">
+        Why pay more, or lose jobs to voicemail, when you can have a 24/7 expert for less than a tank of diesel?
       </p>
     </div>
 
     <div className="overflow-x-auto pb-4">
-      <div
-        className="min-w-[720px] rounded-card p-8"
-        style={{
-          background: 'rgba(255,255,255,0.04)',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
-        }}
-      >
-        {/* Column headers — tonal background separates from rows */}
-        <div className="grid grid-cols-4 gap-4 mb-6 pb-6 rounded-xl px-2"
-          style={{ background: 'rgba(255,255,255,0.02)' }}>
-          <div />
-          <div className="text-center">
-            <span className="font-display font-bold text-lg text-offwhite">Trade Receptionist</span>
+      <div className="min-w-[760px] rounded-card overflow-hidden" style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.4)' }}>
+        <div className="grid grid-cols-5 gap-0">
+          <div className="p-5" style={{ background: 'rgba(255,255,255,0.02)' }} />
+          <div className="p-5 text-center" style={{ background: 'rgba(255,107,43,0.10)' }}>
+            <span className="font-display font-bold text-[15px] text-offwhite block">Trade Receptionist</span>
+            <span className="text-[11px] text-orange-soft/60 font-body">from £29/mo</span>
           </div>
-          <div className="text-center">
-            <span className="font-display font-bold text-lg text-offwhite/35">Virtual Assistant</span>
-          </div>
-          <div className="text-center">
-            <span className="font-display font-bold text-lg text-offwhite/35">Voicemail</span>
-          </div>
+          {['Live Receptionist', 'Virtual PA', 'Voicemail'].map((col) => (
+            <div key={col} className="p-5 text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <span className="font-display font-bold text-[14px] text-offwhite/30 block">{col}</span>
+            </div>
+          ))}
         </div>
 
         {[
-          { label: 'Cost per month',       us: '£29 fixed',    them: '£500+',     bad: '£0 (costly)' },
-          { label: 'Availability',         us: '24/7/365',     them: '9am–5pm',   bad: 'Always on' },
-          { label: 'Response time',        us: 'Instant',      them: 'Variable',  bad: 'Hours later' },
-          { label: 'Books appointments',   us: true,           them: true,        bad: false },
-          { label: 'Natural UK accent',    us: true,           them: 'Variable',  bad: 'N/A' },
-        ].map((row, i) => (
-          <div key={i} className="grid grid-cols-4 gap-4 items-center py-4 table-row-alt rounded-lg px-2">
-            <div className="font-semibold text-[15px] text-offwhite/60 pl-2">{row.label}</div>
-
-            <div className="text-center flex justify-center">
-              {row.us === true ? (
-                <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,107,43,0.12)' }}>
-                  <CheckCircle2 className="w-4 h-4 text-orange-soft" />
+          { label: 'Always available',    us: true,            them1: false,           them2: false,          them3: true  },
+          { label: 'Monthly cost',         us: '£29–£119',      them1: '£800–£2,000',  them2: '£300–£600',    them3: '£0*' },
+          { label: 'WhatsApp summaries',   us: true,            them1: false,           them2: false,          them3: false },
+          { label: 'Trade knowledge',      us: true,            them1: false,           them2: false,          them3: false },
+          { label: 'Setup time',           us: '14 minutes',    them1: '2–4 weeks',     them2: '1–2 weeks',    them3: 'Instant' },
+          { label: 'Spam filtering',       us: true,            them1: false,           them2: false,          them3: false },
+          { label: 'No contract',          us: true,            them1: false,           them2: false,          them3: true  },
+          { label: 'UK-based voice',       us: true,            them1: true,            them2: true,           them3: false },
+        ].map((row, i) => {
+          const cells = [row.us, row.them1, row.them2, row.them3];
+          const bg = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)';
+          return (
+            <div key={i} className="grid grid-cols-5 gap-0 items-center">
+              <div className="p-4 pl-5 font-body text-[14px] text-offwhite/55" style={{ background: bg }}>{row.label}</div>
+              {cells.map((val, j) => (
+                <div key={j} className="p-4 flex justify-center items-center" style={{ background: j === 0 ? 'rgba(255,107,43,0.06)' : bg }}>
+                  {val === true ? (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ background: j === 0 ? 'rgba(255,107,43,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                      <CheckCircle2 className={`w-3.5 h-3.5 ${j === 0 ? 'text-orange-soft' : 'text-offwhite/25'}`} />
+                    </div>
+                  ) : val === false ? (
+                    <XCircle className="w-4 h-4 text-offwhite/15" />
+                  ) : (
+                    <span className={`text-[13px] font-semibold font-body ${j === 0 ? 'text-orange-soft' : 'text-offwhite/30'}`}>{val as string}</span>
+                  )}
                 </div>
-              ) : (
-                <span className="font-bold text-orange-soft bg-orange/10 px-3 py-1 rounded-full text-[13px] tracking-wide">
-                  {row.us}
-                </span>
-              )}
+              ))}
             </div>
-
-            <div className="text-center flex justify-center">
-              {row.them === true ? (
-                <CheckCircle2 className="w-5 h-5 text-offwhite/20" />
-              ) : (
-                <span className="text-[14px] text-offwhite/30">{row.them}</span>
-              )}
-            </div>
-
-            <div className="text-center flex justify-center">
-              {row.bad === false ? (
-                <XCircle className="w-5 h-5 text-offwhite/15" />
-              ) : (
-                <span className="text-[14px] text-offwhite/30">{row.bad}</span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
+
+    <p className="text-[12px] text-offwhite/20 text-center mt-4 font-body">
+      * Voicemail appears "free" but costs an average of £4,200/year in missed jobs.
+    </p>
   </Section>
 );
 
@@ -759,13 +812,16 @@ const DemoSection = () => (
   <Section id="demo" bg="gray">
     <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
       <div>
-        <Badge>Live Demo</Badge>
-        <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-5 tracking-[-0.02em] leading-[1.1]">
-          Not a robot.{' '}
-          <span className="text-gradient-orange">A receptionist.</span>
+        <Badge>Hear It in Action</Badge>
+        <h2
+          className="font-display font-bold text-offwhite mb-5 leading-[1.1]"
+          style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', letterSpacing: '-0.02em' }}
+        >
+          A real call, handled{' '}
+          <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>perfectly.</span>
         </h2>
         <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
-          Trade Receptionist speaks naturally, handles UK accents, and knows your business rules. It qualifies callers, checks your calendar, and books the job — all in one call.
+          Listen to Trade Receptionist handle a real boiler repair enquiry — from greeting to job booked, in under 90 seconds.
         </p>
 
         <div className="space-y-6">
@@ -802,118 +858,257 @@ const DemoSection = () => (
           </div>
         </div>
 
-        <AudioPlayer />
+        <React.Suspense fallback={<LazyFallback />}>
+          <AudioPlayer />
+        </React.Suspense>
       </div>
     </div>
   </Section>
 );
 
 // ─── Use Cases ────────────────────────────────────────────────────────────────
+const TRADE_ITEMS = [
+  { icon: Droplets, name: 'Plumbers',      label: 'Emergency triage',       num: '01' },
+  { icon: Zap,      name: 'Electricians',  label: 'Quote qualification',    num: '02' },
+  { icon: Wrench,   name: 'HVAC',          label: 'Maintenance booking',    num: '03' },
+  { icon: Hammer,   name: 'Builders',      label: 'Site coordination',      num: '04' },
+];
+
 const UseCases = () => (
   <Section bg="white">
-    <div className="text-center mb-14">
-      <Badge>Built for Your Trade</Badge>
-      <h2 className="font-display text-3xl md:text-4xl font-bold text-offwhite tracking-[-0.02em]">
-        Whatever you fix, we answer.
-      </h2>
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
+      <div>
+        <Badge>Built for Your Trade</Badge>
+        <h2
+          className="font-display font-bold text-offwhite"
+          style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}
+        >
+          Whatever you fix,{' '}
+          <span className="text-offwhite/35">we answer.</span>
+        </h2>
+      </div>
+      <p className="text-[15px] text-offwhite/45 max-w-xs md:text-right leading-relaxed">
+        Customised for each trade — the AI knows your job types, pricing, and postcode areas.
+      </p>
     </div>
 
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {[
-        { icon: Droplets, name: 'Plumbers',      label: 'Emergency triage' },
-        { icon: Zap,      name: 'Electricians',  label: 'Quote qualification' },
-        { icon: Wrench,   name: 'HVAC',          label: 'Maintenance booking' },
-        { icon: Hammer,   name: 'Builders',      label: 'Site coordination' },
-      ].map((trade, i) => (
-        <div
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {TRADE_ITEMS.map((trade, i) => (
+        <FadeUp
           key={i}
-          className="group rounded-card p-7 text-center cursor-default transition-all duration-300 glass-deep"
-          style={{
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.05)',
-            transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 1px rgba(255,107,43,0.20), 0 8px 32px rgba(2,13,24,0.4)';
-            (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.05)';
-            (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+          delay={i * 60}
+          className="group relative rounded-card p-6 overflow-hidden cursor-default spotlight-card"
+          onMouseMove={e => {
+            const r = e.currentTarget.getBoundingClientRect();
+            e.currentTarget.style.setProperty('--x', `${e.clientX - r.left}px`);
+            e.currentTarget.style.setProperty('--y', `${e.clientY - r.top}px`);
           }}
         >
-          <trade.icon className="w-9 h-9 mx-auto mb-4 text-offwhite/20 group-hover:text-orange-soft transition-colors duration-300" />
-          <h3 className="font-display font-bold text-[16px] text-offwhite mb-1">{trade.name}</h3>
-          <p className="text-[13px] text-offwhite/35">{trade.label}</p>
-        </div>
+          <div
+            className="absolute inset-0 rounded-card"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              transition: 'background 200ms ease',
+            }}
+          />
+          {/* Hover glow layer */}
+          <div
+            className="absolute inset-0 rounded-card opacity-0 group-hover:opacity-100"
+            style={{
+              background: 'rgba(255,107,43,0.05)',
+              transition: 'opacity 200ms ease',
+            }}
+          />
+
+          <div className="relative z-10">
+            {/* Number — subtle background anchor */}
+            <div
+              className="font-display font-bold leading-none select-none mb-4"
+              style={{
+                fontSize: '3.5rem',
+                color: 'rgba(255,255,255,0.06)',
+                letterSpacing: '-0.04em',
+              }}
+              aria-hidden="true"
+            >
+              {trade.num}
+            </div>
+
+            <trade.icon
+              className="w-6 h-6 mb-3 text-orange-soft/50 group-hover:text-orange-soft"
+              style={{ transition: 'color 200ms ease' }}
+            />
+            <h3
+              className="font-display font-bold text-offwhite mb-1 tracking-tight"
+              style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.3rem)' }}
+            >
+              {trade.name}
+            </h3>
+            <p className="text-[12px] text-offwhite/35 tracking-wide">{trade.label}</p>
+          </div>
+        </FadeUp>
       ))}
     </div>
   </Section>
 );
 
 // ─── Features ─────────────────────────────────────────────────────────────────
-const Features = ({ onWaitlist }: { onWaitlist: () => void }) => {
-  const features = [
-    {
-      icon: Calendar,
-      title: 'Smart Scheduling',
-      desc: 'Integrates with Google Calendar, Outlook, and ServiceM8 to book slots only when you\'re actually free — so you wake up to a full diary.',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Spam Blocking',
-      desc: 'Politely filters out sales calls and nuisance callers before they reach you. You only hear about real jobs.',
-    },
-    {
-      icon: MessageSquare,
-      title: 'WhatsApp Summaries',
-      desc: 'Get a concise WhatsApp message immediately after every call — job type, caller name, postcode, and urgency.',
-    },
-    {
-      icon: Smartphone,
-      title: 'Custom Knowledge',
-      desc: 'Teach it your pricing ranges, service areas (postcodes), and out-of-hours fees. It answers customer questions as if it knows your business cold.',
-    },
-  ];
-
-  return (
-    <Section bg="gray">
-      <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-        <div className="order-2 lg:order-1">
-          <div className="grid sm:grid-cols-2 gap-4">
-            {features.map((f, i) => (
-              <GlassCard key={i} className="p-7">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
-                  style={{ background: 'rgba(255,107,43,0.10)' }}>
-                  <f.icon className="w-5 h-5 text-orange" />
-                </div>
-                <h3 className="font-display font-bold text-[17px] text-offwhite mb-2 tracking-tight">{f.title}</h3>
-                <p className="text-[14px] text-offwhite/50 leading-relaxed">{f.desc}</p>
-              </GlassCard>
-            ))}
-          </div>
+const FEATURES = [
+  {
+    icon: Phone,
+    num: '01',
+    title: 'Always-On Call Answering',
+    outcome: "Never miss a job while you're on-site",
+    desc: 'Trade Receptionist answers every call instantly — 24/7, including weekends and bank holidays. No more voicemail, no more missed work.',
+    visual: (
+      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">Calls this week</p>
+        <div className="flex items-end gap-1.5 h-16">
+          {[40, 65, 45, 80, 55, 90, 72].map((h, i) => (
+            <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 5 ? 'linear-gradient(180deg, #FF8C55, #FF6B2B)' : 'rgba(255,107,43,0.20)' }} />
+          ))}
         </div>
-
-        <div className="order-1 lg:order-2">
-          <Badge>What You Get</Badge>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-6 tracking-[-0.02em] leading-[1.1]">
-            Run your business from your pocket.
-          </h2>
-          <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
-            Stop playing phone tag. Let Trade Receptionist handle the admin while you handle the tools. It's like having an office manager who never sleeps, never takes holidays, and never has a bad day.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button variant="primary" size="lg" onClick={onWaitlist}>
-              Start Free Trial
-            </Button>
-            <Button variant="ghost" className="text-accent gap-2">
-              View all integrations <ArrowRight className="w-4 h-4" />
-            </Button>
+        <div className="flex justify-between mt-2">
+          {['M','T','W','T','F','S','S'].map((d, i) => (
+            <span key={i} className="flex-1 text-center text-[10px] text-offwhite/20 font-body">{d}</span>
+          ))}
+        </div>
+        <div className="flex items-baseline gap-1 mt-4">
+          <span className="font-display font-bold text-offwhite" style={{ fontSize: '1.75rem', letterSpacing: '-0.02em' }}>34</span>
+          <span className="text-[12px] text-offwhite/35 font-body">calls answered this week</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: MessageSquare,
+    num: '02',
+    title: 'Instant WhatsApp Summaries',
+    outcome: 'Wake up to every lead, captured and ready',
+    desc: "Within seconds of every call, you'll receive a WhatsApp with the caller's name, job type, postcode, and urgency level. Check it in 10 seconds between jobs.",
+    visual: (
+      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">WhatsApp message</p>
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.05)' }}>
+          <p className="text-[11px] font-bold text-orange-soft mb-2 font-display">New Job Enquiry · 14:32</p>
+          <div className="space-y-1 text-[13px] text-offwhite/60 font-body">
+            <p><span className="text-offwhite/30">Name:</span> Mrs. Helen Briggs</p>
+            <p><span className="text-offwhite/30">Job:</span> Boiler service + repair</p>
+            <p><span className="text-offwhite/30">Area:</span> SW11 3RL</p>
+            <p><span className="text-offwhite/30">Urgency:</span> <span className="text-orange-soft">This week</span></p>
           </div>
         </div>
       </div>
-    </Section>
-  );
-};
+    ),
+  },
+  {
+    icon: ShieldCheck,
+    num: '03',
+    title: 'Smart Spam Filtering',
+    outcome: 'Only real jobs reach your diary',
+    desc: 'Cold callers, PPI claims, and insurance scams are politely deflected before they waste your time. You only hear about genuine job enquiries.',
+    visual: (
+      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">Today's calls</p>
+        <div className="space-y-2">
+          {[
+            { type: 'Job Enquiry', caller: 'Tom Baker', passed: true },
+            { type: 'Spam call', caller: 'Marketing Co.', passed: false },
+            { type: 'Emergency', caller: 'Mrs. Patel', passed: true },
+            { type: 'Cold call', caller: 'Insurance Ltd', passed: false },
+          ].map((c, i) => (
+            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div>
+                <p className="text-[12px] font-bold text-offwhite/70 font-display">{c.caller}</p>
+                <p className="text-[10px] text-offwhite/25 font-body">{c.type}</p>
+              </div>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: c.passed ? 'rgba(255,107,43,0.15)' : 'rgba(255,255,255,0.04)' }}>
+                {c.passed
+                  ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-soft" />
+                  : <XCircle className="w-3.5 h-3.5 text-offwhite/15" />
+                }
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    icon: Calendar,
+    num: '04',
+    title: 'Diary Integration',
+    outcome: 'Bookings confirmed without lifting a finger',
+    desc: 'Syncs with Google Calendar, Outlook, and ServiceM8. Jobs are booked into your actual free slots — no double-booking, no admin.',
+    visual: (
+      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">This Thursday</p>
+        <div className="space-y-2">
+          {[
+            { time: '08:00', job: 'Boiler service — Mrs. Andrews', confirmed: true },
+            { time: '10:30', job: 'Emergency leak — SW4 9HE', confirmed: true },
+            { time: '13:00', job: 'Bathroom quote — Tom H.', confirmed: true },
+          ].map((slot, i) => (
+            <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <span className="font-mono text-[11px] text-orange-soft/60 flex-shrink-0">{slot.time}</span>
+              <span className="text-[12px] text-offwhite/60 font-body flex-1 truncate">{slot.job}</span>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(255,107,43,0.15)' }}>
+                <CheckCircle2 className="w-3 h-3 text-orange-soft" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+];
+
+const Features = ({ onWaitlist }: { onWaitlist: () => void }) => (
+  <Section bg="gray" id="features">
+    <FadeUp className="mb-20 max-w-xl">
+      <Badge>Built for Tradespeople</Badge>
+      <h2
+        className="font-display font-bold text-offwhite"
+        style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+      >
+        What you actually get.
+      </h2>
+    </FadeUp>
+
+    <div className="space-y-24">
+      {FEATURES.map((feat, i) => (
+        <FadeUp key={i} delay={0} className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className={i % 2 === 1 ? 'lg:order-2' : ''}>
+            <div className="flex items-center gap-3 mb-5">
+              <span className="font-display font-bold text-[13px] tracking-[0.08em]" style={{ color: 'rgba(255,107,43,0.45)' }}>{feat.num}</span>
+              <feat.icon className="w-5 h-5 text-orange-soft/60" />
+            </div>
+            <h3
+              className="font-display font-bold text-offwhite mb-2"
+              style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}
+            >
+              {feat.title}
+            </h3>
+            <p className="text-orange-soft text-[14px] font-semibold mb-4 font-body">{feat.outcome}</p>
+            <p className="text-offwhite/50 leading-relaxed text-[16px] mb-8 max-w-md font-body">{feat.desc}</p>
+          </div>
+          <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
+            {feat.visual}
+          </div>
+        </FadeUp>
+      ))}
+    </div>
+
+    <FadeUp className="text-center mt-20">
+      <Button variant="primary" size="lg" onClick={onWaitlist}>
+        Start Free Trial
+        <ArrowRight className="w-4 h-4 ml-2" />
+      </Button>
+    </FadeUp>
+  </Section>
+);
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
@@ -951,7 +1146,10 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
     <Section id="pricing" bg="white">
       <div className="text-center mb-14">
         <Badge>Simple, Honest Pricing</Badge>
-        <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-4 tracking-[-0.02em]">
+        <h2
+          className="font-display font-bold text-offwhite mb-4"
+          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+        >
           No contracts. Cancel anytime.
         </h2>
         <p className="text-[17px] text-offwhite/50 mb-8">
@@ -965,7 +1163,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <button
               key={b}
               onClick={() => setBilling(b)}
-              className={`px-7 py-2.5 rounded-full text-[13px] font-bold transition-all duration-300 ${
+              className={`px-7 py-2.5 rounded-full text-[13px] font-bold transition-colors duration-300 ${
                 billing === b
                   ? 'bg-orange text-white shadow-orange-glow'
                   : 'text-offwhite/40 hover:text-offwhite/70'
@@ -984,7 +1182,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         {plans.map((plan, i) => (
           <div
             key={i}
-            className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 transition-all duration-300 ${
+            className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 ${
               plan.isPopular
                 ? 'popular-ring md:scale-[1.04]'
                 : 'hover:-translate-y-1'
@@ -993,14 +1191,14 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
               background: plan.isPopular
                 ? 'linear-gradient(160deg, rgba(255,107,43,0.12) 0%, rgba(255,107,43,0.04) 100%)'
                 : 'rgba(255,255,255,0.05)',
-              transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
+              transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1)',
             }}
           >
             {/* Popular badge */}
             {plan.isPopular && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.10em] text-white"
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.10em] text-white"
                 style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 4px 16px rgba(255,107,43,0.4)' }}>
-                <StatusGauge value={97} label="" metric="" size="sm" color="orange" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
                 Most Popular
               </div>
             )}
@@ -1091,7 +1289,10 @@ const FAQ = () => {
     <Section bg="gray" id="faq">
       <div className="text-center mb-14">
         <Badge>Got Questions?</Badge>
-        <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite tracking-[-0.02em]">
+        <h2
+          className="font-display font-bold text-offwhite"
+          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+        >
           Frequently asked questions
         </h2>
       </div>
@@ -1100,34 +1301,40 @@ const FAQ = () => {
         {faqs.map((faq, i) => (
           <div
             key={i}
-            className="rounded-card overflow-hidden transition-all duration-300"
+            className="rounded-card overflow-hidden"
             style={{
               background: openIndex === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
               boxShadow: openIndex === i
                 ? '0 0 0 1px rgba(255,107,43,0.15)'
                 : '0 0 0 1px rgba(255,255,255,0.05)',
+              transition: 'background-color 300ms ease, box-shadow 300ms ease',
             }}
           >
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
               className="w-full flex items-center justify-between p-6 text-left focus:outline-none group"
+              aria-expanded={openIndex === i}
             >
               <span className="font-display font-semibold text-[16px] text-offwhite pr-8 leading-snug">
                 {faq.question}
               </span>
-              <span className="flex-shrink-0">
-                {openIndex === i
-                  ? <ChevronUp className="w-5 h-5 text-orange-soft" />
-                  : <ChevronDown className="w-5 h-5 text-offwhite/30 group-hover:text-offwhite/60 transition-colors" />
-                }
-              </span>
+              <ChevronDown
+                className={`w-5 h-5 flex-shrink-0 transition-[transform,color] duration-300 ${
+                  openIndex === i
+                    ? 'rotate-180 text-orange-soft'
+                    : 'text-offwhite/30 group-hover:text-offwhite/60'
+                }`}
+              />
             </button>
 
-            {openIndex === i && (
+            <div
+              className="accordion-body"
+              style={{ maxHeight: openIndex === i ? '400px' : '0' }}
+            >
               <div className="px-6 pb-6 text-[15px] text-offwhite/55 leading-relaxed">
                 {faq.answer}
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
@@ -1154,13 +1361,18 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
         <StatusGauge value={100} label="Always Online" metric="24/7" size="md" color="orange" />
       </div>
 
-      <h2 className="font-display text-4xl md:text-6xl font-bold text-offwhite mb-6 tracking-[-0.03em] leading-[1.05]">
-        Ready to never miss{' '}
-        <span className="text-gradient-orange">another call?</span>
+      <Badge color="blue">Your Competition Is Already Using This</Badge>
+
+      <h2
+        className="font-display font-bold text-offwhite mb-6 leading-[1.0] mt-4"
+        style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
+      >
+        Every call you miss today{' '}
+        <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>is a job they book tomorrow.</span>
       </h2>
 
       <p className="text-[18px] md:text-xl text-offwhite/50 mb-10 leading-relaxed max-w-2xl mx-auto">
-        Join 500+ UK trades businesses saving 10+ hours a week. While you're reading this, a competitor is answering their calls.
+        Join 500+ UK tradespeople who stopped losing money to voicemail. While you're reading this, a competitor is answering their calls.
       </p>
 
       <div className="flex flex-col sm:flex-row justify-center gap-5 mb-6">
@@ -1175,9 +1387,11 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </Button>
       </div>
 
-      <p className="text-[13px] text-offwhite/25">
-        14-day free trial · No contract · Cancel anytime · Prices in GBP + VAT
-      </p>
+      <div className="flex flex-wrap justify-center gap-6 mt-6 text-[13px] text-offwhite/25 font-body">
+        {['⭐ 4.9/5 rating', 'Setup in 14 minutes', 'Cancel anytime', 'No card required'].map(t => (
+          <span key={t}>{t}</span>
+        ))}
+      </div>
     </div>
   </section>
 );
@@ -1226,7 +1440,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8">
         <p className="text-[13px] text-offwhite/25">
-          &copy; 2025 Trade Receptionist Ltd. All rights reserved. Registered in England & Wales.
+          &copy; 2026 Trade Receptionist Ltd. All rights reserved. Registered in England & Wales.
         </p>
         <div className="flex gap-5 items-center text-offwhite/25">
           <a href="https://instagram.com/tradereceptionist" target="_blank" rel="noopener noreferrer"
@@ -1261,6 +1475,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-navy font-body text-offwhite">
+      <div className="grain" aria-hidden="true" />
       <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleWaitlist} />
 
       <main>
@@ -1269,20 +1484,26 @@ const App: React.FC = () => {
             <Hero onWaitlist={toggleWaitlist} />
             <SocialProof />
             <PainPoints />
-            <HowItWorks />
             <ROISection />
             <ComparisonSection />
             <DemoSection />
-            <Testimonials />
-            <Features onWaitlist={toggleWaitlist} />
+            <HowItWorks />
             <UseCases />
+            <Features onWaitlist={toggleWaitlist} />
+            <React.Suspense fallback={<LazyFallback />}>
+              <Testimonials />
+            </React.Suspense>
             <Pricing onWaitlist={toggleWaitlist} />
             <FAQ />
-            <ContactUs />
+            <React.Suspense fallback={<LazyFallback />}>
+              <ContactUs />
+            </React.Suspense>
             <FinalCTA onWaitlist={toggleWaitlist} />
           </>
         ) : (
-          <BookDemo />
+          <React.Suspense fallback={<LazyFallback />}>
+            <BookDemo />
+          </React.Suspense>
         )}
       </main>
 

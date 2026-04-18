@@ -291,10 +291,11 @@ export const AudioPlayer: React.FC = () => {
       {/* Progress bar — top edge, ultra-subtle */}
       <div className="h-0.5 w-full relative overflow-hidden">
         <div
-          className="h-full transition-all duration-300"
+          className="h-full"
           style={{
             width: `${progressPct}%`,
             background: 'linear-gradient(90deg, #FF6B2B, #FF8C55)',
+            transition: 'width 300ms cubic-bezier(0.23,1,0.32,1)',
           }}
         />
       </div>
@@ -304,12 +305,13 @@ export const AudioPlayer: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 flex-shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{
                 background: isPlaying
                   ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)'
                   : 'rgba(255,107,43,0.12)',
                 boxShadow: isPlaying ? '0 0 20px rgba(255,107,43,0.4)' : 'none',
+                transition: 'background 200ms ease, box-shadow 200ms ease',
               }}
             >
               <Volume2 className="w-5 h-5 text-white" />
@@ -356,18 +358,19 @@ export const AudioPlayer: React.FC = () => {
           <button
             onClick={handleTogglePlay}
             disabled={isLoading}
-            className={`flex-1 h-12 rounded-btn font-bold font-body text-[14px] tracking-[-0.01em] flex items-center justify-center gap-2 transition-all duration-300 ${
+            className={`flex-1 h-12 rounded-btn font-bold font-body text-[14px] tracking-[-0.01em] flex items-center justify-center gap-2 ${
               isLoading
                 ? 'cursor-not-allowed'
                 : 'hover:-translate-y-0.5 active:scale-[0.97]'
             }`}
             style={
               isLoading
-                ? { background: 'rgba(255,255,255,0.06)', color: 'rgba(240,244,248,0.3)' }
+                ? { background: 'rgba(255,255,255,0.06)', color: 'rgba(240,244,248,0.3)', transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms ease' }
                 : {
                     background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)',
                     color: '#ffffff',
                     boxShadow: '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2)',
+                    transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms ease',
                   }
             }
           >
@@ -397,10 +400,11 @@ export const AudioPlayer: React.FC = () => {
                 setCurrentTime(0);
                 generateAudio();
               }}
-              className="h-12 w-12 rounded-btn flex items-center justify-center text-offwhite/35 transition-all duration-200 hover:text-offwhite hover:-translate-y-0.5"
+              className="h-12 w-12 rounded-btn flex items-center justify-center text-offwhite/35 hover:text-offwhite hover:-translate-y-0.5"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+                transition: 'color 150ms ease, transform 200ms cubic-bezier(0.23,1,0.32,1)',
               }}
               aria-label="Regenerate sample"
             >

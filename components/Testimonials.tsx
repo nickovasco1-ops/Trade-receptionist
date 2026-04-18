@@ -1,17 +1,37 @@
 import React from 'react';
 import { Section, Badge } from './UI';
 import { Star, Quote } from 'lucide-react';
-import { Testimonial } from '../types';
+
+interface TestimonialData {
+  name: string;
+  company: string;
+  role: string;
+  quote: string;
+  tag: string;
+  initials: string;
+  avatarColor: string;
+}
+
+// Avatar colours using the design system palette
+const AVATAR_COLORS = [
+  'linear-gradient(135deg, #FF6B2B, #FF8C55)',
+  'linear-gradient(135deg, #0F3060, #99cbff)',
+  'linear-gradient(135deg, #FF8C55, #ffb59a)',
+  'linear-gradient(135deg, #0A2340, #60A5FA)',
+  'linear-gradient(135deg, #FF6B2B, #0F3060)',
+  'linear-gradient(135deg, #99cbff, #60A5FA)',
+];
 
 export const Testimonials: React.FC = () => {
-  const testimonials: Testimonial[] = [
+  const testimonials: TestimonialData[] = [
     {
       name: 'Dave Miller',
       company: 'Miller Plumbing & Heating',
       role: 'Owner',
       quote: 'My phone used to ring off the hook while I was under a sink. Now I just get a text with the job details. It\'s brilliant.',
       tag: 'Fewer missed calls',
-      avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'DM',
+      avatarColor: AVATAR_COLORS[0],
     },
     {
       name: 'Sarah Jenkins',
@@ -19,7 +39,8 @@ export const Testimonials: React.FC = () => {
       role: 'Director',
       quote: 'The qualification is spot on. It filters out the tyre kickers so I only spend time on genuine quotes.',
       tag: 'Better leads',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359-7013c53bca63?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'SJ',
+      avatarColor: AVATAR_COLORS[1],
     },
     {
       name: 'Mike Thompson',
@@ -27,7 +48,8 @@ export const Testimonials: React.FC = () => {
       role: 'Site Manager',
       quote: 'It sounds properly British, not like a robot. My customers actually leave messages now instead of hanging up.',
       tag: 'Professional image',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'MT',
+      avatarColor: AVATAR_COLORS[2],
     },
     {
       name: 'James Wilson',
@@ -35,7 +57,8 @@ export const Testimonials: React.FC = () => {
       role: 'Sole Trader',
       quote: 'Costs me less than a tank of diesel a month and books me about £2k of extra work. Absolute no-brainer.',
       tag: 'High ROI',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'JW',
+      avatarColor: AVATAR_COLORS[3],
     },
     {
       name: 'Emma Clarke',
@@ -43,7 +66,8 @@ export const Testimonials: React.FC = () => {
       role: 'Office Manager',
       quote: 'I used to spend my evenings calling people back. Now I spend them with my kids. The AI handles the bookings.',
       tag: 'Work-life balance',
-      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'EC',
+      avatarColor: AVATAR_COLORS[4],
     },
     {
       name: 'Robert Hughes',
@@ -51,7 +75,8 @@ export const Testimonials: React.FC = () => {
       role: 'Engineer',
       quote: 'Set it up in 5 minutes between jobs. Didn\'t need to change my number or anything complex.',
       tag: 'Easy setup',
-      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200&h=200',
+      initials: 'RH',
+      avatarColor: AVATAR_COLORS[5],
     },
   ];
 
@@ -73,13 +98,18 @@ export const Testimonials: React.FC = () => {
         }}
       />
 
-      <div className="text-center max-w-2xl mx-auto mb-14 relative z-10">
-        <Badge>What UK Tradespeople Say</Badge>
-        <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-4 tracking-[-0.02em]">
-          Trusted by trades across the UK.
-        </h2>
-        <p className="text-[17px] text-offwhite/50">
-          Join 500+ professionals who have stopped missing calls and started booking more work.
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14 relative z-10">
+        <div>
+          <Badge>What UK Tradespeople Say</Badge>
+          <h2
+            className="font-display font-bold text-offwhite"
+            style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+          >
+            Trusted by trades across the UK.
+          </h2>
+        </div>
+        <p className="text-[15px] text-offwhite/45 max-w-xs md:text-right leading-relaxed flex-shrink-0">
+          500+ professionals who've stopped missing calls and started booking more work.
         </p>
       </div>
 
@@ -87,11 +117,16 @@ export const Testimonials: React.FC = () => {
         {testimonials.map((t, i) => (
           <div
             key={i}
-            className="rounded-card p-7 flex flex-col transition-all duration-300 hover:-translate-y-1"
+            className="rounded-card p-7 flex flex-col hover:-translate-y-1 spotlight-card overflow-hidden"
             style={{
               background: 'rgba(255,255,255,0.05)',
               boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
-              transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)',
+              transition: 'transform 280ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 280ms ease',
+            }}
+            onMouseMove={e => {
+              const r = e.currentTarget.getBoundingClientRect();
+              e.currentTarget.style.setProperty('--x', `${e.clientX - r.left}px`);
+              e.currentTarget.style.setProperty('--y', `${e.clientY - r.top}px`);
             }}
           >
             {/* Stars + quote icon */}
@@ -116,15 +151,15 @@ export const Testimonials: React.FC = () => {
               {t.tag}
             </span>
 
-            {/* Avatar + name — spacing creates visual separation, no border needed */}
+            {/* Avatar + name */}
             <div className="flex items-center gap-3 pt-5">
-              <img
-                src={t.avatarUrl}
-                alt={t.name}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                style={{ border: '2px solid rgba(255,107,43,0.20)' }}
-                loading="lazy"
-              />
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-display font-bold text-[13px]"
+                style={{ background: t.avatarColor }}
+                aria-hidden="true"
+              >
+                {t.initials}
+              </div>
               <div>
                 <p className="font-display font-bold text-[14px] text-offwhite">{t.name}</p>
                 <p className="text-[12px] text-offwhite/35">{t.company}</p>

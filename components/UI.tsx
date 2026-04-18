@@ -83,7 +83,7 @@ export const StatusGauge: React.FC<StatusGaugeProps> = ({
             fill={color === 'orange' ? '#FF8C55' : '#99cbff'}
             fontSize={fontSizes[size]}
             fontWeight="700"
-            fontFamily="Space Grotesk, sans-serif"
+            fontFamily="Barlow Condensed, sans-serif"
           >
             {metric}
           </text>
@@ -132,8 +132,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   const base =
     'inline-flex items-center justify-center font-semibold tracking-[-0.01em] ' +
-    'transition-all duration-300 active:scale-[0.97] ' +
-    'disabled:opacity-50 disabled:pointer-events-none select-none relative';
+    'disabled:opacity-50 disabled:pointer-events-none select-none relative ' +
+    'active:scale-[0.97]';
 
   const variants: Record<string, string> = {
     primary:
@@ -163,7 +163,7 @@ export const Button: React.FC<ButtonProps> = ({
       onMouseLeave={handleMouseLeave}
       style={{
         transform: `translate(${offset.x}px, ${offset.y}px)`,
-        transitionTimingFunction: 'cubic-bezier(0.34, 1.2, 0.64, 1)',
+        transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms cubic-bezier(0.23,1,0.32,1), background-color 150ms ease, opacity 150ms ease',
         ...style,
       }}
       className={`${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
@@ -180,8 +180,8 @@ export const GlassCard: React.FC<{ children: React.ReactNode; className?: string
   className = '',
 }) => (
   <div
-    className={`glass glass-ring glass-ring-hover rounded-card transition-all duration-300 ${className}`}
-    style={{ transitionTimingFunction: 'cubic-bezier(0.34,1.2,0.64,1)' }}
+    className={`glass glass-ring glass-ring-hover rounded-card ${className}`}
+    style={{ transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1)' }}
   >
     {children}
   </div>
@@ -192,7 +192,7 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string }> =
   children,
   className = '',
 }) => (
-  <div className={`bg-navy-mid rounded-card shadow-[0_2px_8px_rgba(2,13,24,0.30)] transition-all duration-300 ${className}`}>
+  <div className={`bg-navy-mid rounded-card shadow-[0_2px_8px_rgba(2,13,24,0.30)] ${className}`}>
     {children}
   </div>
 );

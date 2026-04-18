@@ -42,7 +42,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
   };
 
   const inputClass =
-    'w-full pl-12 pr-4 h-14 rounded-xl outline-none transition-all duration-200 text-offwhite text-[15px] font-body ' +
+    'w-full pl-12 pr-4 h-14 rounded-xl outline-none transition-[box-shadow] duration-200 text-offwhite text-[15px] font-body ' +
     'placeholder-offwhite/20 font-medium';
 
   const inputStyle = {

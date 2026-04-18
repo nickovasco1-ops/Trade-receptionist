@@ -20,7 +20,7 @@ export const ContactUs: React.FC = () => {
   };
 
   const inputClass =
-    'w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 ' +
+    'w-full px-4 py-4 rounded-xl outline-none transition-[box-shadow] duration-200 ' +
     'text-offwhite text-[15px] font-body placeholder-offwhite/20 font-medium';
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -33,9 +33,12 @@ export const ContactUs: React.FC = () => {
   return (
     <Section bg="white" id="contact">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-12">
+        <div className="mb-12">
           <Badge>Talk to Our Team</Badge>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-offwhite mb-4 tracking-[-0.02em]">
+          <h2
+            className="font-display font-bold text-offwhite mb-4"
+            style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+          >
             Got a question?
           </h2>
           <p className="text-[17px] text-offwhite/50 leading-relaxed">
