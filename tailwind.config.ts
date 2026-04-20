@@ -11,9 +11,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans:    ['Figtree', 'sans-serif'],
-        body:    ['Figtree', 'sans-serif'],
-        display: ['Barlow Condensed', 'sans-serif'],
+        sans:    ['Manrope', 'sans-serif'],
+        body:    ['Manrope', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
         mono:    ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -58,6 +58,7 @@ const config: Config = {
         mechanical: 'cubic-bezier(0.34, 1.2, 0.64, 1)',
         precision:  'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         standard:   'cubic-bezier(0.4, 0, 0.2, 1)',
+        smooth:     'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       boxShadow: {
         'orange-glow':    '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20)',

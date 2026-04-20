@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParallax } from './src/hooks/useParallax';
+import { useScrollAnimation } from './src/hooks/useScrollAnimation';
+import StickyFeatures from './components/StickyFeatures';
 import {
   Phone, Calendar, MessageSquare, ShieldCheck,
   Menu, X, CheckCircle2, ArrowRight,
@@ -48,8 +51,8 @@ const FadeUp: React.FC<{
       onMouseMove={onMouseMove}
       style={{
         opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(16px)',
-        transition: `opacity 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms, transform 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}ms`,
+        transform: inView ? 'translateY(0)' : 'translateY(32px)',
+        transition: `opacity 600ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 600ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
       }}
     >
       {children}
@@ -60,12 +63,13 @@ const FadeUp: React.FC<{
 // ─── Animated Counter ────────────────────────────────────────────────────────
 const AnimatedCounter: React.FC<{
   endValue: number;
+  prefix?: string;
   suffix?: string;
   decimals?: number;
   duration?: number;
-}> = ({ endValue, suffix = '', decimals = 0, duration = 1600 }) => {
+}> = ({ endValue, prefix = '', suffix = '', decimals = 0, duration = 1600 }) => {
   const spanRef = useRef<HTMLSpanElement>(null);
-  const [display, setDisplay] = useState(decimals > 0 ? (0).toFixed(decimals) : '0');
+  const [display, setDisplay] = useState(prefix + (decimals > 0 ? (0).toFixed(decimals) : '0') + suffix);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -79,18 +83,24 @@ const AnimatedCounter: React.FC<{
         const progress = Math.min((now - startTime) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 4);
         const current = eased * endValue;
-        setDisplay(decimals > 0 ? current.toFixed(decimals) : Math.round(current).toString());
+        const formatted = decimals > 0
+          ? current.toFixed(decimals)
+          : Math.round(current).toLocaleString('en-GB');
+        setDisplay(prefix + formatted + suffix);
         if (progress < 1) requestAnimationFrame(tick);
-        else setDisplay(decimals > 0 ? endValue.toFixed(decimals) : endValue.toString());
+        else {
+          const final = decimals > 0 ? endValue.toFixed(decimals) : endValue.toLocaleString('en-GB');
+          setDisplay(prefix + final + suffix);
+        }
       };
       requestAnimationFrame(tick);
       obs.disconnect();
     }, { threshold: 0.5 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [endValue, duration, decimals]);
+  }, [endValue, duration, decimals, prefix, suffix]);
 
-  return <span ref={spanRef}>{display}{suffix}</span>;
+  return <span ref={spanRef}>{display}</span>;
 };
 
 import { Button, Section, Badge, Card, StatusGauge } from './components/UI';
@@ -285,22 +295,15 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
-  const [rotate, setRotate] = useState({ x: 0, y: 0 });
-  const isTouchDevice = useRef(false);
+  const { primary: parallax, secondary: cardParallax } = useParallax();
 
-  useEffect(() => {
-    isTouchDevice.current = ('ontouchstart' in window);
-  }, []);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isTouchDevice.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const rotateY = ((e.clientX - rect.left  - rect.width  / 2) / (rect.width  / 2)) * 5;
-    const rotateX = ((rect.height / 2 - (e.clientY - rect.top)) / (rect.height / 2)) * 5;
-    setRotate({ x: rotateX, y: rotateY });
+  const gradientText: React.CSSProperties = {
+    background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    fontStyle: 'italic',
   };
-
-  const handleMouseLeave = () => setRotate({ x: 0, y: 0 });
 
   return (
     <section
@@ -327,10 +330,10 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
           {/* Left: Copy */}
           <div className="text-center lg:text-left">
             <div className="hero-fade" style={{ animationDelay: '0ms' }}>
-              <div className="inline-flex items-center gap-2 mb-7 px-4 py-2 rounded-full glass-deep ring-1 ring-orange-soft/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse" />
-                <span className="text-[12px] font-bold tracking-[0.14em] uppercase text-orange-soft">
-                  <span>⭐</span> 4.9/5 · 500+ UK Tradespeople
+              <div className="flex items-center gap-2 mb-7 justify-center lg:justify-start">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse flex-shrink-0" />
+                <span className="text-[13px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body">
+                  The UK's #1 AI Trade Receptionist
                 </span>
               </div>
             </div>
@@ -342,20 +345,20 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               <span className="line-reveal-wrapper">
                 <span className="line-reveal" style={{ animationDelay: '80ms' }}>
                   Never miss a{' '}
-                  <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>call.</span>
+                  <span style={gradientText}>call.</span>
                 </span>
               </span>
               <span className="line-reveal-wrapper">
                 <span className="line-reveal" style={{ animationDelay: '230ms' }}>
                   Never lose a{' '}
-                  <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>job.</span>
+                  <span style={gradientText}>job.</span>
                 </span>
               </span>
             </h1>
 
             <div className="hero-fade" style={{ animationDelay: '390ms' }}>
               <p className="text-lg md:text-xl text-offwhite/65 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-10 font-body">
-                Your AI receptionist answers every call, qualifies every lead, and books jobs straight into your diary — 24/7, while you're on the tools.
+                While you're on the tools, Sarah answers every call, books every job, and sends you a WhatsApp summary. 24/7. Never misses.
               </p>
             </div>
 
@@ -378,7 +381,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
             {/* Trust badges */}
             <div className="hero-fade" style={{ animationDelay: '630ms' }}>
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-[13px] font-semibold text-offwhite/50">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-[13px] font-semibold text-offwhite/50 mb-8">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-orange-soft/70" />
                   14-day free trial
@@ -393,29 +396,53 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 </div>
               </div>
             </div>
+
+            {/* Animated stat counters */}
+            <div className="hero-fade" style={{ animationDelay: '740ms' }}>
+              <div className="flex flex-row gap-8 justify-center lg:justify-start">
+                <div className="text-center lg:text-left">
+                  <div className="font-mono text-[20px] font-bold text-orange-soft">
+                    <AnimatedCounter endValue={12847} duration={1200} />
+                  </div>
+                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">calls this month</p>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="font-mono text-[20px] font-bold text-orange-soft">
+                    <AnimatedCounter endValue={98.7} decimals={1} suffix="%" duration={1000} />
+                  </div>
+                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">answer rate</p>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="font-mono text-[20px] font-bold text-orange-soft">
+                    <AnimatedCounter endValue={4200} prefix="£" duration={1200} />
+                  </div>
+                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">avg. annual savings</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right: Phone mockup */}
+          {/* Right: Phone mockup + floating glass cards */}
           <div
-            className="relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-full z-20 cursor-pointer hero-fade"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{ perspective: '1000px', animationDelay: '150ms' }}
+            className="relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-[420px] z-20 hero-fade"
+            style={{ animationDelay: '150ms' }}
           >
-            {/* Floating glow behind phone */}
-            <div className="absolute inset-0 rounded-[2.5rem] opacity-40 pointer-events-none"
-              style={{ filter: 'blur(40px)', background: 'radial-gradient(ellipse, rgba(255,107,43,0.25) 0%, transparent 70%)' }} />
+            {/* Float animation wrapper → parallax inner */}
+            <div className="animate-float-primary">
+              <div style={{ transform: `translate(${parallax.x}px, ${parallax.y}px)`, transition: 'transform 100ms ease-out' }}>
 
-            <div
-              className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-[9/19] max-h-[680px] mx-auto"
-              style={{
-                transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
-                transition: 'transform 100ms ease-out',
-                background: '#0A2340',
-                border: '6px solid #0F3060',
-                boxShadow: `${-rotate.y * 1.5}px ${rotate.x * 1.5 + 20}px 60px rgba(2,13,24,0.6), 0 0 0 1px rgba(255,255,255,0.06)`,
-              }}
-            >
+                {/* Floating glow behind phone */}
+                <div className="absolute inset-0 rounded-[2.5rem] opacity-40 pointer-events-none"
+                  style={{ filter: 'blur(40px)', background: 'radial-gradient(ellipse, rgba(255,107,43,0.25) 0%, transparent 70%)' }} />
+
+                <div
+                  className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-[9/19] max-h-[680px] mx-auto"
+                  style={{
+                    background: '#0A2340',
+                    border: '6px solid #0F3060',
+                    boxShadow: '0 24px 80px rgba(2,13,24,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
+                  }}
+                >
               {/* Notch */}
               <div className="absolute top-0 inset-x-0 h-7 rounded-b-xl w-32 mx-auto z-20 bg-navy" />
 
@@ -498,15 +525,68 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 </div>
               </div>
             </div>
-          </div>
-          {/* Live calls counter */}
-          <div className="lg:col-span-2 hero-fade flex justify-center mt-6 lg:mt-10" style={{ animationDelay: '700ms' }}>
-            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full" style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.15)' }}>
-              <div className="w-2 h-2 rounded-full bg-orange animate-pulse" />
-              <span className="font-body text-[13px] text-offwhite/50">Calls answered today:</span>
-              <span className="font-mono text-[14px] font-bold text-orange-soft"><AnimatedCounter endValue={14293} duration={2000} /></span>
+              </div>{/* close parallax inner */}
+            </div>{/* close float-primary */}
+
+            {/* Floating glass card 1: Incoming call — top-left */}
+            <div
+              className="absolute top-[10%] -left-[30%] z-30 hidden lg:block"
+              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '0s' }}
+            >
+              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
+                <div className="glass rounded-2xl p-3"
+                  style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(2,13,24,0.6)', maxWidth: '190px' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}>
+                      <Phone className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-offwhite leading-tight">Incoming call</p>
+                      <p className="text-[10px] text-offwhite/45 mt-0.5">Dave Hendricks · Plumbing</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Floating glass card 2: Job booked — bottom-right */}
+            <div
+              className="absolute bottom-[20%] -right-[25%] z-30 hidden lg:block"
+              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '0.8s' }}
+            >
+              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
+                <div className="glass rounded-2xl p-3"
+                  style={{ boxShadow: '0 0 0 1px rgba(255,107,43,0.15), 0 8px 32px rgba(2,13,24,0.6)', maxWidth: '200px' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(255,107,43,0.15)' }}>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-soft" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-offwhite leading-tight">Sarah answered</p>
+                      <p className="text-[10px] text-offwhite/45 mt-0.5">Job booked · Tuesday 9am</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating stats pill — above phone */}
+            <div
+              className="absolute -top-[4%] right-[5%] z-30 hidden lg:block"
+              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '1.6s' }}
+            >
+              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
+                <div className="glass rounded-full px-4 py-2 flex items-center gap-2"
+                  style={{ boxShadow: '0 0 0 1px rgba(153,203,255,0.15), 0 4px 16px rgba(2,13,24,0.5)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
+                  <span className="text-[11px] font-bold text-offwhite/80 font-body whitespace-nowrap">Calls today: 24 · Booked: 18</span>
+                </div>
+              </div>
+            </div>
+
+          </div>{/* close right column */}
 
         </div>
 
@@ -547,12 +627,14 @@ const SocialProof = () => (
 
         <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 flex-shrink-0">
           {[
-            { metric: '98.7%', label: 'Calls answered' },
-            { metric: '£4,200', label: 'Avg. revenue recovered' },
-            { metric: '14 min', label: 'Avg. setup time' },
-          ].map(({ metric, label }) => (
-            <div key={metric} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
-              <span className="font-mono text-[14px] font-bold text-orange-soft">{metric}</span>
+            { endValue: 98.7, decimals: 1, suffix: '%', label: 'Calls answered' },
+            { endValue: 4200, prefix: '£', label: 'Avg. revenue recovered' },
+            { endValue: 14, suffix: ' min', label: 'Avg. setup time' },
+          ].map(({ endValue, decimals, prefix, suffix, label }, i) => (
+            <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
+              <span className="font-mono text-[14px] font-bold text-orange-soft">
+                <AnimatedCounter endValue={endValue} decimals={decimals} prefix={prefix} suffix={suffix} duration={1000} />
+              </span>
               <span className="text-[11px] text-offwhite/35 font-body">{label}</span>
             </div>
           ))}
@@ -626,23 +708,94 @@ const PainPoints = () => (
 const HOW_STEPS = [
   {
     num: '01',
+    label: 'Build',
     icon: Phone,
-    title: 'Divert Your Number',
-    desc: "Forward your calls to Trade Receptionist when you're busy or on-site. Takes two minutes — no new number, no new SIM.",
+    title: 'Build Your Profile',
+    desc: 'Give Sarah your business name, services, pricing, and availability. 14 minutes. No technical knowledge needed.',
   },
   {
     num: '02',
+    label: 'Divert',
     icon: Mic,
-    title: 'We Answer Every Call',
-    desc: 'Our AI answers instantly in a natural British voice. It qualifies the lead, checks your availability, and books the job.',
+    title: 'Divert Your Calls',
+    desc: 'Forward your business number to Sarah — or get a dedicated number. She answers every call instantly, 24/7.',
   },
   {
     num: '03',
+    label: 'Focus',
     icon: MessageSquare,
-    title: 'You Get a WhatsApp Summary',
-    desc: 'Seconds after every call, you receive a WhatsApp with the caller\'s name, job type, postcode, and urgency. Nothing slips through.',
+    title: 'Focus on the Job',
+    desc: 'Get on with the work. Sarah handles every call, books every appointment, and sends you a WhatsApp summary.',
   },
 ];
+
+const HowItWorksStep = ({ step, index }: { step: typeof HOW_STEPS[number]; index: number }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [filled, setFilled] = useState(false);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !startedRef.current) {
+          startedRef.current = true;
+          // Slight stagger per step
+          setTimeout(() => setFilled(true), index * 200);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [index]);
+
+  const Icon = step.icon;
+
+  return (
+    <div ref={ref} className="flex flex-col items-start">
+      {/* Step number circle */}
+      <div
+        className="w-[52px] h-[52px] rounded-full flex items-center justify-center mb-6"
+        style={{
+          background: filled ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)' : 'rgba(255,255,255,0.06)',
+          boxShadow: filled ? '0 0 24px rgba(255,107,43,0.4)' : '0 0 0 1px rgba(255,255,255,0.08)',
+          transition: 'background 600ms ease, box-shadow 600ms ease',
+        }}
+      >
+        <span
+          className="font-display font-bold leading-none"
+          style={{
+            fontSize: '18px',
+            color: filled ? '#ffffff' : 'rgba(255,107,43,0.6)',
+            letterSpacing: '-0.02em',
+            transition: 'color 600ms ease',
+          }}
+        >
+          {step.num}
+        </span>
+      </div>
+
+      <Icon className="w-5 h-5 mb-4" style={{ color: filled ? '#ffb59a' : 'rgba(240,244,248,0.2)', transition: 'color 400ms ease' }} />
+
+      <h3
+        className="font-display font-bold text-offwhite mb-3"
+        style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', letterSpacing: '-0.01em', lineHeight: 1.15 }}
+      >
+        {step.title}
+      </h3>
+
+      {/* Animated progress bar */}
+      <div className="step-progress-bar w-full mb-4">
+        <div className={`step-progress-fill${filled ? ' is-filled' : ''}`} />
+      </div>
+
+      <p className="text-offwhite/50 leading-relaxed text-[15px] max-w-xs font-body">{step.desc}</p>
+    </div>
+  );
+};
 
 const HowItWorks = () => (
   <Section id="how-it-works" bg="white">
@@ -658,38 +811,13 @@ const HowItWorks = () => (
     </FadeUp>
 
     <div className="relative">
-      {/* Step connector — dotted path, not a solid line */}
+      {/* Step connector */}
       <div className="hidden md:block absolute top-[52px] left-[16.66%] right-[16.66%] pointer-events-none"
-        style={{ height: '2px', background: 'repeating-linear-gradient(90deg, rgba(255,107,43,0.35) 0px, rgba(255,107,43,0.35) 4px, transparent 4px, transparent 12px)' }} />
+        style={{ height: '2px', background: 'repeating-linear-gradient(90deg, rgba(255,107,43,0.25) 0px, rgba(255,107,43,0.25) 4px, transparent 4px, transparent 12px)' }} />
 
       <div className="grid md:grid-cols-3 gap-12 md:gap-8 lg:gap-14 relative z-10">
         {HOW_STEPS.map((step, i) => (
-          <FadeUp key={i} delay={i * 100} className="flex flex-col items-start">
-            <div
-              className="w-[56px] h-[56px] rounded-full flex items-center justify-center mb-8 relative"
-              style={{
-                background: i === 0 ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)' : 'rgba(255,255,255,0.06)',
-                boxShadow: i === 0 ? '0 0 24px rgba(255,107,43,0.4)' : '0 0 0 1px rgba(255,255,255,0.08)',
-              }}
-            >
-              <span
-                className="font-display font-bold leading-none"
-                style={{ fontSize: '20px', color: i === 0 ? '#ffffff' : 'rgba(255,107,43,0.7)', letterSpacing: '-0.02em' }}
-              >
-                {step.num}
-              </span>
-            </div>
-
-            <step.icon className="w-6 h-6 text-orange-soft/50 mb-4" />
-
-            <h3
-              className="font-display font-bold text-offwhite mb-3"
-              style={{ fontSize: 'clamp(1.25rem, 2vw, 1.5rem)', letterSpacing: '-0.01em' }}
-            >
-              {step.title}
-            </h3>
-            <p className="text-offwhite/50 leading-relaxed text-[15px] max-w-xs">{step.desc}</p>
-          </FadeUp>
+          <HowItWorksStep key={i} step={step} index={i} />
         ))}
       </div>
     </div>
@@ -735,8 +863,11 @@ const ROISection = () => (
 );
 
 // ─── Comparison ───────────────────────────────────────────────────────────────
-const ComparisonSection = () => (
+const ComparisonSection = () => {
+  const ref = useScrollAnimation();
+  return (
   <Section bg="white" id="comparison">
+    <div ref={ref} data-animate>
     <div className="text-center mb-14">
       <Badge color="blue">The Honest Comparison</Badge>
       <h2
@@ -803,13 +934,17 @@ const ComparisonSection = () => (
     <p className="text-[12px] text-offwhite/20 text-center mt-4 font-body">
       * Voicemail appears "free" but costs an average of £4,200/year in missed jobs.
     </p>
+    </div>{/* close data-animate wrapper */}
   </Section>
-);
+  );
+};
 
 // ─── Demo Section ─────────────────────────────────────────────────────────────
-const DemoSection = () => (
+const DemoSection = () => {
+  const ref = useScrollAnimation();
+  return (
   <Section id="demo" bg="gray">
-    <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
+    <div ref={ref} data-animate className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
       <div>
         <Badge>Hear It in Action</Badge>
         <h2
@@ -863,7 +998,8 @@ const DemoSection = () => (
       </div>
     </div>
   </Section>
-);
+  );
+};
 
 // ─── Use Cases ────────────────────────────────────────────────────────────────
 const TRADE_ITEMS = [
@@ -1112,6 +1248,7 @@ const Features = ({ onWaitlist }: { onWaitlist: () => void }) => (
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const pricingRef = useScrollAnimation();
 
   const plans: PricingTier[] = [
     {
@@ -1177,10 +1314,11 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </div>
       </div>
 
-      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-4">
+      <div ref={pricingRef} data-animate className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-4">
         {plans.map((plan, i) => (
           <div
             key={i}
+            data-delay={i}
             className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 ${
               plan.isPopular
                 ? 'popular-ring md:scale-[1.04]'
@@ -1248,6 +1386,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const faqRef = useScrollAnimation();
 
   const faqs: FAQItem[] = [
     {
@@ -1296,10 +1435,11 @@ const FAQ = () => {
         </h2>
       </div>
 
-      <div className="max-w-3xl mx-auto space-y-3">
+      <div ref={faqRef} data-animate className="max-w-3xl mx-auto space-y-3">
         {faqs.map((faq, i) => (
           <div
             key={i}
+            data-delay={i}
             className="rounded-card overflow-hidden"
             style={{
               background: openIndex === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
@@ -1342,7 +1482,9 @@ const FAQ = () => {
 };
 
 // ─── Final CTA ────────────────────────────────────────────────────────────────
-const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
+const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
+  const ref = useScrollAnimation();
+  return (
   <section className="bg-void py-24 md:py-36 relative overflow-hidden">
     {/* Atmospheric glows */}
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
@@ -1352,7 +1494,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
     <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none opacity-20"
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
-    <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center relative z-10">
+    <div ref={ref} data-animate className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center relative z-10">
       {/* Status gauges */}
       <div className="flex justify-center gap-12 mb-12">
         <StatusGauge value={98} label="Calls Handled" metric="98%" size="md" color="orange" />
@@ -1393,7 +1535,8 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
@@ -1465,6 +1608,32 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
 
+  // Lenis smooth scroll — init once on mount
+  useEffect(() => {
+    let lenis: import('lenis').default | null = null;
+    let rafId: number;
+
+    import('lenis').then(({ default: Lenis }) => {
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        smoothWheel: true,
+      });
+
+      const raf = (time: number) => {
+        lenis!.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis?.destroy();
+    };
+  }, []);
+
   const handleViewChange = (view: View) => {
     window.scrollTo(0, 0);
     setCurrentView(view);
@@ -1488,7 +1657,7 @@ const App: React.FC = () => {
             <DemoSection />
             <HowItWorks />
             <UseCases />
-            <Features onWaitlist={toggleWaitlist} />
+            <StickyFeatures onWaitlist={toggleWaitlist} />
             <React.Suspense fallback={<LazyFallback />}>
               <Testimonials />
             </React.Suspense>
