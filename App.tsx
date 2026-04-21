@@ -208,8 +208,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
           >
-            <Logo height={120} className="hidden md:block" />
-            <Logo height={90} className="md:hidden" />
+            <Logo height={96} />
           </button>
 
           {/* Desktop nav */}
@@ -1580,24 +1579,45 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8">
-        <p className="text-[13px] text-offwhite/25">
-          &copy; 2026 Trade Receptionist Ltd. All rights reserved. Registered in England & Wales.
-        </p>
-        <div className="flex gap-5 items-center text-offwhite/25">
-          <a href="https://instagram.com/tradereceptionist" target="_blank" rel="noopener noreferrer"
-            className="hover:text-orange-soft transition-colors">
-            <Instagram className="w-5 h-5" />
-          </a>
-          <a href="https://tiktok.com/@tradereceptionist" target="_blank" rel="noopener noreferrer"
-            className="hover:text-orange-soft transition-colors">
-            <TikTokIcon className="w-5 h-5" />
-          </a>
-          <a href="https://www.facebook.com/share/16QddwsMk8/" target="_blank" rel="noopener noreferrer"
-            className="hover:text-orange-soft transition-colors">
-            <Facebook className="w-5 h-5" />
-          </a>
+      {/* Social media row */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8 border-t border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          {[
+            { href: 'https://instagram.com/tradereceptionist', Icon: Instagram, label: 'Instagram' },
+            { href: 'https://www.facebook.com/share/16QddwsMk8/', Icon: Facebook, label: 'Facebook' },
+            { href: 'https://tiktok.com/@tradereceptionist', Icon: TikTokIcon, label: 'TikTok' },
+          ].map(({ href, Icon, label }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                color: 'rgba(240,244,248,0.55)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,107,43,0.12)';
+                (e.currentTarget as HTMLAnchorElement).style.color = '#ffb59a';
+                (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 0 1px rgba(255,107,43,0.2)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)';
+                (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(240,244,248,0.55)';
+                (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.08)';
+              }}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="text-[12px] font-semibold font-body">{label}</span>
+            </a>
+          ))}
         </div>
+        <p className="text-[13px] text-offwhite/25">
+          &copy; 2026 Trade Receptionist Ltd. All rights reserved. Registered in England &amp; Wales.
+        </p>
       </div>
     </div>
   </footer>

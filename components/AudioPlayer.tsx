@@ -3,26 +3,23 @@ import { Play, Pause, Volume2, Loader2, RefreshCw, AlertCircle } from 'lucide-re
 import { GoogleGenAI, Modality } from "@google/genai";
 
 const CALL_SCRIPT = `
-Caller (Jess): Hi—sorry, I'm hoping you can help. Our boiler's just gone off and the house is freezing.
-Receptionist (Sam): Oh no—right, okay. You've done the right thing calling. Is it showing an error code, or is it completely dead?
-Caller (Jess): It's got, um… "EA" something? And there's no heating at all.
-Receptionist (Sam): Mm, got you. And just to check—have you also got no hot water, or is it only the heating?
-Caller (Jess): No hot water either.
-Receptionist (Sam): Okay, thanks. I'll log this as urgent. Whereabouts are you—what's the postcode?
-Caller (Jess): It's SE19 2—uh—SE19 2DP.
-Receptionist (Sam): Perfect, SE19 2DP. And what's the best name for the booking?
-Caller (Jess): Jess Carter.
-Receptionist (Sam): Lovely—Jess. And a mobile number, in case the engineer needs to ring you on the way?
-Caller (Jess): Yeah, it's 07—
-Receptionist (Sam): —Yep, go on.
-Caller (Jess): 7702 118 64.
-Receptionist (Sam): Brilliant—so that's 07702 118 64. Right. I'm going to message the on-call engineer now. If we can't get someone there today, we'll aim for first slot tomorrow morning—sorry, Wednesday morning. Is anyone at the property all day?
-Caller (Jess): I can be, yeah.
-Receptionist (Sam): Spot on. One last thing—any smell of gas at all?
-Caller (Jess): No, nothing like that.
-Receptionist (Sam): Okay, good. Leave it with me—I'll come straight back to you within the next twenty minutes with a time window. And if anything changes—like you do smell gas—get outside and call the emergency line immediately, yeah?
-Caller (Jess): Yeah, understood. Thank you.
-Receptionist (Sam): No worries at all, Jess. We'll get you sorted. Speak in a bit—bye for now.
+Receptionist (Sarah): Good afternoon, you've reached Hendricks Plumbing — I'm Sarah, how can I help?
+Caller (Mike): Hi yeah — my bathroom radiator's just started leaking, it's dripping onto the floorboards. I'm worried it's gonna go through to the ceiling below.
+Receptionist (Sarah): Oh right, okay — so it's actively leaking at the moment. Is the water coming from the valve at the side, or from where the pipe meets the wall?
+Caller (Mike): Erm — the pipe at the bottom, I think. Near where it connects in.
+Receptionist (Sarah): Got you. Right — first thing, can you turn the radiator valves off on both sides? There's one at each end. Just turn them both clockwise as far as they'll go — that'll slow it right down while we get someone out to you.
+Caller (Mike): Yeah — yeah, I can do that. Hang on — right, done it. That's already helped actually, it's just dripping now.
+Receptionist (Sarah): Brilliant, good work. Right, let me get this booked in for you. What area are you in? Postcode if you've got it?
+Caller (Mike): SE24 — SE24 0EB.
+Receptionist (Sarah): Perfect — that's Herne Hill. Dave covers that area and he's got a gap this afternoon, around half three. Does that work for you?
+Caller (Mike): Oh — that'd be great, yeah.
+Receptionist (Sarah): Lovely. And the name for the booking?
+Caller (Mike): Mike — Mike Patterson.
+Receptionist (Sarah): Great, Mike. And a mobile number so Dave can ring when he's about twenty minutes away?
+Caller (Mike): Yeah — it's 07831 440 295.
+Receptionist (Sarah): Perfect, so that's 07831 — 440 295. Right, I've got you booked in for today, half three, SE24 0EB. You'll get a text confirmation shortly, and Dave will give you a ring when he's on his way. Is there anything else I can help with?
+Caller (Mike): No, that's brilliant — thank you so much.
+Receptionist (Sarah): Absolute pleasure, Mike. We'll get that sorted for you. Bye for now.
 `;
 
 export const AudioPlayer: React.FC = () => {
@@ -103,19 +100,22 @@ export const AudioPlayer: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: "AIzaSyAaLTghL1moUlpcayIt6VV1gaLIaw0iYLs" });
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY ?? 'AIzaSyALBxFCtWAAsF2fTHpyQTBwneyANgwda8s';
+      const ai = new GoogleGenAI({ apiKey });
       const directedPrompt = `
-      [DIRECTOR NOTES:
-      - Language MUST be English (United Kingdom), locale en-GB.
-      - Accent MUST be a natural London / South East England accent.
-      - Character Sam: Female, warm, professional trade receptionist.
-      - Character Jess: Female, stressed customer.]
+[DIRECTOR NOTES — READ CAREFULLY BEFORE SPEAKING:
+- Language: English (United Kingdom). Locale: en-GB. Do NOT use American English pronunciation, vocabulary, or intonation under any circumstances.
+- Both speakers have natural South-East England / Greater London accents. Non-rhotic. Glottal stops on "t" mid-word are natural.
+- Character Sarah: Female, 30s, warm and professionally efficient. Genuine South London warmth — like a brilliant GP receptionist. Never robotic. Uses natural British verbal acknowledgements: "right", "got you", "brilliant", "lovely", "spot on". Speaks at a natural conversational pace, not rushed.
+- Character Mike: Male, 40s, stressed homeowner, working-class South London. Natural hesitations ("erm", "yeah"), slightly relieved as the call progresses and things get sorted.
+- Prosody: Sarah should sound like she's genuinely listening and caring, not reading from a script. Natural rising intonation on questions. Slight warmth/smile in the voice throughout.
+- Pace: Sarah speaks clearly but not slowly — confident and in control. Mike is slightly rushed at the start, then relaxes.]
 
-      ${CALL_SCRIPT}
+${CALL_SCRIPT}
       `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
+        model: "gemini-2.5-flash-preview-tts",   // also try "gemini-2.0-flash-preview-image-generation" if this 404s
         contents: [{ parts: [{ text: directedPrompt }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -123,12 +123,12 @@ export const AudioPlayer: React.FC = () => {
             multiSpeakerVoiceConfig: {
               speakerVoiceConfigs: [
                 {
-                  speaker: 'Sam',
+                  speaker: 'Sarah',
                   voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
                 },
                 {
-                  speaker: 'Jess',
-                  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
+                  speaker: 'Mike',
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } }
                 }
               ]
             }
@@ -156,10 +156,14 @@ export const AudioPlayer: React.FC = () => {
 
     } catch (err: any) {
       setIsLoading(false);
-      let errorMessage = "Failed to generate audio.";
+      let errorMessage = "Failed to generate audio. Please try again.";
       if (err.message) errorMessage = err.message;
-      if (err.toString().includes('403') || err.toString().includes('key')) {
-        errorMessage = "API Key Invalid or Expired. Please check your key.";
+      if (err.toString().includes('403') || err.toString().includes('API_KEY_INVALID')) {
+        errorMessage = "API key rejected. Please check your Gemini API key.";
+      } else if (err.toString().includes('429')) {
+        errorMessage = "Rate limit hit — please wait a moment and try again.";
+      } else if (err.toString().includes('No audio data')) {
+        errorMessage = "No audio returned. The model may not support this voice config.";
       }
       setError(errorMessage);
     }
@@ -318,10 +322,10 @@ export const AudioPlayer: React.FC = () => {
             </div>
             <div>
               <p className="font-display font-bold text-[16px] text-offwhite leading-none tracking-tight mb-1">
-                New Job Enquiry
+                Radiator Leak — Booked Same Day
               </p>
               <p className="text-[12px] text-offwhite/40 font-body leading-none">
-                AI Receptionist · Natural en-GB Voice
+                Sarah (AI) · South London · en-GB
               </p>
             </div>
           </div>
