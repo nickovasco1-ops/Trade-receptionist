@@ -142,6 +142,10 @@ input[type="range"]::-moz-range-thumb {
   0%,  100% { box-shadow: 0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20); }
   50%        { box-shadow: 0 0 48px rgba(255,107,43,0.60), 0 8px 24px rgba(255,107,43,0.40); }
 }
+@keyframes pulseGlowGreen {
+  0%,  100% { box-shadow: 0 0 16px rgba(37,211,102,0.50), 0 4px 12px rgba(37,211,102,0.30); }
+  50%        { box-shadow: 0 0 32px rgba(37,211,102,0.80), 0 6px 20px rgba(37,211,102,0.50); }
+}
 @keyframes floatUp {
   0%,  100% { transform: translateY(0px); }
   50%        { transform: translateY(-6px); }
@@ -207,7 +211,8 @@ input[type="range"]::-moz-range-thumb {
 .animate-float           { animation: floatUp 4s ease-in-out infinite; }
 .animate-float-primary   { animation: float-primary 5s ease-in-out infinite; }
 .animate-float-secondary { animation: float-secondary 4s ease-in-out infinite; }
-.animate-pulse-glow      { animation: pulseGlow 2.5s ease-in-out infinite; }
+.animate-pulse-glow       { animation: pulseGlow 2.5s ease-in-out infinite; }
+.animate-pulse-glow-green { animation: pulseGlowGreen 2.5s ease-in-out infinite; }
 .animate-marquee         { animation: marquee 30s linear infinite; }
 .animate-spin            { animation: spin 1s linear infinite; }
 
@@ -323,6 +328,19 @@ input[type="range"]::-moz-range-thumb {
 }
 .step-progress-fill.is-filled {
   width: 100%;
+}
+
+/* ─── iOS Input Zoom Prevention ─── */
+/* iOS zooms in on any input with font-size below 16px; this prevents it */
+input, textarea, select { font-size: max(16px, 1em); }
+
+/* ─── Active Tap States (touch devices only) ─── */
+@media (hover: none) {
+  button:active, a:active, [role="button"]:active {
+    opacity: 0.7;
+    transform: scale(0.97);
+    transition: opacity 80ms ease, transform 80ms ease;
+  }
 }
 
 /* ─── Reduced Motion ─── */

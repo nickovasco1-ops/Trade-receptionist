@@ -9,13 +9,13 @@ interface LogoProps {
   className?: string;
 }
 
-export const Logo: React.FC<LogoProps> = ({ height = 120, className = '' }) => (
+export const Logo: React.FC<LogoProps> = ({ height, className = '' }) => (
   <img
     src={LOGO_URL}
     alt="Trade Receptionist"
     height={height}
     className={className}
-    style={{ height, width: 'auto', display: 'block' }}
+    style={{ height: height !== undefined ? height : undefined, width: 'auto', display: 'block' }}
     draggable={false}
   />
 );

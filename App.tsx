@@ -117,8 +117,8 @@ const Testimonials = React.lazy(() => import('./components/Testimonials').then(m
 const BookDemo     = React.lazy(() => import('./components/BookDemo').then(m => ({ default: m.BookDemo })));
 const ContactUs    = React.lazy(() => import('./components/ContactUs').then(m => ({ default: m.ContactUs })));
 
-const LazyFallback = () => (
-  <div className="flex justify-center items-center py-16">
+const LazyFallback = ({ height = 200 }: { height?: number }) => (
+  <div className="flex justify-center items-center" style={{ height }}>
     <div className="w-8 h-8 rounded-full" style={{ boxShadow: '0 0 0 2px rgba(255,107,43,0.3)', animation: 'spin 1s linear infinite' }} />
   </div>
 );
@@ -202,14 +202,14 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="flex justify-between h-36 items-center">
+        <div className="flex justify-between h-20 xl:h-36 items-center">
           {/* Logo */}
           <button
             className="flex-shrink-0 flex items-center focus:outline-none"
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
           >
-            <Logo height={96} />
+            <Logo className="h-14 xl:h-24" />
           </button>
 
           {/* Desktop nav */}
@@ -247,7 +247,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
           {/* Mobile hamburger */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="xl:hidden text-offwhite/70 hover:text-offwhite p-2 transition-colors"
+            className="xl:hidden text-offwhite/70 hover:text-offwhite p-3 transition-colors"
             aria-label={isOpen ? 'Close menu' : 'Open menu'}
           >
             {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
@@ -269,7 +269,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
             {navLinks.map(({ label, target }) => (
               <button
                 key={target}
-                className="text-xl font-bold text-left text-offwhite/80 hover:text-offwhite transition-colors"
+                className="text-xl font-bold text-left text-offwhite/80 hover:text-offwhite transition-colors w-full py-2"
                 onClick={() => handleNav(target)}
               >
                 {label}
@@ -308,7 +308,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
   return (
     <section
       id="hero"
-      className="relative pt-44 pb-24 md:pt-56 md:pb-36 overflow-hidden"
+      className="relative pt-28 pb-24 md:pt-44 xl:pt-56 md:pb-36 overflow-hidden"
       style={{
         background:
           'radial-gradient(ellipse at 15% 60%, rgba(255,107,43,0.09) 0%, transparent 55%),' +
@@ -340,7 +340,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
             <h1
               className="font-display font-bold text-offwhite mb-7"
-              style={{ fontSize: 'clamp(3.5rem, 8.5vw, 8.5rem)', lineHeight: 0.90, letterSpacing: '-0.025em' }}
+              style={{ fontSize: 'clamp(3.5rem, 8.5vw, 8.5rem)', lineHeight: 0.93, letterSpacing: '-0.025em' }}
             >
               <span className="line-reveal-wrapper">
                 <span className="line-reveal" style={{ animationDelay: '80ms' }}>
@@ -397,6 +397,15 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </div>
             </div>
 
+            {/* Live status strip — mobile only, replaces the visual weight of the phone mockup */}
+            <div className="hero-fade md:hidden mb-4" style={{ animationDelay: '700ms' }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold font-body"
+                style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse flex-shrink-0" />
+                <span className="text-orange-soft">AI is live — 98.7% answer rate</span>
+              </div>
+            </div>
+
             {/* Testimonial card */}
             <div className="hero-fade" style={{ animationDelay: '740ms' }}>
               <div
@@ -435,9 +444,9 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
             </div>
           </div>
 
-          {/* Right: Phone mockup + floating glass cards */}
+          {/* Right: Phone mockup + floating glass cards — hidden on mobile to keep CTA above fold */}
           <div
-            className="relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-[420px] z-20 hero-fade"
+            className="hidden md:block relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-[420px] z-20 hero-fade"
             style={{ animationDelay: '150ms' }}
           >
             {/* Float animation wrapper → parallax inner */}
@@ -842,7 +851,7 @@ const ROISection = () => (
   <Section id="roi" bg="gray">
     <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
       <FadeUp className="order-2 lg:order-1">
-        <React.Suspense fallback={<LazyFallback />}>
+        <React.Suspense fallback={<LazyFallback height={480} />}>
           <Calculator />
         </React.Suspense>
       </FadeUp>
@@ -894,6 +903,14 @@ const ComparisonSection = () => {
       </p>
     </div>
 
+    {/* Scroll hint — mobile only */}
+    <p className="md:hidden text-center text-[12px] text-offwhite/30 mb-3 font-body">← Swipe to compare →</p>
+
+    <div className="relative">
+      {/* Right fade gradient — mobile only */}
+      <div className="md:hidden absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to left, #051426 0%, transparent 100%)' }} />
+
     <div className="overflow-x-auto pb-4">
       <div className="min-w-[760px] rounded-card overflow-hidden" style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.4)' }}>
         <div className="grid grid-cols-5 gap-0">
@@ -943,6 +960,7 @@ const ComparisonSection = () => {
         })}
       </div>
     </div>
+    </div>{/* close relative scroll wrapper */}
 
     <p className="text-[12px] text-offwhite/20 text-center mt-4 font-body">
       * Voicemail appears "free" but costs an average of £4,200/year in missed jobs.
@@ -1005,7 +1023,7 @@ const DemoSection = () => {
           </div>
         </div>
 
-        <React.Suspense fallback={<LazyFallback />}>
+        <React.Suspense fallback={<LazyFallback height={200} />}>
           <AudioPlayer />
         </React.Suspense>
 
@@ -1016,13 +1034,14 @@ const DemoSection = () => {
           style={{
             background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
             boxShadow: '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2)',
-            transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms ease',
+            transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms ease',
           }}
         >
-          📞 Call the AI live — it'll answer in 2 seconds
+          <Phone className="w-4 h-4 flex-shrink-0" />
+          Call the AI live — it'll answer in 2 seconds
         </a>
         <p className="mt-2 text-center text-[12px] text-offwhite/30 font-body">
-          UK: +44 1234 567 890 · Placeholder — will be live Retell number
+          UK: +44 1234 567 890
         </p>
       </div>
     </div>
@@ -1328,7 +1347,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <button
               key={b}
               onClick={() => setBilling(b)}
-              className={`px-7 py-2.5 rounded-full text-[13px] font-bold transition-colors duration-300 ${
+              className={`px-7 py-3 min-h-[44px] rounded-full text-[13px] font-bold transition-colors duration-300 ${
                 billing === b
                   ? 'bg-orange text-white shadow-orange-glow'
                   : 'text-offwhite/40 hover:text-offwhite/70'
@@ -1350,8 +1369,10 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             data-delay={i}
             className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 ${
               plan.isPopular
-                ? 'popular-ring md:scale-[1.04]'
-                : 'hover:-translate-y-1'
+                ? 'popular-ring md:scale-[1.04] order-first md:order-none'
+                : i === 0
+                  ? 'hover:-translate-y-1 order-2 md:order-none'
+                  : 'hover:-translate-y-1 order-3 md:order-none'
             }`}
             style={{
               background: plan.isPopular
@@ -1571,8 +1592,8 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
   <footer className="bg-void pt-20 pb-12">
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-      <div className="grid md:grid-cols-4 gap-12 mb-16">
-        <div className="col-span-1 md:col-span-2">
+      <div className="grid md:grid-cols-3 gap-12 mb-16">
+        <div className="md:col-span-2">
           <div className="mb-6">
             <Logo height={100} />
           </div>
@@ -1610,7 +1631,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
       </div>
 
       {/* Social media row */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8 border-t border-white/[0.06]">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8">
         <div className="flex items-center gap-3">
           {[
             { href: 'https://instagram.com/tradereceptionist', Icon: Instagram, label: 'Instagram' },
@@ -1623,7 +1644,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200"
+              className="flex items-center gap-2 p-3 min-h-[44px] min-w-[44px] rounded-full transition-all duration-300"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 color: 'rgba(240,244,248,0.55)',
@@ -1654,6 +1675,41 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
 );
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
+// ─── WhatsApp Escape Hatch ────────────────────────────────────────────────────
+const WhatsAppButton = () => (
+  <a
+    href="https://wa.me/447786899933?text=Hi%20I%27m%20interested%20in%20Trade%20Receptionist"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Chat with us on WhatsApp"
+    className="group fixed right-4 md:right-6 bottom-20 md:bottom-6 z-40 flex items-center justify-center w-14 h-14 rounded-full animate-pulse-glow-green hover:scale-110 active:scale-95 transition-transform duration-300"
+    style={{ background: '#25D366' }}
+  >
+    {/* WhatsApp SVG */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="white"
+      className="w-7 h-7"
+      aria-hidden="true"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+
+    {/* Tooltip */}
+    <span
+      className="pointer-events-none absolute right-16 whitespace-nowrap px-3 py-1.5 rounded-lg text-[12px] font-semibold font-body opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      style={{
+        background: 'rgba(5,20,38,0.95)',
+        color: '#F0F4F8',
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 4px 16px rgba(2,13,24,0.5)',
+      }}
+    >
+      Chat with us on WhatsApp
+    </span>
+  </a>
+);
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
@@ -1698,7 +1754,7 @@ const App: React.FC = () => {
       <div className="grain" aria-hidden="true" />
       <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleStripe} />
 
-      <main>
+      <main className="pb-20 md:pb-0">
         {currentView === 'home' ? (
           <>
             <Hero onWaitlist={toggleStripe} />
@@ -1710,18 +1766,18 @@ const App: React.FC = () => {
             <HowItWorks />
             <UseCases />
             <StickyFeatures onWaitlist={toggleStripe} />
-            <React.Suspense fallback={<LazyFallback />}>
+            <React.Suspense fallback={<LazyFallback height={320} />}>
               <Testimonials />
             </React.Suspense>
             <Pricing onWaitlist={toggleStripe} />
             <FAQ />
-            <React.Suspense fallback={<LazyFallback />}>
+            <React.Suspense fallback={<LazyFallback height={400} />}>
               <ContactUs />
             </React.Suspense>
             <FinalCTA onWaitlist={toggleStripe} />
           </>
         ) : (
-          <React.Suspense fallback={<LazyFallback />}>
+          <React.Suspense fallback={<LazyFallback height={400} />}>
             <BookDemo />
           </React.Suspense>
         )}
@@ -1729,6 +1785,7 @@ const App: React.FC = () => {
 
       <Footer onWaitlist={toggleStripe} />
       <StickyBottomBar onWaitlist={toggleStripe} />
+      <WhatsAppButton />
       <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
       <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
     </div>

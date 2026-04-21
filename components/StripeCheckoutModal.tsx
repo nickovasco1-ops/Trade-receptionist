@@ -74,14 +74,16 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen
         style={{
           background: '#0A2340',
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.7)',
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/70 transition-colors z-10 p-1"
+          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/70 transition-colors z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -167,7 +169,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen
 
                 <button
                   onClick={() => handlePlanClick(plan.stripeUrl)}
-                  className="w-full h-11 rounded-[12px] font-bold font-body text-[14px] flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5"
+                  className="w-full h-11 rounded-[12px] font-bold font-body text-[14px] flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5"
                   style={
                     plan.popular
                       ? {

@@ -35,8 +35,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
       setStatus('success');
       setFormData({ name: '', email: '', role: '' });
-    } catch (err) {
-      console.error('Waitlist error:', err);
+    } catch {
       setStatus('error');
     }
   };
@@ -72,23 +71,27 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md rounded-card overflow-hidden animate-fade-up"
+        className="relative w-full max-w-md rounded-card overflow-hidden animate-fade-up flex flex-col"
         style={{
           background: '#0A2340',
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.6)',
+          maxHeight: '90dvh',
         }}
       >
-        {/* Close */}
+        {/* Close — absolute so it stays over the scroll */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/80 transition-colors z-10 p-1"
+          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/80 transition-colors z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Orange top accent strip */}
-        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #FF6B2B, #FF8C55)' }} />
+        <div className="h-1 w-full flex-shrink-0" style={{ background: 'linear-gradient(90deg, #FF6B2B, #FF8C55)' }} />
+
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
 
         {status === 'success' ? (
           <div className="p-10 text-center">
@@ -219,6 +222,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
             </p>
           </div>
         )}
+        </div>{/* close scrollable content */}
       </div>
     </div>
   );
