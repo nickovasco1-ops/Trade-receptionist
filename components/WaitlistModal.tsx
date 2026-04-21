@@ -99,10 +99,10 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
               <CheckCircle2 className="w-8 h-8 text-orange-soft" />
             </div>
             <h3 className="font-display text-2xl font-bold text-offwhite mb-3 tracking-tight">
-              You're on the list!
+              You're in — check your email
             </h3>
             <p className="text-offwhite/50 mb-8 leading-relaxed text-[15px]">
-              We'll be in touch very soon with your early access details. In the meantime, spread the word to fellow tradespeople.
+              We'll send your login details and setup guide within 1 hour. No card required.
             </p>
             <Button variant="outline" fullWidth onClick={onClose}>
               Close
@@ -112,10 +112,10 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
           <div className="p-8">
             <div className="mb-7">
               <h3 className="font-display text-[26px] font-bold text-offwhite mb-1.5 tracking-tight">
-                Join the Waitlist
+                Set up your free trial — takes 2 minutes
               </h3>
               <p className="text-offwhite/40 text-[14px] leading-relaxed">
-                Be the first to use the platform for free. Launching in limited batches.
+                We'll set up your account straight away. No card needed to start.
               </p>
             </div>
 
@@ -202,11 +202,11 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
                   {status === 'loading' ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      Saving your spot…
+                      Setting up your trial…
                     </>
                   ) : (
                     <>
-                      Secure My Spot
+                      Reserve My Free Trial Spot
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -215,7 +215,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
             </form>
 
             <p className="mt-5 text-center text-[12px] text-offwhite/20">
-              No spam. Your data is never sold. Unsubscribe any time.
+              We'll send your login details within 1 hour. No card needed to start.
             </p>
           </div>
         )}

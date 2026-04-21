@@ -107,6 +107,7 @@ import { Button, Section, Badge, Card, StatusGauge } from './components/UI';
 import { BlueprintGrid } from './components/BlueprintGrid';
 import { Logo } from './components/Logo';
 import { WaitlistModal } from './components/WaitlistModal';
+import { StripeCheckoutModal } from './components/StripeCheckoutModal';
 import { FAQItem, PricingTier } from './types';
 
 // Lazy-loaded below-fold components — keeps initial JS bundle lean
@@ -396,26 +397,39 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </div>
             </div>
 
-            {/* Animated stat counters */}
+            {/* Testimonial card */}
             <div className="hero-fade" style={{ animationDelay: '740ms' }}>
-              <div className="flex flex-row gap-8 justify-center lg:justify-start">
-                <div className="text-center lg:text-left">
-                  <div className="font-mono text-[20px] font-bold text-orange-soft">
-                    <AnimatedCounter endValue={12847} duration={1200} />
-                  </div>
-                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">calls this month</p>
+              <div
+                className="rounded-card p-5 max-w-md mx-auto lg:mx-0"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(2,13,24,0.4)',
+                }}
+              >
+                {/* Stars */}
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} style={{ color: '#FF6B2B', fontSize: '16px' }}>★</span>
+                  ))}
                 </div>
-                <div className="text-center lg:text-left">
-                  <div className="font-mono text-[20px] font-bold text-orange-soft">
-                    <AnimatedCounter endValue={98.7} decimals={1} suffix="%" duration={1000} />
+                {/* Quote */}
+                <p className="text-[15px] text-offwhite/80 leading-relaxed mb-3 font-body">
+                  "Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal."
+                </p>
+                {/* Attribution */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(255,107,43,0.15)' }}
+                  >
+                    <Droplets className="w-4 h-4 text-orange-soft" />
                   </div>
-                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">answer rate</p>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="font-mono text-[20px] font-bold text-orange-soft">
-                    <AnimatedCounter endValue={4200} prefix="£" duration={1200} />
+                  <div>
+                    <p className="text-[13px] font-bold text-offwhite font-display">Mark T.</p>
+                    <p className="text-[11px] text-offwhite/40 font-body">Plumber · South London</p>
                   </div>
-                  <p className="text-[11px] text-offwhite/35 font-body mt-0.5">avg. annual savings</p>
                 </div>
               </div>
             </div>
@@ -994,6 +1008,22 @@ const DemoSection = () => {
         <React.Suspense fallback={<LazyFallback />}>
           <AudioPlayer />
         </React.Suspense>
+
+        {/* Live call CTA */}
+        <a
+          href="tel:+441234567890"
+          className="mt-5 flex items-center justify-center gap-3 w-full h-14 rounded-btn font-bold font-body text-[15px] tracking-[-0.01em] text-white hover:-translate-y-0.5 active:translate-y-0"
+          style={{
+            background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+            boxShadow: '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2)',
+            transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms ease',
+          }}
+        >
+          📞 Call the AI live — it'll answer in 2 seconds
+        </a>
+        <p className="mt-2 text-center text-[12px] text-offwhite/30 font-body">
+          UK: +44 1234 567 890 · Placeholder — will be live Retell number
+        </p>
       </div>
     </div>
   </Section>
@@ -1627,6 +1657,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [isStripeOpen, setIsStripeOpen] = useState(false);
 
   // Lenis smooth scroll — init once on mount
   useEffect(() => {
@@ -1660,16 +1691,17 @@ const App: React.FC = () => {
   };
 
   const toggleWaitlist = () => setIsWaitlistOpen(v => !v);
+  const toggleStripe = () => setIsStripeOpen(v => !v);
 
   return (
     <div className="min-h-screen bg-navy font-body text-offwhite">
       <div className="grain" aria-hidden="true" />
-      <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleWaitlist} />
+      <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleStripe} />
 
       <main>
         {currentView === 'home' ? (
           <>
-            <Hero onWaitlist={toggleWaitlist} />
+            <Hero onWaitlist={toggleStripe} />
             <SocialProof />
             <PainPoints />
             <ROISection />
@@ -1677,16 +1709,16 @@ const App: React.FC = () => {
             <DemoSection />
             <HowItWorks />
             <UseCases />
-            <StickyFeatures onWaitlist={toggleWaitlist} />
+            <StickyFeatures onWaitlist={toggleStripe} />
             <React.Suspense fallback={<LazyFallback />}>
               <Testimonials />
             </React.Suspense>
-            <Pricing onWaitlist={toggleWaitlist} />
+            <Pricing onWaitlist={toggleStripe} />
             <FAQ />
             <React.Suspense fallback={<LazyFallback />}>
               <ContactUs />
             </React.Suspense>
-            <FinalCTA onWaitlist={toggleWaitlist} />
+            <FinalCTA onWaitlist={toggleStripe} />
           </>
         ) : (
           <React.Suspense fallback={<LazyFallback />}>
@@ -1695,8 +1727,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer onWaitlist={toggleWaitlist} />
-      <StickyBottomBar onWaitlist={toggleWaitlist} />
+      <Footer onWaitlist={toggleStripe} />
+      <StickyBottomBar onWaitlist={toggleStripe} />
+      <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
       <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
     </div>
   );
