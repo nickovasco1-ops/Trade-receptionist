@@ -2,6 +2,9 @@
   "name": "trade-receptionist-api",
   "version": "0.1.0",
   "description": "Trade Receptionist backend API",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
