@@ -313,42 +313,23 @@ router.post('/provision', async (req: Request, res: Response) => {
     return;
   }
 
-  // ── Step 6: Search for available UK number ────────────────────────────────
+  // ── Steps 6–8: Buy + import UK number (optional — skip if unavailable) ──────
 
-  let phoneNumber: string;
-  let twilioSid:   string;
+  let phoneNumber: string | null = null;
 
   try {
     const available = await searchUkNumbers(5);
-    if (!available.length) throw new Error('No UK numbers available in Twilio account');
+    if (available.length) {
+      const purchased = await buyUkNumber(available[0].phoneNumber);
+      phoneNumber      = purchased.phoneNumber;
+      state.twilioSid  = purchased.sid;
 
-    // ── Step 7: Purchase the first available number ───────────────────────
-
-    const purchased = await buyUkNumber(available[0].phoneNumber);
-    phoneNumber    = purchased.phoneNumber;
-    twilioSid      = purchased.sid;
-    state.twilioSid = twilioSid;
+      await importTwilioNumber(phoneNumber, agentIds.agentId);
+      state.retellNumber = phoneNumber;
+    }
   } catch (err: unknown) {
-    await rollback(state);
-    res.status(502).json({
-      success: false,
-      error:   `Twilio number purchase failed: ${err instanceof Error ? err.message : String(err)}`,
-    } satisfies ApiResponse);
-    return;
-  }
-
-  // ── Step 8: Import number into Retell and assign agent ────────────────────
-
-  try {
-    await importTwilioNumber(phoneNumber, agentIds.agentId);
-    state.retellNumber = phoneNumber;
-  } catch (err: unknown) {
-    await rollback(state);
-    res.status(502).json({
-      success: false,
-      error:   `Retell phone import failed: ${err instanceof Error ? err.message : String(err)}`,
-    } satisfies ApiResponse);
-    return;
+    // Non-fatal — agent is live, number can be added later via Settings
+    console.warn('[provision] Phone number step skipped:', err instanceof Error ? err.message : err);
   }
 
   // ── Step 9: Persist agent_id + phone back to Supabase ────────────────────
