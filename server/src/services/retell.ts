@@ -134,7 +134,7 @@ export async function createRetellAgent(
     backchannel_frequency:      0.7,
     backchannel_words:          ['hmm', 'right', 'okay', 'yes', 'I see'],
     interruption_sensitivity:   0.9,
-    end_call_after_silence_ms:  8000,
+    end_call_after_silence_ms:  10000,
     max_call_duration_ms:       600000,
   };
 
