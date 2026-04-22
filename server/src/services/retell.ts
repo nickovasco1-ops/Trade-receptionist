@@ -71,7 +71,7 @@ export async function createRetellLlm(
     });
   }
 
-  const res = await fetch(`${BASE_URL}/v2/create-retell-llm`, {
+  const res = await fetch(`${BASE_URL}/create-retell-llm`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify({
@@ -90,7 +90,7 @@ export async function createRetellLlm(
  * Called by the PATCH /clients/:id route whenever client config changes.
  */
 export async function updateRetellLlm(llmId: string, prompt: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v2/update-retell-llm/${llmId}`, {
+  const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
     method:  'PATCH',
     headers: headers(),
     body:    JSON.stringify({ general_prompt: prompt }),
@@ -100,7 +100,7 @@ export async function updateRetellLlm(llmId: string, prompt: string): Promise<vo
 
 /** Delete a Retell LLM. Used during provisioning rollback. */
 export async function deleteRetellLlm(llmId: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v2/delete-retell-llm/${llmId}`, {
+  const res = await fetch(`${BASE_URL}/delete-retell-llm/${llmId}`, {
     method:  'DELETE',
     headers: headers(),
   });
@@ -142,7 +142,7 @@ export async function createRetellAgent(
   if (webhookUrl) agentBody.webhook_url = webhookUrl;
   if (config.beginMessage) agentBody.begin_message = config.beginMessage;
 
-  const res = await fetch(`${BASE_URL}/v2/create-agent`, {
+  const res = await fetch(`${BASE_URL}/create-agent`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify(agentBody),
@@ -158,7 +158,7 @@ export async function createRetellAgent(
 
 /** Delete a Retell agent. Used during provisioning rollback. */
 export async function deleteRetellAgent(agentId: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v2/delete-agent/${agentId}`, {
+  const res = await fetch(`${BASE_URL}/delete-agent/${agentId}`, {
     method:  'DELETE',
     headers: headers(),
   });
@@ -184,7 +184,7 @@ export async function importTwilioNumber(
     throw new Error('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN required for number import');
   }
 
-  const res = await fetch(`${BASE_URL}/v2/create-phone-number`, {
+  const res = await fetch(`${BASE_URL}/create-phone-number`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify({
@@ -207,7 +207,7 @@ export async function assignAgentToNumber(
   agentId:     string
 ): Promise<void> {
   const encoded = encodeURIComponent(phoneNumber);
-  const res = await fetch(`${BASE_URL}/v2/update-phone-number/${encoded}`, {
+  const res = await fetch(`${BASE_URL}/update-phone-number/${encoded}`, {
     method:  'PATCH',
     headers: headers(),
     body:    JSON.stringify({ agent_id: agentId }),
@@ -218,7 +218,7 @@ export async function assignAgentToNumber(
 /** Release a Retell-managed phone number. Used during provisioning rollback. */
 export async function releaseRetellNumber(phoneNumber: string): Promise<void> {
   const encoded = encodeURIComponent(phoneNumber);
-  const res = await fetch(`${BASE_URL}/v2/delete-phone-number/${encoded}`, {
+  const res = await fetch(`${BASE_URL}/delete-phone-number/${encoded}`, {
     method:  'DELETE',
     headers: headers(),
   });
@@ -230,7 +230,7 @@ export async function releaseRetellNumber(phoneNumber: string): Promise<void> {
 // ── Call API ──────────────────────────────────────────────────────────────────
 
 export async function getCall(callId: string): Promise<Record<string, unknown> | null> {
-  const res = await fetch(`${BASE_URL}/v2/get-call/${callId}`, { headers: headers() });
+  const res = await fetch(`${BASE_URL}/get-call/${callId}`, { headers: headers() });
   if (!res.ok) return null;
   return res.json() as Promise<Record<string, unknown>>;
 }
@@ -241,7 +241,7 @@ export async function getCall(callId: string): Promise<Record<string, unknown> |
  */
 export async function updateAgentPrompt(agentId: string, prompt: string): Promise<void> {
   // Try v2: fetch agent to discover its llm_id
-  const agentRes = await fetch(`${BASE_URL}/v2/get-agent/${agentId}`, { headers: headers() });
+  const agentRes = await fetch(`${BASE_URL}/get-agent/${agentId}`, { headers: headers() });
   if (agentRes.ok) {
     const agent = (await agentRes.json()) as {
       response_engine?: { type: string; llm_id?: string };
