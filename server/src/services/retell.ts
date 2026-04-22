@@ -56,17 +56,16 @@ export async function createRetellLlm(
 
   if (ownerNumber) {
     tools.push({
-      type:        'transfer_call',
+      type:        'bridge_transfer',
       name:        'TransferToOwner',
       description: [
         'Transfer the call to the business owner when the customer explicitly asks',
         'to speak with a real person, or when an emergency requires immediate',
         'human response.',
       ].join(' '),
-      transfer_destination: {
-        type:        'number',
-        number:      ownerNumber,
-        number_name: 'Business Owner',
+      transfer_option: {
+        type:   'external',
+        number: ownerNumber,
       },
     });
   }
