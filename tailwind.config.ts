@@ -6,6 +6,7 @@ const config: Config = {
     './index.tsx',
     './App.tsx',
     './components/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
     './types.ts',
   ],
   theme: {
