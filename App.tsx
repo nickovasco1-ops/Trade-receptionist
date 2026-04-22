@@ -842,7 +842,9 @@ const HowItWorks = () => (
 
       <div className="grid md:grid-cols-3 gap-12 md:gap-8 lg:gap-14 relative z-10">
         {HOW_STEPS.map((step, i) => (
-          <HowItWorksStep key={i} step={step} index={i} />
+          <React.Fragment key={i}>
+            <HowItWorksStep step={step} index={i} />
+          </React.Fragment>
         ))}
       </div>
     </div>

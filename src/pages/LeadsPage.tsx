@@ -4,10 +4,11 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import { supabase } from '../lib/supabase';
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
-  new:      { label: 'New',      bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
-  booked:   { label: 'Booked',   bg: 'rgba(34,197,94,0.12)',  text: '#86efac' },
-  quoted:   { label: 'Quoted',   bg: 'rgba(250,204,21,0.12)', text: '#fde68a' },
-  declined: { label: 'Declined', bg: 'rgba(255,255,255,0.06)', text: '#6b7280' },
+  new:       { label: 'New',       bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
+  contacted: { label: 'Contacted', bg: 'rgba(250,204,21,0.12)',  text: '#fde68a' },
+  booked:    { label: 'Booked',    bg: 'rgba(34,197,94,0.12)',   text: '#86efac' },
+  lost:      { label: 'Lost',      bg: 'rgba(255,255,255,0.06)', text: '#6b7280' },
+  spam:      { label: 'Spam',      bg: 'rgba(255,255,255,0.04)', text: '#4b5563' },
 };
 
 const URGENCY_META: Record<string, { bg: string; text: string }> = {

@@ -97,12 +97,29 @@ export default function OnboardingPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user?.email) throw new Error('Not authenticated');
+
+      // Map local form fields to the server provisionSchema field names.
+      // trade_type and city are stored as service_areas / injected into services.
+      const payload = {
+        business_name:        form.business_name,
+        owner_name:           form.owner_name,
+        owner_email:          user.email,
+        owner_mobile:         form.owner_mobile,
+        plan:                 'starter',
+        receptionist_name:    'Sarah',
+        services:             form.trade_type ? [form.trade_type] : [],
+        service_areas:        form.city       ? [form.city]       : [],
+        business_hours_start: form.work_start || null,
+        business_hours_end:   form.work_end   || null,
+        working_days:         [1, 2, 3, 4, 5],
+        timezone:             form.timezone,
+      };
 
       const res  = await fetch('/api/clients/provision', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...form, owner_email: user.email }),
+        body:    JSON.stringify(payload),
       });
 
       const json = await res.json();
