@@ -75,33 +75,39 @@ export async function sendSms(to: string, body: string, from: string): Promise<s
  * Results are random — call once and pick the first available.
  */
 export async function searchUkNumbers(count = 5): Promise<AvailableNumber[]> {
-  const params = new URLSearchParams({
-    VoiceEnabled: 'true',
-    SmsEnabled:   'true',
-    Limit:        String(count),
-  });
+  // Try Local first, fall back to Mobile (which supports SMS natively in UK)
+  for (const type of ['Local', 'Mobile']) {
+    const params = new URLSearchParams({
+      VoiceEnabled: 'true',
+      Limit:        String(count),
+    });
 
-  const res = await fetch(
-    `${baseUrl()}/AvailablePhoneNumbers/GB/Local.json?${params}`,
-    { headers: authHeader() }
-  );
-  if (!res.ok) throw new Error(`Twilio number search failed: ${await res.text()}`);
+    const res = await fetch(
+      `${baseUrl()}/AvailablePhoneNumbers/GB/${type}.json?${params}`,
+      { headers: authHeader() }
+    );
+    if (!res.ok) continue;
 
-  const json = (await res.json()) as {
-    available_phone_numbers: Array<{
-      phone_number: string;
-      friendly_name: string;
-      locality: string | null;
-      region: string | null;
-    }>;
-  };
+    const json = (await res.json()) as {
+      available_phone_numbers: Array<{
+        phone_number: string;
+        friendly_name: string;
+        locality: string | null;
+        region: string | null;
+      }>;
+    };
 
-  return json.available_phone_numbers.map((n) => ({
-    phoneNumber:  n.phone_number,
-    friendlyName: n.friendly_name,
-    locality:     n.locality,
-    region:       n.region,
-  }));
+    const numbers = json.available_phone_numbers.map((n) => ({
+      phoneNumber:  n.phone_number,
+      friendlyName: n.friendly_name,
+      locality:     n.locality,
+      region:       n.region,
+    }));
+
+    if (numbers.length > 0) return numbers;
+  }
+
+  return [];
 }
 
 /** Purchase a UK phone number. Returns the SID needed for later release. */
