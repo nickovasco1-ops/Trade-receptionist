@@ -128,7 +128,6 @@ export async function createRetellAgent(
     agent_name:       config.agentName,
     response_engine:  { type: 'retell-llm', llm_id: llmId },
     voice_id:         CHARLOTTE_VOICE_ID,
-    voice_model:      'eleven_turbo_v2',
     language:         'en-GB',
     enable_backchannel:         true,
     backchannel_frequency:      0.7,
