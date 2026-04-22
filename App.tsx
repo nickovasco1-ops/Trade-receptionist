@@ -238,7 +238,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 
           {/* Desktop CTAs */}
           <div className="hidden xl:flex items-center gap-3">
-            <Button variant="ghost" size="sm">Log in</Button>
+            <Button variant="ghost" size="sm" onClick={() => window.location.href = '/login'}>Log in</Button>
             <Button variant="primary" size="sm" onClick={onWaitlist}>
               Start Free Trial
             </Button>
@@ -284,6 +284,9 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
               </Button>
               <Button variant="primary" fullWidth onClick={() => { onWaitlist(); setIsOpen(false); }}>
                 Start Free Trial
+              </Button>
+              <Button variant="ghost" fullWidth onClick={() => window.location.href = '/login'}>
+                Log in
               </Button>
             </div>
           </div>
