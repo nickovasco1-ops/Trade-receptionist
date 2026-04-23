@@ -12,6 +12,7 @@ const CallsPage      = React.lazy(() => import('./src/pages/CallsPage'));
 const LeadsPage      = React.lazy(() => import('./src/pages/LeadsPage'));
 const SettingsPage   = React.lazy(() => import('./src/pages/SettingsPage'));
 const OnboardingPage = React.lazy(() => import('./src/pages/OnboardingPage'));
+const WelcomePage    = React.lazy(() => import('./src/pages/WelcomePage'));
 
 // Auth guard — simple: checks Supabase session cookie presence via storage
 import { supabase } from './src/lib/supabase';
@@ -110,6 +111,13 @@ ReactDOM.createRoot(rootElement).render(
               <OnboardingPage />
             </React.Suspense>
           </RequireAuth>
+        } />
+
+        {/* ── Post-payment landing page (no auth required) ─────── */}
+        <Route path="/welcome" element={
+          <React.Suspense fallback={null}>
+            <WelcomePage />
+          </React.Suspense>
         } />
       </Routes>
     </BrowserRouter>

@@ -28,9 +28,10 @@ app.use(
 );
 
 // ── Body parsers ──────────────────────────────────────────────────────────────
-// /webhooks/retell needs the raw Buffer so the HMAC signature can be verified.
-// This MUST be registered before express.json() or the raw body is lost.
-app.use('/webhooks/retell', express.raw({ type: 'application/json' }));
+// /webhooks/retell and /webhooks/stripe need the raw Buffer for HMAC verification.
+// These MUST be registered before express.json() or the raw body is lost.
+app.use('/webhooks/retell',  express.raw({ type: 'application/json' }));
+app.use('/webhooks/stripe',  express.raw({ type: 'application/json' }));
 
 // Everything else gets parsed JSON
 app.use(express.json());
