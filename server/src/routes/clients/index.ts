@@ -370,4 +370,95 @@ router.post('/provision', async (req: Request, res: Response) => {
   } satisfies ApiResponse<Client>);
 });
 
+// ── POST /clients/:id/assign-number ──────────────────────────────────────────
+//
+// Manually assign a UK phone number to an existing client.
+// Searches Twilio for an available number, purchases it, imports it into
+// Retell against the client's existing agent, and updates the client row.
+
+router.post('/:id/assign-number', async (req: Request, res: Response) => {
+  const { data: clientRow, error: fetchErr } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', req.params.id)
+    .single();
+
+  if (fetchErr || !clientRow) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  const client = clientRow as Client;
+
+  if (!client.retell_agent_id) {
+    res.status(400).json({
+      success: false,
+      error: 'Client has no Retell agent — run /provision first',
+    } satisfies ApiResponse);
+    return;
+  }
+
+  if (client.twilio_number) {
+    res.status(400).json({
+      success: false,
+      error: `Client already has number ${client.twilio_number}`,
+    } satisfies ApiResponse);
+    return;
+  }
+
+  let phoneNumber: string;
+  let twilioSid: string;
+
+  try {
+    const available = await searchUkNumbers(5);
+    if (!available.length) {
+      res.status(502).json({
+        success: false,
+        error: 'No UK numbers available on Twilio right now — try again shortly',
+      } satisfies ApiResponse);
+      return;
+    }
+    const purchased = await buyUkNumber(available[0].phoneNumber);
+    phoneNumber = purchased.phoneNumber;
+    twilioSid   = purchased.sid;
+  } catch (err: unknown) {
+    res.status(502).json({
+      success: false,
+      error: `Twilio purchase failed: ${err instanceof Error ? err.message : String(err)}`,
+    } satisfies ApiResponse);
+    return;
+  }
+
+  try {
+    await importTwilioNumber(phoneNumber, client.retell_agent_id);
+  } catch (err: unknown) {
+    // Release the number so we don't pay for an orphaned one
+    await releaseNumber(twilioSid).catch(() => null);
+    res.status(502).json({
+      success: false,
+      error: `Retell import failed: ${err instanceof Error ? err.message : String(err)}`,
+    } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: updated, error: updateErr } = await supabase
+    .from('clients')
+    .update({ twilio_number: phoneNumber, updated_at: new Date().toISOString() })
+    .eq('id', client.id)
+    .select()
+    .single();
+
+  if (updateErr || !updated) {
+    res.status(207).json({
+      success: true,
+      data: { ...client, twilio_number: phoneNumber } as Client,
+      error: `Supabase update failed — number ${phoneNumber} purchased and imported but not saved. PATCH /clients/${client.id} manually.`,
+    } satisfies ApiResponse<Client>);
+    return;
+  }
+
+  console.log(`[clients] assigned ${phoneNumber} to ${client.owner_email}`);
+  res.json({ success: true, data: updated as Client } satisfies ApiResponse<Client>);
+});
+
 export default router;
