@@ -268,7 +268,8 @@ router.post('/', async (req: Request, res: Response) => {
   const rawBody = req.body as Buffer;
   const signature = req.headers['x-retell-signature'] as string | undefined;
 
-  if (!signature || !verifySignature(rawBody, signature)) {
+  const webhookSecret = process.env.RETELL_WEBHOOK_SECRET;
+  if (webhookSecret && (!signature || !verifySignature(rawBody, signature))) {
     console.warn('[retell] rejected request — invalid signature');
     // Still return 200 so Retell doesn't retry (prevents log spam)
     res.status(200).json({ ok: false, reason: 'invalid_signature' });
