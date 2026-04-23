@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { X, CheckCircle2, ArrowRight, Zap } from 'lucide-react';
 
 interface StripeCheckoutModalProps {
@@ -17,12 +16,10 @@ interface Plan {
   popular: boolean;
 }
 
-// Replace these with real Stripe payment link URLs once created in Stripe Dashboard.
-// Until then, the CTA routes to onboarding so users can still sign up.
-const STRIPE_LINKS: Record<string, string | null> = {
-  Starter: null, // e.g. 'https://buy.stripe.com/test_xxxx'
-  Pro:     null,
-  Agency:  null,
+const STRIPE_LINKS: Record<string, string> = {
+  Starter: 'https://buy.stripe.com/7sY3cwaXI6pl7jAd5k6wE00',
+  Pro:     'https://buy.stripe.com/dRmdRa4zk5lh33ke9o6wE01',
+  Agency:  'https://buy.stripe.com/00w3cwd5QeVRfQ66GW6wE02',
 };
 
 const PLANS: Plan[] = [
@@ -31,7 +28,7 @@ const PLANS: Plan[] = [
     price: 29,
     calls: 'Up to 100 calls/month',
     features: ['AI call answering 24/7', 'WhatsApp job summaries', 'Call transcripts'],
-    stripeUrl: STRIPE_LINKS.Starter ?? '/onboarding',
+    stripeUrl: STRIPE_LINKS.Starter,
     popular: false,
   },
   {
@@ -39,7 +36,7 @@ const PLANS: Plan[] = [
     price: 59,
     calls: 'Up to 300 calls/month',
     features: ['Everything in Starter', 'Diary integration', 'Priority routing', 'Custom greetings'],
-    stripeUrl: STRIPE_LINKS.Pro ?? '/onboarding',
+    stripeUrl: STRIPE_LINKS.Pro,
     popular: true,
   },
   {
@@ -47,22 +44,16 @@ const PLANS: Plan[] = [
     price: 119,
     calls: 'Unlimited calls',
     features: ['Everything in Pro', 'Multiple numbers', 'Team management', 'Dedicated support'],
-    stripeUrl: STRIPE_LINKS.Agency ?? '/onboarding',
+    stripeUrl: STRIPE_LINKS.Agency,
     popular: false,
   },
 ];
 
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen, onClose, onWaitlist }) => {
-  const navigate = useNavigate();
   if (!isOpen) return null;
 
   const handlePlanClick = (stripeUrl: string) => {
-    if (stripeUrl.startsWith('/')) {
-      onClose();
-      navigate(stripeUrl);
-    } else {
-      window.open(stripeUrl, '_blank');
-    }
+    window.open(stripeUrl, '_blank');
   };
 
   const handleWaitlist = () => {

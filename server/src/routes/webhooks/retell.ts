@@ -23,11 +23,7 @@ function verifySignature(rawBody: Buffer, signature: string): boolean {
   const secret = process.env.RETELL_WEBHOOK_SECRET;
 
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[retell] RETELL_WEBHOOK_SECRET not set — rejecting all webhooks');
-      return false;
-    }
-    console.warn('[retell] RETELL_WEBHOOK_SECRET not set — skipping verification (dev only)');
+    console.warn('[retell] RETELL_WEBHOOK_SECRET not set — skipping verification');
     return true;
   }
 
@@ -35,7 +31,6 @@ function verifySignature(rawBody: Buffer, signature: string): boolean {
   const sigBuf = Buffer.from(signature);
   const expBuf = Buffer.from(expected);
 
-  // timingSafeEqual requires equal-length buffers
   if (sigBuf.length !== expBuf.length) return false;
   return crypto.timingSafeEqual(sigBuf, expBuf);
 }

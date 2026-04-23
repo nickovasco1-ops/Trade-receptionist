@@ -1034,7 +1034,7 @@ const DemoSection = () => {
 
         {/* Live call CTA */}
         <a
-          href="tel:+441234567890"
+          href="tel:+447400466554"
           className="mt-5 flex items-center justify-center gap-3 w-full h-14 rounded-btn font-bold font-body text-[15px] tracking-[-0.01em] text-white hover:-translate-y-0.5 active:translate-y-0"
           style={{
             background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
@@ -1046,7 +1046,7 @@ const DemoSection = () => {
           Call the AI live — it'll answer in 2 seconds
         </a>
         <p className="mt-2 text-center text-[12px] text-offwhite/30 font-body">
-          UK: +44 1234 567 890
+          UK: +44 7400 466 554
         </p>
       </div>
     </div>
