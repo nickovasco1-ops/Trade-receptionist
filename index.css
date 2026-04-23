@@ -204,10 +204,20 @@ input[type="range"]::-moz-range-thumb {
   0%, 100% { transform: translateY(0); opacity: 0.4; }
   50%       { transform: translateY(6px); opacity: 1; }
 }
+@keyframes menu-slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ─── Animation Utility Classes ─── */
 .animate-fade-up         { animation: fadeUp 0.4s cubic-bezier(0,0,0.2,1) both; }
 .animate-fade-in         { animation: fadeIn 0.5s ease both; }
+.menu-slide-down         { animation: menu-slide-down 220ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-modal-enter     { animation: modal-enter 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-float           { animation: floatUp 4s ease-in-out infinite; }
 .animate-float-primary   { animation: float-primary 5s ease-in-out infinite; }
 .animate-float-secondary { animation: float-secondary 4s ease-in-out infinite; }
@@ -249,8 +259,13 @@ input[type="range"]::-moz-range-thumb {
 
 /* ─── Accordion ─── */
 .accordion-body {
-  overflow: hidden;
-  transition: max-height 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 380ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.accordion-body > * { overflow: hidden; }
+.accordion-body.is-open {
+  grid-template-rows: 1fr;
 }
 
 /* ─── Grain Texture ─── */
@@ -367,9 +382,14 @@ input, textarea, select { font-size: max(16px, 1em); }
   .animate-float,
   .animate-float-primary,
   .animate-float-secondary,
-  .animate-marquee {
+  .animate-marquee,
+  .menu-slide-down,
+  .animate-modal-enter {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+  .accordion-body {
+    transition: none !important;
   }
 }

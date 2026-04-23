@@ -76,7 +76,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg rounded-card overflow-hidden"
+        className="relative w-full max-w-lg rounded-card overflow-hidden animate-modal-enter"
         style={{
           background: '#0A2340',
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.7)',

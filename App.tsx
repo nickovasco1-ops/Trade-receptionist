@@ -226,11 +226,10 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                   style={{ transition: 'color 200ms ease' }}
                 >
                   {label}
-                  {isActive && (
-                    <span
-                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-orange-soft"
-                    />
-                  )}
+                  <span
+                    className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-orange-soft"
+                    style={{ opacity: isActive ? 1 : 0, transition: 'opacity 200ms ease' }}
+                  />
                 </button>
               );
             })}
@@ -258,7 +257,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
       {/* Mobile menu */}
       {isOpen && (
         <div
-          className="xl:hidden absolute w-full px-6 py-8"
+          className="xl:hidden absolute w-full px-6 py-8 menu-slide-down"
           style={{
             background: 'rgba(5,20,38,0.98)',
             backdropFilter: 'blur(24px)',
@@ -692,7 +691,9 @@ const PainPoints = () => (
             <StatusGauge value={67} label="" metric="" size="lg" color="orange" />
           </div>
           <div className="relative z-10">
-            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>£4,200</div>
+            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>
+              <AnimatedCounter endValue={4200} prefix="£" duration={1200} />
+            </div>
             <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Per year, per tradesperson</p>
             <p className="text-offwhite/50 text-[15px] leading-relaxed">Average annual revenue lost to missed calls. That's nearly £350 every single month walking straight to your competitor.</p>
           </div>
@@ -1367,10 +1368,11 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </div>
       </div>
 
-      <div ref={pricingRef} data-animate className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-4">
+      <div ref={pricingRef} className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-4">
         {plans.map((plan, i) => (
           <div
             key={i}
+            data-animate
             data-delay={i}
             className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 ${
               plan.isPopular
@@ -1521,10 +1523,7 @@ const FAQ = () => {
               />
             </button>
 
-            <div
-              className="accordion-body"
-              style={{ maxHeight: openIndex === i ? '400px' : '0' }}
-            >
+            <div className={`accordion-body${openIndex === i ? ' is-open' : ''}`}>
               <div className="px-6 pb-6 text-[15px] text-offwhite/55 leading-relaxed">
                 {faq.answer}
               </div>

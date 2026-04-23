@@ -27,6 +27,10 @@ export function useScrollAnimation<T extends HTMLElement = HTMLElement>() {
           children.forEach((child) => {
             const delay = Number(child.dataset.delay ?? 0) * 80;
             child.style.transitionDelay = `${delay}ms`;
+            // If a child is itself animatable, trigger its entrance too
+            if (child.hasAttribute('data-animate')) {
+              child.classList.add('is-visible');
+            }
           });
 
           observer.unobserve(entry.target);

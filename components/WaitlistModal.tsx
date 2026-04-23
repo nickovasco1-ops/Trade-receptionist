@@ -71,7 +71,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md rounded-card overflow-hidden animate-fade-up flex flex-col"
+        className="relative w-full max-w-md rounded-card overflow-hidden animate-modal-enter flex flex-col"
         style={{
           background: '#0A2340',
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.6)',
