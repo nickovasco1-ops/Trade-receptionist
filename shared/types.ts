@@ -20,6 +20,8 @@ export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 
 // ── Tables ────────────────────────────────────────────────────────────────────
 
+export type NumberMode = 'new_number' | 'keep_existing';
+
 export interface Client {
   id: string;
   business_name: string;
@@ -28,12 +30,21 @@ export interface Client {
   owner_mobile: string | null;
   retell_agent_id: string | null;
   twilio_number: string | null;
+  own_number: string | null;
   google_cal_id: string | null;
   google_refresh_token: string | null;
   plan: Plan;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Returned from POST /clients/provision and POST /clients/:id/assign-number.
+// Extends Client with the computed divert activation code (not stored in DB).
+export interface ClientProvisionResponse extends Client {
+  number_mode: NumberMode;
+  activation_code: string | null;
+  activation_instructions: string | null;
 }
 
 export interface BusinessConfig {

@@ -15,7 +15,13 @@ import {
   buyUkNumber,
   releaseNumber,
 } from '../../services/twilio';
-import type { ApiResponse, Client, BusinessConfig } from '../../../../shared/types';
+import type {
+  ApiResponse,
+  Client,
+  BusinessConfig,
+  ClientProvisionResponse,
+  NumberMode,
+} from '../../../../shared/types';
 
 const router = Router();
 
@@ -26,12 +32,14 @@ const createSchema = z.object({
   owner_name:    z.string().min(1),
   owner_email:   z.string().email(),
   owner_mobile:  z.string().optional(),
+  own_number:    z.string().optional(),
   plan:          z.enum(['starter', 'pro', 'agency']).default('starter'),
 });
 
 const updateSchema = createSchema.partial().extend({
   retell_agent_id:      z.string().optional(),
   twilio_number:        z.string().optional(),
+  own_number:           z.string().nullable().optional(),
   google_cal_id:        z.string().optional(),
   google_refresh_token: z.string().optional(),
   is_active:            z.boolean().optional(),
@@ -91,6 +99,35 @@ async function rollback(state: CleanupState): Promise<void> {
     await supabase.from('business_config').delete().eq('client_id', state.clientId);
     await supabase.from('clients').delete().eq('id', state.clientId);
   }
+}
+
+// ── Number mode helpers ───────────────────────────────────────────────────────
+
+function buildActivationCode(twilioNumber: string): string {
+  // UK carrier universal divert (busy + no answer + unreachable) — one dial activates all three.
+  // Works on EE, Vodafone, O2, Three, BT Mobile, Sky Mobile.
+  // giffgaff users: set via My giffgaff app instead.
+  return `**004*${twilioNumber}#`;
+}
+
+function buildProvisionResponse(
+  client: Client,
+  twilioNumber: string | null,
+): ClientProvisionResponse {
+  const isKeepExisting = !!client.own_number;
+  const number_mode: NumberMode = isKeepExisting ? 'keep_existing' : 'new_number';
+
+  let activation_code: string | null = null;
+  let activation_instructions: string | null = null;
+
+  if (isKeepExisting && twilioNumber) {
+    activation_code = buildActivationCode(twilioNumber);
+    activation_instructions =
+      `On your mobile, dial ${activation_code} and press call. ` +
+      `Your AI receptionist will then answer calls to ${client.own_number} whenever you\'re busy or unavailable.`;
+  }
+
+  return { ...client, number_mode, activation_code, activation_instructions };
 }
 
 // ── Standard CRUD ─────────────────────────────────────────────────────────────
@@ -219,7 +256,7 @@ router.post('/provision', async (req: Request, res: Response) => {
   }
 
   const {
-    business_name, owner_name, owner_email, owner_mobile, plan,
+    business_name, owner_name, owner_email, owner_mobile, own_number, plan,
     receptionist_name, services, service_areas,
     hourly_rate_min, hourly_rate_max,
     emergency_keywords, business_hours_start, business_hours_end,
@@ -238,7 +275,7 @@ router.post('/provision', async (req: Request, res: Response) => {
 
   const { data: clientRow, error: clientErr } = await supabase
     .from('clients')
-    .insert({ business_name, owner_name, owner_email, owner_mobile, plan })
+    .insert({ business_name, owner_name, owner_email, owner_mobile, own_number: own_number ?? null, plan })
     .select()
     .single();
 
@@ -349,34 +386,41 @@ router.post('/provision', async (req: Request, res: Response) => {
     // Infrastructure is fully provisioned — only the DB record didn't update.
     // Return 207 so the caller knows it's safe and what IDs to patch manually.
     console.error('[provision] Supabase update failed after full provisioning', updateErr);
+    const partialClient = { ...client, retell_agent_id: agentIds.agentId, twilio_number: phoneNumber } as Client;
     res.status(207).json({
       success: true,
-      data:    {
-        ...client,
-        retell_agent_id: agentIds.agentId,
-        twilio_number:   phoneNumber,
-      },
+      data:    buildProvisionResponse(partialClient, phoneNumber),
       error: [
         'Supabase update failed — infrastructure is provisioned.',
         `PATCH /clients/${client.id} with retell_agent_id and twilio_number to complete.`,
       ].join(' '),
-    } satisfies ApiResponse<Client>);
+    } satisfies ApiResponse<ClientProvisionResponse>);
     return;
   }
 
+  const finalClient = finalRow as Client;
+  console.log(
+    `[provision] complete  client=${finalClient.id}  mode=${finalClient.own_number ? 'keep_existing' : 'new_number'}  number=${phoneNumber ?? 'none'}`
+  );
   res.status(201).json({
     success: true,
-    data:    finalRow as Client,
-  } satisfies ApiResponse<Client>);
+    data:    buildProvisionResponse(finalClient, phoneNumber),
+  } satisfies ApiResponse<ClientProvisionResponse>);
 });
 
 // ── POST /clients/:id/assign-number ──────────────────────────────────────────
 //
 // Manually assign a UK phone number to an existing client.
-// Searches Twilio for an available number, purchases it, imports it into
-// Retell against the client's existing agent, and updates the client row.
+// Supports two modes via optional body field:
+//   own_number (string) — client keeps their existing number, uses carrier divert.
+//                         Response includes activation_code with the USSD string.
+//   (omitted)           — new Twilio number becomes their advertised number.
 
 router.post('/:id/assign-number', async (req: Request, res: Response) => {
+  const own_number: string | undefined = typeof req.body?.own_number === 'string'
+    ? req.body.own_number
+    : undefined;
+
   const { data: clientRow, error: fetchErr } = await supabase
     .from('clients')
     .select('*')
@@ -432,7 +476,6 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
   try {
     await importTwilioNumber(phoneNumber, client.retell_agent_id);
   } catch (err: unknown) {
-    // Release the number so we don't pay for an orphaned one
     await releaseNumber(twilioSid).catch(() => null);
     res.status(502).json({
       success: false,
@@ -443,22 +486,79 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
 
   const { data: updated, error: updateErr } = await supabase
     .from('clients')
-    .update({ twilio_number: phoneNumber, updated_at: new Date().toISOString() })
+    .update({
+      twilio_number: phoneNumber,
+      own_number:    own_number ?? null,
+      updated_at:    new Date().toISOString(),
+    })
     .eq('id', client.id)
     .select()
     .single();
 
   if (updateErr || !updated) {
+    const partialClient = { ...client, twilio_number: phoneNumber, own_number: own_number ?? null } as Client;
     res.status(207).json({
       success: true,
-      data: { ...client, twilio_number: phoneNumber } as Client,
+      data: buildProvisionResponse(partialClient, phoneNumber),
       error: `Supabase update failed — number ${phoneNumber} purchased and imported but not saved. PATCH /clients/${client.id} manually.`,
-    } satisfies ApiResponse<Client>);
+    } satisfies ApiResponse<ClientProvisionResponse>);
     return;
   }
 
-  console.log(`[clients] assigned ${phoneNumber} to ${client.owner_email}`);
-  res.json({ success: true, data: updated as Client } satisfies ApiResponse<Client>);
+  const updatedClient = updated as Client;
+  console.log(
+    `[clients] assigned ${phoneNumber} to ${client.owner_email}  mode=${updatedClient.own_number ? 'keep_existing' : 'new_number'}`
+  );
+  res.json({
+    success: true,
+    data: buildProvisionResponse(updatedClient, phoneNumber),
+  } satisfies ApiResponse<ClientProvisionResponse>);
+});
+
+// ── GET /clients/:id/activation-code ─────────────────────────────────────────
+//
+// Returns the USSD divert activation code for a client that has both a
+// twilio_number and an own_number set. Safe to call any time — idempotent.
+
+router.get('/:id/activation-code', async (req: Request, res: Response) => {
+  const { data: clientRow, error } = await supabase
+    .from('clients')
+    .select('id, twilio_number, own_number, business_name, owner_email')
+    .eq('id', req.params.id)
+    .single();
+
+  if (error || !clientRow) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  const { twilio_number, own_number } = clientRow as Pick<Client, 'twilio_number' | 'own_number' | 'id' | 'business_name' | 'owner_email'>;
+
+  if (!twilio_number) {
+    res.status(400).json({
+      success: false,
+      error: 'Client has no Twilio number yet — run /assign-number or /provision first',
+    } satisfies ApiResponse);
+    return;
+  }
+
+  if (!own_number) {
+    res.status(400).json({
+      success: false,
+      error: 'Client is in new_number mode — no divert needed. Set own_number via PATCH /clients/:id to switch to keep_existing mode.',
+    } satisfies ApiResponse);
+    return;
+  }
+
+  const activation_code = buildActivationCode(twilio_number);
+  const activation_instructions =
+    `On your mobile, dial ${activation_code} and press call. ` +
+    `Your AI receptionist will then answer calls to ${own_number} whenever you\'re busy or unavailable.`;
+
+  res.json({
+    success: true,
+    data: { activation_code, activation_instructions, own_number, twilio_number },
+  } satisfies ApiResponse);
 });
 
 export default router;
