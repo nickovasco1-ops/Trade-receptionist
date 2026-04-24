@@ -359,8 +359,15 @@ router.post('/', async (req: Request, res: Response) => {
 
   const webhookSecret = process.env.RETELL_WEBHOOK_SECRET;
   if (webhookSecret && (!signature || !verifySignature(rawBody, signature))) {
-    console.warn('[retell] rejected request — invalid signature');
-    // Still return 200 so Retell doesn't retry (prevents log spam)
+    // IMPORTANT: if you see this log, RETELL_WEBHOOK_SECRET in your environment
+    // does not match the signing secret shown in your Retell dashboard.
+    // All call notifications (SMS, email) are blocked until this is fixed.
+    console.error(
+      '[retell] SIGNATURE MISMATCH — webhook event rejected. ' +
+      'Check RETELL_WEBHOOK_SECRET matches your Retell dashboard signing secret. ' +
+      `signature_present=${!!signature}`
+    );
+    // Return 200 so Retell does not retry endlessly
     res.status(200).json({ ok: false, reason: 'invalid_signature' });
     return;
   }
