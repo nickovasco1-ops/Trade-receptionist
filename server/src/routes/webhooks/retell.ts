@@ -268,6 +268,10 @@ router.post('/', async (req: Request, res: Response) => {
   const rawBody = req.body as Buffer;
   const signature = req.headers['x-retell-signature'] as string | undefined;
 
+  // Log every inbound webhook for Railway observability
+  const preview = rawBody?.toString('utf8').slice(0, 300) ?? '(empty body)';
+  console.log(`[retell] inbound webhook  sig=${signature ?? 'none'}  body=${preview}`);
+
   const webhookSecret = process.env.RETELL_WEBHOOK_SECRET;
   if (webhookSecret && (!signature || !verifySignature(rawBody, signature))) {
     console.warn('[retell] rejected request — invalid signature');
@@ -282,8 +286,8 @@ router.post('/', async (req: Request, res: Response) => {
   let event: RetellWebhookEvent;
   try {
     event = JSON.parse(rawBody.toString('utf8')) as RetellWebhookEvent;
-  } catch {
-    console.error('[retell] body parse error');
+  } catch (err) {
+    console.error('[retell] body parse error', err, 'raw:', preview);
     return;
   }
 
