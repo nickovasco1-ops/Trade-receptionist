@@ -70,13 +70,34 @@ export async function createRetellLlm(
     });
   }
 
+  const analysisSchema = [
+    { type: 'string', name: 'caller_name',   description: 'Full name of the caller.' },
+    { type: 'string', name: 'caller_number', description: 'Phone number of the caller.' },
+    { type: 'string', name: 'caller_email',  description: 'Email address of the caller if provided, otherwise empty string.' },
+    { type: 'string', name: 'postcode',      description: 'UK postcode of the job location if mentioned, otherwise empty string.' },
+    { type: 'string', name: 'job_type',      description: 'Nature or type of the trade job required.' },
+    {
+      type:        'enum',
+      name:        'urgency',
+      description: 'How urgently the job is needed.',
+      choices:     ['routine', 'urgent', 'emergency'],
+    },
+    { type: 'string', name: 'notes',        description: 'Any additional notes or details from the call.' },
+    {
+      type:        'string',
+      name:        'scheduled_at',
+      description: 'If a booking was confirmed during the call, the agreed appointment datetime in ISO 8601 format YYYY-MM-DDTHH:MM using UK local time (e.g. 2024-06-20T10:00). Empty string if no booking was made.',
+    },
+  ];
+
   const res = await fetch(`${BASE_URL}/create-retell-llm`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify({
-      general_prompt: prompt,
-      general_tools:  tools,
-      model:          'gpt-4o-mini',
+      general_prompt:          prompt,
+      general_tools:           tools,
+      model:                   'gpt-4o-mini',
+      post_call_analysis_data: analysisSchema,
     }),
   });
   if (!res.ok) throw new Error(`Retell createLlm failed: ${await res.text()}`);
@@ -89,10 +110,33 @@ export async function createRetellLlm(
  * Called by the PATCH /clients/:id route whenever client config changes.
  */
 export async function updateRetellLlm(llmId: string, prompt: string): Promise<void> {
+  const analysisSchema = [
+    { type: 'string', name: 'caller_name',   description: 'Full name of the caller.' },
+    { type: 'string', name: 'caller_number', description: 'Phone number of the caller.' },
+    { type: 'string', name: 'caller_email',  description: 'Email address of the caller if provided, otherwise empty string.' },
+    { type: 'string', name: 'postcode',      description: 'UK postcode of the job location if mentioned, otherwise empty string.' },
+    { type: 'string', name: 'job_type',      description: 'Nature or type of the trade job required.' },
+    {
+      type:        'enum',
+      name:        'urgency',
+      description: 'How urgently the job is needed.',
+      choices:     ['routine', 'urgent', 'emergency'],
+    },
+    { type: 'string', name: 'notes',        description: 'Any additional notes or details from the call.' },
+    {
+      type:        'string',
+      name:        'scheduled_at',
+      description: 'If a booking was confirmed during the call, the agreed appointment datetime in ISO 8601 format YYYY-MM-DDTHH:MM using UK local time (e.g. 2024-06-20T10:00). Empty string if no booking was made.',
+    },
+  ];
+
   const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
     method:  'PATCH',
     headers: headers(),
-    body:    JSON.stringify({ general_prompt: prompt }),
+    body:    JSON.stringify({
+      general_prompt:          prompt,
+      post_call_analysis_data: analysisSchema,
+    }),
   });
   if (!res.ok) throw new Error(`Retell updateLlm failed: ${await res.text()}`);
 }

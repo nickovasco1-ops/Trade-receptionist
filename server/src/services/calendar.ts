@@ -134,7 +134,7 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
  *
  * Example: localToUtc("2024-06-15T08:00:00", "Europe/London") → Date at 07:00 UTC
  */
-function localToUtc(isoLocal: string, tz: string): Date {
+export function localToUtc(isoLocal: string, tz: string): Date {
   // Treat isoLocal as UTC first to get an approximate timestamp
   const approx = new Date(`${isoLocal}Z`);
 
