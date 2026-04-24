@@ -45,12 +45,15 @@
 }
 
 /* ─── Base Overrides ─── */
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  background-color: #020D18; /* Deepest void — fallback before scene loads */
+}
 
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-navy);
+  background-color: transparent; /* Scene div handles atmosphere */
   color: var(--color-offwhite);
   font-family: var(--font-body);
 }
@@ -212,6 +215,20 @@ input[type="range"]::-moz-range-thumb {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes ambient-drift-a {
+  0%   { transform: translate(0,    0)   scale(1.00); }
+  25%  { transform: translate(5%,   4%)  scale(1.06); }
+  50%  { transform: translate(3%,   9%)  scale(0.95); }
+  75%  { transform: translate(-4%,  5%)  scale(1.04); }
+  100% { transform: translate(0,    0)   scale(1.00); }
+}
+@keyframes ambient-drift-b {
+  0%   { transform: translate(0,    0)    scale(1.00); }
+  30%  { transform: translate(-6%, -4%)   scale(1.08); }
+  60%  { transform: translate(-3%, -8%)   scale(0.93); }
+  85%  { transform: translate(4%,  -3%)   scale(1.05); }
+  100% { transform: translate(0,    0)    scale(1.00); }
+}
 
 /* ─── Animation Utility Classes ─── */
 .animate-fade-up         { animation: fadeUp 0.4s cubic-bezier(0,0,0.2,1) both; }
@@ -225,6 +242,61 @@ input[type="range"]::-moz-range-thumb {
 .animate-pulse-glow-green { animation: pulseGlowGreen 2.5s ease-in-out infinite; }
 .animate-marquee         { animation: marquee 30s linear infinite; }
 .animate-spin            { animation: spin 1s linear infinite; }
+
+/* ─── Cinematic Scene Base ──────────────────────────────────────────────────── */
+/* Fixed atmospheric backdrop — sits behind all content via z-index: -1          */
+/* within the root isolation context. Semi-transparent sections reveal it.        */
+.page-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* Four-corner vignette — pulls edges to void, cinematic framing */
+    radial-gradient(ellipse 92% 52% at 50% -6%,   transparent 28%, rgba(2,13,24,0.84) 100%),
+    radial-gradient(ellipse 42% 100% at -3% 50%,   rgba(2,13,24,0.72) 0%, transparent 66%),
+    radial-gradient(ellipse 42% 100% at 103% 50%,  rgba(2,13,24,0.72) 0%, transparent 66%),
+    radial-gradient(ellipse 115% 48% at 50% 112%,  rgba(2,13,24,0.96) 0%, transparent 64%),
+    /* Primary warm source — upper-left, single intentional light origin */
+    radial-gradient(ellipse 92% 72% at 13% 20%,    rgba(255,107,43,0.100) 0%, transparent 74%),
+    /* Cool complementary — upper-right, secondary bounce light */
+    radial-gradient(ellipse 70% 56% at 85% 7%,     rgba(153,203,255,0.078) 0%, transparent 64%),
+    /* Warm ground glow — lower third, depth cue like floor reflection */
+    radial-gradient(ellipse 78% 42% at 30% 88%,    rgba(255,107,43,0.044) 0%, transparent 70%),
+    /* Deep base */
+    #020D18;
+}
+
+/* ─── Ambient Drift Layers ───────────────────────────────────────────────────── */
+/* Two oversized blurred radial blobs that drift on 45–55s cycles.               */
+/* Almost imperceptible — creates the sense the environment is alive.            */
+.page-scene-drift-a {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  width: 80vmax;
+  height: 68vmax;
+  top: -35%;
+  left: -22%;
+  background: radial-gradient(circle, rgba(255,107,43,0.060) 0%, transparent 70%);
+  filter: blur(90px);
+  will-change: transform;
+  animation: ambient-drift-a 55s ease-in-out infinite;
+}
+
+.page-scene-drift-b {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  width: 68vmax;
+  height: 58vmax;
+  top: -18%;
+  right: -28%;
+  background: radial-gradient(circle, rgba(153,203,255,0.050) 0%, transparent 70%);
+  filter: blur(100px);
+  will-change: transform;
+  animation: ambient-drift-b 47s ease-in-out infinite;
+}
 
 /* ─── Stagger Delays ─── */
 .stagger-1 { animation-delay:   0ms; }
@@ -384,7 +456,9 @@ input, textarea, select { font-size: max(16px, 1em); }
   .animate-float-secondary,
   .animate-marquee,
   .menu-slide-down,
-  .animate-modal-enter {
+  .animate-modal-enter,
+  .page-scene-drift-a,
+  .page-scene-drift-b {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

@@ -8,8 +8,8 @@ import { useEffect, useRef } from 'react';
  * of N × 80 ms.
  * The observer fires once then unobserves (entrance animations don't repeat).
  */
-export function useScrollAnimation<T extends HTMLElement = HTMLElement>() {
-  const ref = useRef<T>(null);
+export function useScrollAnimation() {
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;

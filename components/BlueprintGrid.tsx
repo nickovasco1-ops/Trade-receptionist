@@ -47,7 +47,7 @@ export const BlueprintGrid: React.FC = () => {
       const influenceRadius = 200;
       const forceFactor = 0.4;
 
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.strokeStyle = 'rgba(153, 203, 255, 0.042)';
       ctx.lineWidth = 1;
       
       // Draw Vertical Lines
@@ -110,7 +110,7 @@ export const BlueprintGrid: React.FC = () => {
   return (
     <canvas 
       ref={canvasRef} 
-      className="absolute inset-0 z-0 pointer-events-auto opacity-60"
+      className="absolute inset-0 z-0 pointer-events-auto opacity-45"
       style={{ width: '100%', height: '100%' }}
     />
   );

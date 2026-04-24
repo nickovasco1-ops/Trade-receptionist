@@ -313,9 +313,8 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
       className="relative pt-28 pb-24 md:pt-44 xl:pt-56 md:pb-36 overflow-hidden"
       style={{
         background:
-          'radial-gradient(ellipse at 15% 60%, rgba(255,107,43,0.09) 0%, transparent 55%),' +
-          'radial-gradient(ellipse at 85% 15%, rgba(153,203,255,0.07) 0%, transparent 50%),' +
-          '#051426',
+          'radial-gradient(ellipse at 15% 60%, rgba(255,107,43,0.06) 0%, transparent 55%),' +
+          'radial-gradient(ellipse at 85% 15%, rgba(153,203,255,0.05) 0%, transparent 50%)',
       }}
     >
       <BlueprintGrid />
@@ -630,7 +629,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 const SocialProof = () => (
   <div className="relative py-12 overflow-hidden"
     style={{
-      background: 'linear-gradient(180deg, #051426 0%, #0A2340 15%, #0A2340 85%, #051426 100%)',
+      background: 'linear-gradient(180deg, rgba(5,20,38,0.55) 0%, rgba(9,29,54,0.70) 15%, rgba(9,29,54,0.70) 85%, rgba(5,20,38,0.55) 100%)',
     }}
   >
 
@@ -1539,7 +1538,7 @@ const FAQ = () => {
 const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const ref = useScrollAnimation();
   return (
-  <section className="bg-void py-24 md:py-36 relative overflow-hidden">
+  <section className="py-24 md:py-36 relative overflow-hidden" style={{ background: 'rgba(2,13,24,0.88)' }}>
     {/* Atmospheric glows */}
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.12) 0%, transparent 65%)', filter: 'blur(60px)' }} />
@@ -1594,7 +1593,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
-  <footer className="bg-void pt-20 pb-12">
+  <footer className="pt-20 pb-12" style={{ background: 'rgba(2,13,24,0.92)' }}>
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
       <div className="grid md:grid-cols-3 gap-12 mb-16">
         <div className="md:col-span-2">
@@ -1678,6 +1677,15 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
   </footer>
 );
 
+// ─── Cinematic Background Scene ──────────────────────────────────────────────
+const PageSceneDrift: React.FC = () => (
+  <>
+    <div className="page-scene" aria-hidden="true" />
+    <div className="page-scene-drift-a" aria-hidden="true" />
+    <div className="page-scene-drift-b" aria-hidden="true" />
+  </>
+);
+
 // ─── App Root ─────────────────────────────────────────────────────────────────
 // ─── WhatsApp Escape Hatch ────────────────────────────────────────────────────
 const WhatsAppButton = () => (
@@ -1754,7 +1762,8 @@ const App: React.FC = () => {
   const toggleStripe = () => setIsStripeOpen(v => !v);
 
   return (
-    <div className="min-h-screen bg-navy font-body text-offwhite">
+    <div className="min-h-screen font-body text-offwhite" style={{ isolation: 'isolate', background: 'transparent' }}>
+      <PageSceneDrift />
       <div className="grain" aria-hidden="true" />
       <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleStripe} />
 

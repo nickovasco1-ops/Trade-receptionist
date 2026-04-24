@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Phone, MessageSquare, ShieldCheck, Calendar,
   ArrowRight, CheckCircle2, XCircle,
+  type LucideIcon,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Feature {
   num: string;
-  icon: React.FC<{ className?: string }>;
+  icon: LucideIcon;
   title: string;
   desc: string;
   outcome: string;

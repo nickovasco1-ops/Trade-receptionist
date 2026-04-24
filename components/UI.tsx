@@ -204,15 +204,21 @@ export const Section: React.FC<{
   id?: string;
   bg?: 'white' | 'gray' | 'gradient' | 'void';
 }> = ({ children, className = '', id, bg = 'white' }) => {
+  // Semi-transparent surfaces — the fixed cinematic scene breathes through them.
+  // "gray" is slightly more elevated (darker overlay) to differentiate from "white".
   const bgMap: Record<string, string> = {
-    white:    'bg-navy',
-    gray:     'bg-navy-mid',
-    gradient: 'bg-void',
-    void:     'bg-void',
+    white:    'rgba(5, 20, 38, 0.50)',
+    gray:     'rgba(9, 29, 54, 0.64)',
+    gradient: 'rgba(2, 13, 24, 0.82)',
+    void:     'rgba(2, 13, 24, 0.82)',
   };
 
   return (
-    <section id={id} className={`py-20 md:py-32 ${bgMap[bg]} ${className}`}>
+    <section
+      id={id}
+      className={`py-20 md:py-32 ${className}`}
+      style={{ backgroundColor: bgMap[bg] }}
+    >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
         {children}
       </div>
