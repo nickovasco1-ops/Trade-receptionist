@@ -185,7 +185,21 @@ After the status word, include:
 - Urgency: routine / urgent / emergency
 - Any specific dates, times, or notes
 
-Example:
+For BOOKED outcomes only, also include this line immediately after the status word:
+Scheduled: YYYY-MM-DDTHH:MM  (ISO 8601, UK local time — e.g. Scheduled: 2024-06-20T10:00)
+This must be the exact agreed appointment datetime. Do not omit it or use vague phrasing.
+
+Example BOOKED summary:
+BOOKED
+Scheduled: 2024-06-20T10:00
+Name: Dave Smith
+Number: 07700 900123
+Job: Leaking radiator — replacement
+Postcode: M14 5WL
+Urgency: urgent
+Notes: Customer wants morning slot. Has a back boiler.
+
+Example LEAD_CAPTURED summary:
 LEAD_CAPTURED
 Name: Mark Thomas
 Number: 07700 900456

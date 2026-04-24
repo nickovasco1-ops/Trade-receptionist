@@ -15,7 +15,8 @@ import {
   buyUkNumber,
   releaseNumber,
 } from '../../services/twilio';
-import type { ApiResponse, Client, BusinessConfig } from '../../../../shared/types';
+import { getAvailableSlots } from '../../services/calendar';
+import type { ApiResponse, Client, BusinessConfig, Booking } from '../../../../shared/types';
 
 const router = Router();
 
@@ -459,6 +460,95 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
 
   console.log(`[clients] assigned ${phoneNumber} to ${client.owner_email}`);
   res.json({ success: true, data: updated as Client } satisfies ApiResponse<Client>);
+});
+
+// ── GET /clients/:id/available-slots ─────────────────────────────────────────
+//
+// Returns available appointment slots for a client's Google Calendar over the
+// next 7 days, respecting their configured working hours and working days.
+// Returns 400 if Google Calendar is not connected for this client.
+
+router.get('/:id/available-slots', async (req: Request, res: Response) => {
+  const { data: clientRow, error: fetchErr } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', req.params.id)
+    .single();
+
+  if (fetchErr || !clientRow) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  const client = clientRow as Client;
+
+  if (!client.google_cal_id || !client.google_refresh_token) {
+    res.status(400).json({
+      success: false,
+      error:   'Google Calendar is not connected for this client',
+    } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: configRow } = await supabase
+    .from('business_config')
+    .select('*')
+    .eq('client_id', client.id)
+    .single();
+
+  const config = configRow as BusinessConfig | null;
+
+  try {
+    const slots = await getAvailableSlots({
+      calendarId:   client.google_cal_id,
+      refreshToken: client.google_refresh_token,
+      startHour:    config?.business_hours_start ?? '08:00',
+      endHour:      config?.business_hours_end   ?? '18:00',
+      workingDays:  config?.working_days         ?? [1, 2, 3, 4, 5],
+      timezone:     config?.timezone             ?? 'Europe/London',
+    });
+
+    res.json({
+      success: true,
+      data:    { slots: slots.map((d) => d.toISOString()) },
+    } satisfies ApiResponse<{ slots: string[] }>);
+  } catch (err: unknown) {
+    console.error('[clients] available-slots error', err);
+    res.status(502).json({
+      success: false,
+      error:   err instanceof Error ? err.message : 'Failed to fetch available slots',
+    } satisfies ApiResponse);
+  }
+});
+
+// ── GET /clients/:id/bookings ─────────────────────────────────────────────────
+//
+// Returns all bookings for a client, ordered by scheduled_at ascending.
+
+router.get('/:id/bookings', async (req: Request, res: Response) => {
+  const { data: clientRow, error: fetchErr } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('id', req.params.id)
+    .single();
+
+  if (fetchErr || !clientRow) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('client_id', req.params.id)
+    .order('scheduled_at', { ascending: true });
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message } satisfies ApiResponse);
+    return;
+  }
+
+  res.json({ success: true, data } satisfies ApiResponse<Booking[]>);
 });
 
 export default router;
