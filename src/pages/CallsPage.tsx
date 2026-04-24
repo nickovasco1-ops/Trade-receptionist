@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, Download, Filter } from 'lucide-react';
+import { Phone, Play, Filter } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { supabase } from '../lib/supabase';
+import type { Call } from '../../shared/types';
 
-type Outcome = 'booked' | 'lead_captured' | 'enquiry' | 'spam' | 'voicemail' | 'emergency' | 'transferred' | 'no_answer';
+type CallWithSummary = Pick<
+  Call,
+  'id' | 'outcome' | 'is_emergency' | 'caller_number' | 'direction' | 'duration_secs' | 'started_at' | 'ended_at' | 'recording_url'
+> & { transcripts?: { summary: string | null }[] | null };
+
+type Outcome = Call['outcome'];
 
 const OUTCOME_META: Record<string, { label: string; bg: string; text: string }> = {
-  booked:        { label: 'Booked',      bg: 'rgba(34,197,94,0.12)',  text: '#86efac' },
+  booked:        { label: 'Booked',      bg: 'rgba(34,197,94,0.12)',   text: '#86efac' },
   lead_captured: { label: 'Lead',        bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
   enquiry:       { label: 'Enquiry',     bg: 'rgba(255,255,255,0.07)', text: '#9ca3af' },
   spam:          { label: 'Spam',        bg: 'rgba(255,255,255,0.05)', text: '#6b7280' },
@@ -16,10 +22,10 @@ const OUTCOME_META: Record<string, { label: string; bg: string; text: string }> 
   no_answer:     { label: 'Missed',      bg: 'rgba(239,68,68,0.12)',   text: '#fca5a5' },
 };
 
-const ALL_OUTCOMES = Object.keys(OUTCOME_META) as Outcome[];
+const ALL_OUTCOMES = Object.keys(OUTCOME_META) as NonNullable<Outcome>[];
 
-function OutcomeBadge({ outcome }: { outcome: string }) {
-  const meta = OUTCOME_META[outcome] ?? OUTCOME_META.enquiry;
+function OutcomeBadge({ outcome }: { outcome: string | null }) {
+  const meta = OUTCOME_META[outcome ?? 'enquiry'] ?? OUTCOME_META.enquiry;
   return (
     <span
       className="inline-block px-2 py-0.5 rounded-badge text-[11px] font-semibold font-body"
@@ -31,9 +37,9 @@ function OutcomeBadge({ outcome }: { outcome: string }) {
 }
 
 export default function CallsPage() {
-  const [calls, setCalls]         = useState<any[]>([]);
-  const [filtered, setFiltered]   = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [calls, setCalls]       = useState<CallWithSummary[]>([]);
+  const [filtered, setFiltered] = useState<CallWithSummary[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
 
   useEffect(() => {
@@ -60,19 +66,19 @@ export default function CallsPage() {
         .order('started_at', { ascending: false })
         .limit(200);
 
-      setCalls(data ?? []);
-      setFiltered(data ?? []);
+      setCalls((data ?? []) as CallWithSummary[]);
+      setFiltered((data ?? []) as CallWithSummary[]);
       setLoading(false);
     }
     load();
   }, []);
 
   useEffect(() => {
-    if (outcomeFilter === 'all') {
-      setFiltered(calls);
-    } else {
-      setFiltered(calls.filter(c => c.outcome === outcomeFilter));
-    }
+    setFiltered(
+      outcomeFilter === 'all'
+        ? calls
+        : calls.filter(c => c.outcome === outcomeFilter)
+    );
   }, [outcomeFilter, calls]);
 
   function formatDuration(secs: number | null) {
@@ -97,15 +103,17 @@ export default function CallsPage() {
         <div>
           <h1 className="text-[26px] font-bold text-offwhite font-display tracking-tight">Calls</h1>
           <p className="text-[14px] text-offwhite/40 font-body mt-1">
-            {filtered.length} {outcomeFilter === 'all' ? 'total' : outcomeFilter} call{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} {outcomeFilter === 'all' ? 'total' : (OUTCOME_META[outcomeFilter]?.label.toLowerCase() ?? outcomeFilter)}{' '}
+            call{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Filter size={14} className="text-offwhite/30" />
+        <div className="flex items-center gap-2.5">
+          <Filter size={13} className="text-offwhite/30 flex-shrink-0" />
           <select
             value={outcomeFilter}
             onChange={e => setOutcomeFilter(e.target.value)}
-            className="text-[13px] font-body text-offwhite/70 rounded-[10px] px-3 py-2 outline-none cursor-pointer transition-all duration-200"
+            aria-label="Filter by outcome"
+            className="text-[13px] font-body text-offwhite/70 rounded-[10px] px-3 py-2 outline-none cursor-pointer transition-all duration-200 focus:ring-1 focus:ring-orange/40"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <option value="all">All outcomes</option>
@@ -130,7 +138,9 @@ export default function CallsPage() {
           <Phone size={28} className="text-offwhite/20 mx-auto mb-3" strokeWidth={1.5} />
           <p className="text-[15px] font-bold text-offwhite font-display mb-1">No calls found</p>
           <p className="text-[13px] text-offwhite/40 font-body">
-            {outcomeFilter === 'all' ? 'Your AI receptionist is ready — calls will appear here.' : `No ${OUTCOME_META[outcomeFilter]?.label.toLowerCase()} calls yet.`}
+            {outcomeFilter === 'all'
+              ? 'Your AI receptionist is ready — calls will appear here.'
+              : `No ${OUTCOME_META[outcomeFilter]?.label.toLowerCase() ?? outcomeFilter} calls yet.`}
           </p>
         </div>
       ) : (
@@ -140,10 +150,10 @@ export default function CallsPage() {
         >
           {/* Table header */}
           <div
-            className="grid gap-4 px-5 py-3 text-[11px] font-semibold text-offwhite/30 uppercase tracking-[0.08em] font-body"
+            className="grid gap-4 px-5 py-3 text-[11px] font-semibold text-offwhite/30 uppercase tracking-[0.09em] font-body"
             style={{
-              gridTemplateColumns: '1fr 120px 80px 90px 90px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              gridTemplateColumns: '1fr 140px 80px 100px 80px',
+              background: 'rgba(255,255,255,0.03)',
             }}
           >
             <span>Caller</span>
@@ -154,31 +164,34 @@ export default function CallsPage() {
           </div>
 
           {/* Rows */}
-          {filtered.map((call, i) => (
+          {filtered.map((call) => (
             <div
               key={call.id}
-              className="grid gap-4 px-5 py-3.5 items-center text-[13px] font-body hover:bg-white/[0.02] transition-colors"
+              className="grid gap-4 px-5 py-3.5 items-center text-[13px] font-body hover:bg-white/[0.025] transition-colors duration-150"
               style={{
-                gridTemplateColumns: '1fr 120px 80px 90px 90px',
-                borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                gridTemplateColumns: '1fr 140px 80px 100px 80px',
+                boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.04)',
               }}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Phone size={13} className={call.is_emergency ? 'text-orange flex-shrink-0' : 'text-offwhite/25 flex-shrink-0'} />
+                <Phone
+                  size={13}
+                  className={call.is_emergency ? 'text-orange flex-shrink-0' : 'text-offwhite/25 flex-shrink-0'}
+                />
                 <span className="text-offwhite/80 truncate">{call.caller_number ?? 'Unknown number'}</span>
               </div>
-              <span className="text-offwhite/40 hidden sm:block">{formatDate(call.started_at)}</span>
-              <span className="text-offwhite/40 hidden md:block">{formatDuration(call.duration_secs)}</span>
-              <OutcomeBadge outcome={call.outcome ?? 'enquiry'} />
+              <span className="text-offwhite/40 hidden sm:block tabular-nums">{formatDate(call.started_at)}</span>
+              <span className="text-offwhite/40 hidden md:block tabular-nums">{formatDuration(call.duration_secs)}</span>
+              <OutcomeBadge outcome={call.outcome} />
               <div className="hidden md:block">
                 {call.recording_url ? (
                   <a
                     href={call.recording_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[12px] text-accent hover:text-accent-glow transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[12px] text-accent hover:text-accent-glow transition-colors"
                   >
-                    <Download size={11} /> Play
+                    <Play size={11} /> Play
                   </a>
                 ) : (
                   <span className="text-offwhite/20">—</span>
