@@ -30,6 +30,24 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthed(!!session);
+
+      // Auto-connect Google Calendar when user signs in with Google and grants calendar access
+      if (
+        _event === 'SIGNED_IN' &&
+        session?.user?.app_metadata?.provider === 'google' &&
+        session.provider_refresh_token &&
+        session.user.email
+      ) {
+        fetch('/api/auth/google/save-calendar-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email:                session.user.email,
+            providerToken:        session.provider_token ?? undefined,
+            providerRefreshToken: session.provider_refresh_token,
+          }),
+        }).catch(() => {});
+      }
     });
 
     return () => listener.subscription.unsubscribe();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Phone, User, Briefcase, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -87,6 +87,16 @@ export default function OnboardingPage() {
   });
   const [provisionError, setProvisionError] = useState('');
 
+  // Pre-fill name from Google profile if available
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      const meta = session.user.user_metadata as Record<string, string> | undefined;
+      const name = meta?.full_name ?? meta?.name ?? '';
+      if (name) setForm(prev => ({ ...prev, owner_name: prev.owner_name || name }));
+    });
+  }, []);
+
   function set(key: keyof FormData, value: string) {
     setForm(prev => ({ ...prev, [key]: value }));
   }
@@ -129,6 +139,24 @@ export default function OnboardingPage() {
       }
 
       setStep('done');
+
+      // Auto-connect Google Calendar if user signed in with Google
+      const { data: { session } } = await supabase.auth.getSession();
+      if (
+        session?.provider_refresh_token &&
+        session?.user?.app_metadata?.provider === 'google' &&
+        session.user.email
+      ) {
+        fetch('/api/auth/google/save-calendar-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email:                session.user.email,
+            providerToken:        session.provider_token ?? undefined,
+            providerRefreshToken: session.provider_refresh_token,
+          }),
+        }).catch(() => {});
+      }
     } catch (err: unknown) {
       setProvisionError(err instanceof Error ? err.message : 'Something went wrong');
       setStep('hours'); // go back so user can retry

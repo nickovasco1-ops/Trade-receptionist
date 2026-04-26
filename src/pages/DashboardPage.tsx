@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Phone, Users, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { supabase } from '../lib/supabase';
@@ -99,6 +99,7 @@ function StatCard({
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [stats, setStats]         = useState<Stats | null>(null);
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -120,7 +121,7 @@ export default function DashboardPage() {
         .eq('owner_email', user.email)
         .maybeSingle();
 
-      if (!clientRow) { setLoading(false); return; }
+      if (!clientRow) { navigate('/onboarding', { replace: true }); return; }
 
       const [callsRes, leadsRes] = await Promise.all([
         supabase
@@ -234,28 +235,7 @@ export default function DashboardPage() {
             )}
           </div>
         </>
-      ) : (
-        /* No client provisioned yet */
-        <div
-          className="rounded-card p-10 text-center max-w-md"
-          style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
-        >
-          <h2 className="text-[18px] font-bold text-offwhite font-display mb-2">Set up your receptionist</h2>
-          <p className="text-[14px] text-offwhite/50 font-body mb-5 leading-relaxed">
-            You don't have an account configured yet. Complete onboarding to get your AI receptionist live.
-          </p>
-          <Link
-            to="/onboarding"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-btn font-semibold text-[14px] text-white font-body transition-all duration-300 hover:-translate-y-0.5"
-            style={{
-              background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-              boxShadow: '0 0 24px rgba(255,107,43,0.35)',
-            }}
-          >
-            Start onboarding <ArrowRight size={14} />
-          </Link>
-        </div>
-      )}
+      ) : null}
     </DashboardShell>
   );
 }

@@ -261,22 +261,34 @@ export default function SettingsPage() {
 
         <SettingsSection title="Google Calendar" icon={Calendar}>
           {form.google_cal_connected ? (
-            <div className="flex items-center gap-3">
-              <CheckCircle size={15} className="text-green-400 flex-shrink-0" />
-              <span className="text-[14px] text-offwhite/70 font-body">Calendar connected</span>
-              <span className="text-[12px] text-offwhite/30 font-body truncate">{form.google_cal_id}</span>
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <CheckCircle size={15} className="text-green-400 flex-shrink-0" />
+                <span className="text-[14px] text-offwhite/70 font-body">Calendar connected</span>
+                <span className="text-[12px] text-offwhite/30 font-body truncate">{form.google_cal_id}</span>
+              </div>
+              <button
+                type="button"
+                onClick={connectGoogleCalendar}
+                disabled={calConnecting}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-[10px] text-[13px] font-semibold font-body text-offwhite/40 transition-all duration-200 hover:text-offwhite/60 disabled:opacity-50"
+                style={{ background: 'rgba(255,255,255,0.04)' }}
+              >
+                <Key size={13} />
+                {calConnecting ? 'Redirecting…' : 'Re-connect'}
+              </button>
             </div>
           ) : (
             <div>
               <p className="text-[13px] text-offwhite/50 font-body mb-4 leading-relaxed">
-                Connect your Google Calendar so your AI receptionist can check availability and book jobs directly into your diary.
+                Sign in with Google to connect your calendar automatically, or use the button below. Your AI receptionist will check availability and book jobs directly into your diary.
               </p>
               <button
                 type="button"
                 onClick={connectGoogleCalendar}
                 disabled={calConnecting}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-btn text-[14px] font-semibold font-body text-offwhite transition-all duration-200 hover:bg-white/[0.1] disabled:opacity-50"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgba(255,255,255,0.08)', boxShadow: '0 0 0 1px rgba(255,255,255,0.1)' }}
               >
                 <Key size={14} />
                 {calConnecting ? 'Redirecting to Google…' : 'Connect Google Calendar'}

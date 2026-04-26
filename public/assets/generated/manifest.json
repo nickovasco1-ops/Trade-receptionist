@@ -1,0 +1,44 @@
+{
+  "how-it-works": {
+    "generatedAt": "2026-04-24T15:50:17.528Z",
+    "files": [
+      "public/assets/generated/how-it-works/step-1.png",
+      "public/assets/generated/how-it-works/step-2.png",
+      "public/assets/generated/how-it-works/step-3.png"
+    ]
+  },
+  "use-cases": {
+    "generatedAt": "2026-04-24T15:52:26.642Z",
+    "files": [
+      "public/assets/generated/use-cases/plumber.png",
+      "public/assets/generated/use-cases/electrician.png",
+      "public/assets/generated/use-cases/hvac.png",
+      "public/assets/generated/use-cases/builder.png"
+    ]
+  },
+  "og": {
+    "generatedAt": "2026-04-24T15:53:38.373Z",
+    "files": [
+      "public/assets/generated/og/og-image.png"
+    ]
+  },
+  "testimonials": {
+    "generatedAt": "2026-04-24T16:00:31.655Z",
+    "files": [
+      "public/assets/generated/testimonials/avatar-1.png",
+      "public/assets/generated/testimonials/avatar-2.png",
+      "public/assets/generated/testimonials/avatar-3.png",
+      "public/assets/generated/testimonials/avatar-4.png",
+      "public/assets/generated/testimonials/avatar-5.png",
+      "public/assets/generated/testimonials/avatar-6.png"
+    ]
+  },
+  "pain-points": {
+    "generatedAt": "2026-04-24T16:02:49.507Z",
+    "files": [
+      "public/assets/generated/pain-points/missed-call.png",
+      "public/assets/generated/pain-points/lost-revenue.png",
+      "public/assets/generated/pain-points/competitor.png"
+    ]
+  }
+}
