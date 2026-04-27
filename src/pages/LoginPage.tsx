@@ -165,13 +165,11 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-shadow duration-200 focus:ring-2 focus:ring-orange/40"
                       style={{
                         background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
                       }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,107,43,0.5)')}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
                     />
                   </div>
                 </div>
@@ -183,11 +181,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 disabled:opacity-60"
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-                    boxShadow: '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2)',
-                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60"
                 >
                   {loading ? 'Sending…' : <>Send magic link <ArrowRight size={15} /></>}
                 </button>

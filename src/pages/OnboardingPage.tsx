@@ -48,7 +48,7 @@ function StepIndicator({ current }: { current: Step }) {
                     : active
                     ? 'rgba(255,107,43,0.15)'
                     : 'rgba(255,255,255,0.06)',
-                  border: active ? '1px solid rgba(255,107,43,0.4)' : done ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: active ? '0 0 0 1px rgba(255,107,43,0.4)' : done ? '0 0 0 1px rgba(34,197,94,0.3)' : '0 0 0 1px rgba(255,255,255,0.08)',
                 }}
               >
                 {done
@@ -163,15 +163,8 @@ export default function OnboardingPage() {
     }
   }
 
-  const inputClass = "w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-all duration-200";
-  const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' };
-
-  function handleFocus(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-    e.currentTarget.style.borderColor = 'rgba(255,107,43,0.4)';
-  }
-  function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
-    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-  }
+  const inputClass = "w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-shadow duration-200 focus:ring-2 focus:ring-orange/40";
+  const inputStyle = { background: 'rgba(255,255,255,0.06)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' };
 
   return (
     <div
@@ -198,25 +191,24 @@ export default function OnboardingPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">Business name</label>
-                  <input className={inputClass} style={inputStyle} value={form.business_name} onChange={e => set('business_name', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} placeholder="Mark Thomas Plumbing Ltd" />
+                  <input className={inputClass} style={inputStyle} value={form.business_name} onChange={e => set('business_name', e.target.value)} placeholder="Mark Thomas Plumbing Ltd" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">Trade type</label>
-                  <select className={inputClass} style={inputStyle} value={form.trade_type} onChange={e => set('trade_type', e.target.value)} onFocus={handleFocus} onBlur={handleBlur}>
+                  <select className={inputClass} style={inputStyle} value={form.trade_type} onChange={e => set('trade_type', e.target.value)}>
                     <option value="">Select your trade…</option>
                     {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">City / area</label>
-                  <input className={inputClass} style={inputStyle} value={form.city} onChange={e => set('city', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} placeholder="South London" />
+                  <input className={inputClass} style={inputStyle} value={form.city} onChange={e => set('city', e.target.value)} placeholder="South London" />
                 </div>
               </div>
               <button
                 onClick={() => setStep('contact')}
                 disabled={!form.business_name || !form.trade_type}
-                className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)', boxShadow: '0 0 24px rgba(255,107,43,0.35)' }}
+                className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50"
               >
                 Next <ArrowRight size={15} />
               </button>
@@ -231,11 +223,11 @@ export default function OnboardingPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">Your name</label>
-                  <input className={inputClass} style={inputStyle} value={form.owner_name} onChange={e => set('owner_name', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} placeholder="Mark Thomas" />
+                  <input className={inputClass} style={inputStyle} value={form.owner_name} onChange={e => set('owner_name', e.target.value)} placeholder="Mark Thomas" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">Mobile number (for SMS alerts)</label>
-                  <input type="tel" className={inputClass} style={inputStyle} value={form.owner_mobile} onChange={e => set('owner_mobile', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} placeholder="+44 7700 900000" />
+                  <input type="tel" className={inputClass} style={inputStyle} value={form.owner_mobile} onChange={e => set('owner_mobile', e.target.value)} placeholder="+44 7700 900000" />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
@@ -246,7 +238,7 @@ export default function OnboardingPage() {
                   onClick={() => setStep('hours')}
                   disabled={!form.owner_name || !form.owner_mobile}
                   className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)', boxShadow: '0 0 24px rgba(255,107,43,0.35)' }}
+                  className="bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
                 >
                   Next <ArrowRight size={15} />
                 </button>
@@ -262,11 +254,11 @@ export default function OnboardingPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">Start time</label>
-                  <input type="time" className={inputClass} style={inputStyle} value={form.work_start} onChange={e => set('work_start', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} />
+                  <input type="time" className={inputClass} style={inputStyle} value={form.work_start} onChange={e => set('work_start', e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body">End time</label>
-                  <input type="time" className={inputClass} style={inputStyle} value={form.work_end} onChange={e => set('work_end', e.target.value)} onFocus={handleFocus} onBlur={handleBlur} />
+                  <input type="time" className={inputClass} style={inputStyle} value={form.work_end} onChange={e => set('work_end', e.target.value)} />
                 </div>
               </div>
 
@@ -281,7 +273,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={provision}
                   className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300"
-                  style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)', boxShadow: '0 0 24px rgba(255,107,43,0.35)' }}
+                  className="bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
                 >
                   Launch my receptionist <ArrowRight size={15} />
                 </button>
@@ -329,8 +321,7 @@ export default function OnboardingPage() {
               </p>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300"
-                style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)', boxShadow: '0 0 24px rgba(255,107,43,0.35)' }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300"
               >
                 Go to dashboard <ArrowRight size={15} />
               </button>

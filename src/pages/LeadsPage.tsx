@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Users, Mail, Phone, MapPin, Briefcase, AlertTriangle } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { supabase } from '../lib/supabase';
+import type { Lead } from '../../shared/types';
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   new:       { label: 'New',       bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
@@ -18,7 +19,7 @@ const URGENCY_META: Record<string, { bg: string; text: string }> = {
 };
 
 export default function LeadsPage() {
-  const [leads, setLeads]     = useState<any[]>([]);
+  const [leads, setLeads]     = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,7 +120,7 @@ export default function LeadsPage() {
                       style={{
                         background: statusMeta.bg,
                         color: statusMeta.text,
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
                       }}
                     >
                       {Object.entries(STATUS_META).map(([val, { label }]) => (

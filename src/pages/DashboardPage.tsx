@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, Users, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
+import StatusBadge from '../components/dashboard/ui/StatusBadge';
 import { supabase } from '../lib/supabase';
 import type { Call } from '../../shared/types';
 
@@ -14,38 +15,6 @@ interface Stats {
 
 type CallRow = Pick<Call, 'id' | 'outcome' | 'is_emergency' | 'started_at' | 'caller_number' | 'duration_secs'>;
 
-// Animate a number from 0 → target using easeOutExpo over `duration` ms
-function useCountUp(target: number, active: boolean, duration = 900): number {
-  const [value, setValue] = useState(0);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (!active || target === 0) { setValue(target); return; }
-    const start = performance.now();
-    const easeOut = (t: number) => 1 - Math.pow(2, -10 * t);
-
-    function tick(now: number) {
-      const p = Math.min((now - start) / duration, 1);
-      setValue(Math.round(easeOut(p) * target));
-      if (p < 1) rafRef.current = requestAnimationFrame(tick);
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [target, active, duration]);
-
-  return value;
-}
-
-const OUTCOME_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  booked:        { label: 'Booked',      bg: 'rgba(34,197,94,0.12)',   text: '#86efac' },
-  lead_captured: { label: 'Lead',        bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
-  enquiry:       { label: 'Enquiry',     bg: 'rgba(255,255,255,0.07)', text: '#9ca3af' },
-  spam:          { label: 'Spam',        bg: 'rgba(255,255,255,0.05)', text: '#6b7280' },
-  voicemail:     { label: 'Voicemail',   bg: 'rgba(255,255,255,0.05)', text: '#6b7280' },
-  emergency:     { label: 'Emergency',   bg: 'rgba(255,107,43,0.15)',  text: '#ffb59a' },
-  transferred:   { label: 'Transferred', bg: 'rgba(255,255,255,0.07)', text: '#9ca3af' },
-  no_answer:     { label: 'Missed',      bg: 'rgba(239,68,68,0.12)',   text: '#fca5a5' },
-};
 
 function StatCard({
   label, value, icon: Icon, href, accent = false,
@@ -58,7 +27,7 @@ function StatCard({
 }) {
   const inner = (
     <div
-      className="group rounded-card p-5 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+      className={`group rounded-card p-5 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1${href ? ' cursor-pointer' : ''}`}
       style={{
         background: accent ? 'rgba(255,107,43,0.08)' : 'rgba(255,255,255,0.05)',
         boxShadow: accent
@@ -104,11 +73,10 @@ export default function DashboardPage() {
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
   const [loading, setLoading]     = useState(true);
 
-  const statsLoaded = stats !== null;
-  const totalCalls  = useCountUp(stats?.totalCalls  ?? 0, statsLoaded);
-  const totalLeads  = useCountUp(stats?.totalLeads  ?? 0, statsLoaded);
-  const bookedJobs  = useCountUp(stats?.bookedJobs  ?? 0, statsLoaded);
-  const emergencies = useCountUp(stats?.emergencies ?? 0, statsLoaded);
+  const totalCalls  = stats?.totalCalls  ?? 0;
+  const totalLeads  = stats?.totalLeads  ?? 0;
+  const bookedJobs  = stats?.bookedJobs  ?? 0;
+  const emergencies = stats?.emergencies ?? 0;
 
   useEffect(() => {
     async function load() {
@@ -204,8 +172,7 @@ export default function DashboardPage() {
                 style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
               >
                 {recentCalls.map((call) => {
-                  const badge = OUTCOME_BADGE[call.outcome ?? 'enquiry'] ?? OUTCOME_BADGE.enquiry;
-                  const when  = call.started_at
+                  const when = call.started_at
                     ? new Date(call.started_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
                     : '—';
                   const dur = call.duration_secs != null
@@ -216,18 +183,12 @@ export default function DashboardPage() {
                     <div
                       key={call.id}
                       className="flex items-center gap-4 px-5 py-3.5 text-[13px] font-body hover:bg-white/[0.025] transition-colors duration-150"
-                      style={{ boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.04)' }}
                     >
                       <Phone size={13} className="text-offwhite/25 flex-shrink-0" />
                       <span className="text-offwhite/75 flex-1 truncate">{call.caller_number ?? 'Unknown'}</span>
                       <span className="text-offwhite/30 hidden sm:block tabular-nums">{when}</span>
                       <span className="text-offwhite/30 hidden md:block tabular-nums">{dur}</span>
-                      <span
-                        className="px-2 py-0.5 rounded-badge text-[11px] font-semibold flex-shrink-0"
-                        style={{ background: badge.bg, color: badge.text }}
-                      >
-                        {badge.label}
-                      </span>
+                      <StatusBadge outcome={call.outcome} className="flex-shrink-0" />
                     </div>
                   );
                 })}

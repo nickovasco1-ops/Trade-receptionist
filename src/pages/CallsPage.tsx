@@ -114,7 +114,7 @@ export default function CallsPage() {
             onChange={e => setOutcomeFilter(e.target.value)}
             aria-label="Filter by outcome"
             className="text-[13px] font-body text-offwhite/70 rounded-[10px] px-3 py-2 outline-none cursor-pointer transition-all duration-200 focus:ring-1 focus:ring-orange/40"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: 'rgba(255,255,255,0.06)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
           >
             <option value="all">All outcomes</option>
             {ALL_OUTCOMES.map(o => (

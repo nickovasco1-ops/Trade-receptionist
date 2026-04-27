@@ -226,6 +226,26 @@ export const Section: React.FC<{
   );
 };
 
+// ─── Panel (dashboard flat tonal card — no glass, no backdrop-blur) ──────────
+interface PanelProps {
+  children: React.ReactNode;
+  className?: string;
+  variant?: 'default' | 'accent' | 'hover';
+}
+
+export const Panel: React.FC<PanelProps> = ({ children, className = '', variant = 'default' }) => {
+  const variantClasses: Record<string, string> = {
+    default: 'bg-white/[0.04] shadow-ring-subtle',
+    accent:  'bg-orange/[0.08] shadow-card-accent',
+    hover:   'bg-white/[0.04] shadow-ring-subtle hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300 ease-mechanical',
+  };
+  return (
+    <div className={`rounded-card p-5 ${variantClasses[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
 // ─── Eyebrow Badge ────────────────────────────────────────────────────────────
 export const Badge: React.FC<{
   children: React.ReactNode;

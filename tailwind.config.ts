@@ -34,6 +34,13 @@ const config: Config = {
           glow:    '#60A5FA',
         },
         offwhite: '#F0F4F8',
+        status: {
+          success:   '#86efac',
+          warn:      '#fde68a',
+          danger:    '#fca5a5',
+          muted:     '#9ca3af',
+          'muted-2': '#6b7280',
+        },
         // Legacy aliases — keep so components that haven't been updated don't break
         brand: {
           50:  '#fff7ed',
@@ -54,6 +61,7 @@ const config: Config = {
         btn:    '14px',
         button: '14px',
         badge:  '999px',
+        field:  '10px',
       },
       transitionTimingFunction: {
         mechanical: 'cubic-bezier(0.34, 1.2, 0.64, 1)',
@@ -65,6 +73,13 @@ const config: Config = {
         'orange-glow':    '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20)',
         'orange-glow-lg': '0 0 40px rgba(255,107,43,0.50), 0 8px 24px rgba(255,107,43,0.30)',
         'blue-glow':      '0 0 20px rgba(153,203,255,0.25), 0 4px 12px rgba(153,203,255,0.15)',
+        'ring-subtle':    '0 0 0 1px rgba(255,255,255,0.06)',
+        'ring-default':   '0 0 0 1px rgba(255,255,255,0.08)',
+        'ring-strong':    '0 0 0 1px rgba(255,255,255,0.10)',
+        'ring-orange':    '0 0 0 1px rgba(255,107,43,0.20)',
+        'card':           '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.30)',
+        'card-hover':     '0 0 0 1px rgba(255,255,255,0.10), 0 20px 48px rgba(2,13,24,0.50)',
+        'card-accent':    '0 0 0 1px rgba(255,107,43,0.20), 0 8px 32px rgba(2,13,24,0.40)',
       },
     },
   },

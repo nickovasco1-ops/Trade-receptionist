@@ -1,107 +1,128 @@
- Trade Receptionist — Master Development Constitution
+# Trade Receptionist — Development Constitution
 
-> **Read this file entirely before touching a single line of code.**
-> This is the unbreakable law of the codebase. Every design decision, component, interaction, and copy choice flows from this document. When in doubt: re-read it.
-
----
-
-## 1. Project Identity & Creative North Star
-
-### What This Product Is
-
-**Trade Receptionist** is the premium AI virtual receptionist SaaS built exclusively for UK tradespeople — plumbers, electricians, builders, HVAC engineers, and construction contractors. It answers calls, books jobs, filters spam, and delivers WhatsApp summaries so a tradesman never loses a customer while he's under a sink or on a roof.
-
-This is **not** a generic productivity app. It is **not** a cute startup. It is a precision-engineered business tool with the authority and reliability of professional-grade trade equipment.
-
-### The Master Craftsman Aesthetic
-
-The entire visual language flows from one metaphor: **a master craftsman's workshop**. Think:
-
-- Heavy cast-iron machinery with warm industrial lighting
-- A blueprint laid flat on a workbench — precise, structural, purposeful
-- High-visibility orange on dark — PPE gear, caution tape, job site energy
-- Permanence and weight — this software is built to last, like a quality tool
-
-**The aesthetic is: authoritative, precise, built-to-last.** It is never:
-- Flashy or playful
-- AI-tropey (no neural networks, floating brains, robotic arms)
-- Corporate generic (no light-grey SaaS, no thin Helvetica)
-- Consumer app casual
-
-### Animation Philosophy: Precision Machinery in Motion
-
-The site must feel like it was **built in Framer** — scroll-driven, cinematic, alive. Every section entrance, every stat counter, every sticky panel must demonstrate craft. The standard to meet is: **audia.framer.website**. Study it. Match its scroll-driven feature reveals, ambient floating UI elements, and staggered entrance sequences — but execute them in the Trade Receptionist Industrial Luminescence aesthetic.
-
-The motion language is: **heavy machinery starting up**. Not bouncy. Not playful. Weighted, intentional, precise. Like a well-oiled piston — powerful, smooth, inevitable.
-
-### Target User Profile
-
-Primary: **UK sole-trader tradesperson**, 28–55 years old
-- Works alone or with 1–3 employees
-- Drives a van, works on-site, can't always answer calls
-- Loses £3,000–£15,000/year in missed calls
-- Values reliability above all else
-- Mobile-first: reads this site in a van cab, on a job site, in bright daylight
-- Skeptical of tech — needs social proof, plain language, and real outcomes
-
-Secondary: **Small trade business owner** (2–10 employees), same pain points at scale.
-
-### Tone of Voice
-
-- **Direct, no fluff.** "You miss calls. You lose money. We fix that."
-- **UK English always.** "Book" not "Schedule". "Quotes" not "Estimates" (for most trades). "Ring" not "Call" sometimes. Spellings: colour, organisation, centre.
-- **Outcome-first.** Every headline = result achieved, not feature described.
-- **Authoritative, not salesy.** State facts. Let outcomes do the selling.
+> **Read §0 before every task. Read the relevant section before every edit.**
+> This file is the source of truth for product identity, design system, code conventions, and integration boundaries. Reality on disk overrides aspiration in this file — if they conflict, document it in §10 (Landmines) and align by edits, not by deleting the divergence.
 
 ---
 
-## 2. Design System Constitution — Industrial Luminescence
+## §0 — The Five Laws (memorise)
 
-> These are **unbreakable laws**. No exceptions, no "just this once", no arbitrary values.
+1. **No lines.** No `border-*`, `divide-*`, or `<hr>` for layout. Use tonal elevation (`navy → navy-mid → navy-high`), glassmorphism, gradient fades, and whitespace. The only permitted line is `border-l-2 border-orange` on the active feature row in the sticky-scroll Features section, plus accessibility focus outlines.
+2. **No pure black, no pure white, no Inter.** Use `void` / `navy` / `offwhite` tokens and `Space Grotesk` + `Manrope` only.
+3. **Mechanical motion, never bouncy.** Minimum 300ms for transforms. Easings live in §4 — anything else is wrong.
+4. **Outcome copy, UK English, £.** "Start Free Trial" not "Get Started". "Diary" not "Schedule". Never "Powered by AI".
+5. **Two surfaces, two voices.** The **marketing site** is editorial, dramatic, animated (Industrial Luminescence). The **dashboard product** is calm, dense, functional — same tokens, different rhythm. See §2 and §7.
 
-### 2.1 Color System
+If a change would violate one of these, stop and ask.
 
-#### Primary Palette
+---
 
-| Token Name | Hex | Usage |
+## §1 — Product Identity & Voice
+
+**Trade Receptionist** is a premium AI virtual receptionist for UK tradespeople (plumbers, electricians, builders, HVAC, construction). It answers calls, books jobs, filters spam, and sends WhatsApp summaries so the trade never loses a customer while under a sink or on a roof.
+
+### Aesthetic — "Industrial Luminescence"
+
+The visual metaphor is **a master craftsman's workshop**: warm industrial lighting on dark cast iron, blueprint-on-workbench precision, high-vis orange against deep navy. The product is a precision tool, not a startup app.
+
+- Authoritative, precise, built-to-last
+- Never flashy, playful, AI-tropey (no neural networks / floating brains / robot arms)
+- Never light-grey corporate SaaS, never thin Helvetica
+- Reference standard for marketing motion: **audia.framer.website** — match its scroll-driven reveals and ambient float, but in our palette and with our weight
+
+### User profile
+
+- **Primary**: UK sole-trader tradesperson, 28–55, drives a van, can't always answer calls, loses £3k–£15k/year in missed work, mobile-first (often reading the site in bright daylight in a van cab).
+- **Secondary**: small trade business (2–10 employees), same pain at scale.
+- **Skeptical of tech.** Needs plain language, real outcomes, and proof.
+
+### Tone of voice
+
+- Direct, no fluff. *"You miss calls. You lose money. We fix that."*
+- UK English always (colour, organise, centre; quote, diary, ring, job, call-out)
+- Outcome-first headlines. Result, not feature.
+- Authoritative, not salesy. State facts. Let outcomes sell.
+
+### Voice cheat sheet — paste-ready
+
+| Use case | Use this | Not this |
 |---|---|---|
-| `--color-void` | `#020D18` | Deepest background, never pure black |
-| `--color-navy` | `#051426` | Primary background (body, sections) |
-| `--color-navy-mid` | `#0A2340` | Elevated surface (cards, panels) |
-| `--color-navy-high` | `#0F3060` | Highest elevation surface |
-| `--color-orange` | `#FF6B2B` | Primary CTA, key highlights, Status Gauge active state |
-| `--color-orange-glow` | `#FF8C55` | Orange hover state, glow source |
-| `--color-orange-soft` | `#ffb59a` | Orange on dark backgrounds, subtle text accents |
-| `--color-blue-accent` | `#99cbff` | Secondary accent, links, info states |
-| `--color-blue-glow` | `#60A5FA` | Blue glow, secondary CTAs |
-| `--color-surface-glass` | `rgba(255,255,255,0.06)` | Glass card base |
-| `--color-white-primary` | `#F0F4F8` | Primary text on dark |
-| `--color-white-secondary` | `rgba(240,244,248,0.70)` | Secondary text on dark |
-| `--color-white-muted` | `rgba(240,244,248,0.40)` | Labels, captions on dark |
+| Primary CTA | "Start Free Trial" | "Get Started", "Sign Up" |
+| Secondary CTA | "Hear a Live Demo" / "Book a Demo" | "Learn More", "Contact Us" |
+| Calculator CTA | "Calculate My Losses" | "Try the Calculator" |
+| Pricing CTA | "Start Free Trial" | "Choose Plan", "Buy Now" |
+| Features eyebrow | "WHAT YOU ACTUALLY GET" | "FEATURES" |
+| How-it-works eyebrow | "THREE STEPS TO ZERO MISSED CALLS" | "HOW IT WORKS" |
+| Pricing heading | "Simple, Honest Pricing" | "Pricing" |
+| Testimonials eyebrow | "WHAT UK TRADESPEOPLE SAY" | "TESTIMONIALS" |
+| Trust signal | "14-day free trial. No card required." | "Free trial available" |
+| Urgency line | "While you read this, a competitor is answering their calls." | "Don't miss out!" |
 
-#### Forbidden Colors
-- `#000000` (pure black) — use `#020D18` instead
-- `#FFFFFF` (pure white) — use `#F0F4F8` instead
-- Any grey not derived from the navy palette
-- Any unsaturated mid-grey backgrounds
+---
 
-#### Gradient Recipes (use exactly)
+## §2 — Surface Map (the repo holds three things)
+
+This is one repo with three distinct surfaces. They share design tokens; they do **not** share UX rules.
+
+| Surface | Entry | Purpose | Voice |
+|---|---|---|---|
+| **Marketing site** | `App.tsx` (root `/`) | Convert visitors. Editorial, animated, dramatic. | §1, §6 |
+| **Dashboard product** | `src/pages/*` via React Router | Calm SaaS UI for paying users. Information density, function. | §7 |
+| **Backend API** | `server/src/index.ts` (Express) | Webhooks, integrations, data plane. | §8 |
+
+**Shared between them:** design tokens (`index.css` `@theme` block), `components/UI.tsx`, `components/Logo.tsx`, types in `shared/types.ts`.
+
+> **Critical**: when asked to "improve the site", ask *which surface*. Marketing rules and dashboard rules are different (e.g., float animation belongs in marketing, never in the dashboard).
+
+---
+
+## §3 — Design Tokens
+
+> **Source of truth: `index.css` `@theme` block (Tailwind v4 CSS-first config).**
+> The legacy `tailwind.config.ts` mirrors the same tokens for any tooling that reads it — keep both in sync. Do not delete the legacy `brand-*` or `tradeBlue.*` aliases; older components still consume them (see §10).
+
+### 3.1 Color palette
+
+| Token | Hex | Tailwind | Usage |
+|---|---|---|---|
+| `--color-void` | `#020D18` | `bg-void` | Deepest background, fallback before scene loads. Never pure black. |
+| `--color-navy` | `#051426` | `bg-navy` | Primary section background |
+| `--color-navy-mid` | `#0A2340` | `bg-navy-mid` | Card/panel surface |
+| `--color-navy-high` | `#0F3060` | `bg-navy-high` | Highest-elevation surface |
+| `--color-orange` | `#FF6B2B` | `bg-orange text-orange` | Primary CTA, key highlights |
+| `--color-orange-glow` | `#FF8C55` | `bg-orange-glow` | Hover state, glow source |
+| `--color-orange-soft` | `#ffb59a` | `text-orange-soft` | Eyebrow labels on dark |
+| `--color-accent` | `#99cbff` | `text-accent` | Secondary accent, links, info |
+| `--color-accent-glow` | `#60A5FA` | `bg-accent-glow` | Secondary glow |
+| `--color-offwhite` | `#F0F4F8` | `text-offwhite` | Primary text on dark. Never pure white. |
+
+Body text on dark: `text-offwhite/70`. Captions/labels on dark: `text-offwhite/40`.
+
+> **Note**: the Tailwind class is `text-accent`, not `text-blue-accent`. The original spec said `blue-accent`; the actual config exposes it as `accent`. Use `accent` in code.
+
+### 3.2 Forbidden colors
+
+`#000000`, `#FFFFFF`, any unsaturated grey, any colour not derived from the navy palette. Use the tokens.
+
+### 3.3 Gradient recipes (use exactly)
 
 ```css
-/* Primary CTA gradient */
+/* Primary CTA */
 background: linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%);
 
 /* Hero background */
-background: radial-gradient(ellipse at 20% 50%, rgba(255,107,43,0.08) 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 20%, rgba(153,203,255,0.06) 0%, transparent 50%),
-            #051426;
+background:
+  radial-gradient(ellipse at 20% 50%, rgba(255,107,43,0.08) 0%, transparent 60%),
+  radial-gradient(ellipse at 80% 20%, rgba(153,203,255,0.06) 0%, transparent 50%),
+  #051426;
 
-/* Blueprint grid overlay */
-background-image: linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px);
+/* Blueprint grid overlay (decorative texture only) */
+background-image:
+  linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px);
 background-size: 40px 40px;
 
-/* Section divider gradient (no-line alternative) */
+/* Section transition (no-line alternative) */
 background: linear-gradient(180deg, #051426 0%, #0A2340 50%, #051426 100%);
 
 /* Glass surface */
@@ -109,622 +130,350 @@ background: rgba(255,255,255,0.06);
 backdrop-filter: blur(24px);
 -webkit-backdrop-filter: blur(24px);
 
-/* Gradient text — hero keyword highlight */
+/* Gradient keyword text — ONE word per headline maximum */
 background: linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%);
 -webkit-background-clip: text;
 -webkit-text-fill-color: transparent;
 background-clip: text;
 ```
 
-### 2.2 Typography
+### 3.4 Typography
 
-#### Font Families
-
-```css
-/* Display — headings, hero, section titles */
-font-family: 'Space Grotesk', sans-serif;
-
-/* Body — paragraphs, labels, UI text */
-font-family: 'Manrope', sans-serif;
-```
-
-Load via Google Fonts:
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 ```
 
-#### Type Scale
-
-| Token | Font | Size | Weight | Line Height | Letter Spacing | Usage |
+| Token | Font | Size | Weight | Line | Tracking | Use |
 |---|---|---|---|---|---|---|
-| `display-2xl` | Space Grotesk | 72px / 4.5rem | 700 | 1.05 | -0.03em | Hero headline (desktop) |
-| `display-xl` | Space Grotesk | 56px / 3.5rem | 700 | 1.08 | -0.025em | Hero headline (mobile) |
-| `display-lg` | Space Grotesk | 48px / 3rem | 700 | 1.1 | -0.02em | Section headlines |
-| `display-md` | Space Grotesk | 36px / 2.25rem | 600 | 1.15 | -0.015em | Sub-section headlines |
-| `display-sm` | Space Grotesk | 28px / 1.75rem | 600 | 1.2 | -0.01em | Card headlines |
-| `label-xl` | Manrope | 13px / 0.8125rem | 700 | 1.2 | 0.12em | Section eyebrows (UPPERCASE) |
-| `body-xl` | Manrope | 20px / 1.25rem | 400 | 1.6 | 0 | Hero subheadline |
-| `body-lg` | Manrope | 18px / 1.125rem | 400 | 1.65 | 0 | Feature descriptions |
-| `body-md` | Manrope | 16px / 1rem | 400 | 1.7 | 0 | Default body |
-| `body-sm` | Manrope | 14px / 0.875rem | 400 | 1.6 | 0 | Captions, meta |
-| `mono` | 'JetBrains Mono', monospace | 13px | 400 | 1.5 | 0 | Code, metrics, data |
+| display-2xl | Space Grotesk | 72px | 700 | 1.05 | -0.03em | Hero (desktop) |
+| display-xl | Space Grotesk | 56px | 700 | 1.08 | -0.025em | Hero (mobile) |
+| display-lg | Space Grotesk | 48px | 700 | 1.10 | -0.02em | Section headline |
+| display-md | Space Grotesk | 36px | 600 | 1.15 | -0.015em | Subsection |
+| display-sm | Space Grotesk | 28px | 600 | 1.20 | -0.01em | Card headline |
+| label-xl | Manrope | 13px | 700 | 1.20 | 0.12em | Eyebrow (UPPERCASE) |
+| body-xl | Manrope | 20px | 400 | 1.60 | 0 | Hero subhead |
+| body-lg | Manrope | 18px | 400 | 1.65 | 0 | Feature description |
+| body-md | Manrope | 16px | 400 | 1.70 | 0 | Default body |
+| body-sm | Manrope | 14px | 400 | 1.60 | 0 | Caption / meta |
+| mono | JetBrains Mono | 13px | 400 | 1.50 | 0 | Code, metrics |
 
-#### Typography Rules
-- Display headings: always Space Grotesk, always negative letter-spacing, always `#F0F4F8`
-- **Gradient text rule**: ONE word or short phrase per hero/section headline may use the orange gradient text treatment. Apply `italic` + gradient to the most emotionally charged word (e.g. *call*, *job*, *money*). Never the entire headline. Never more than once per section.
-- Section eyebrow labels: always Manrope, always uppercase, always `tracking-[0.12em]`, always `--color-orange-soft` or `--color-blue-accent`
-- Body text on dark: `rgba(240,244,248,0.70)` — never pure white, never full opacity
-- Max line length: 65ch for body text, 40ch for hero subheadlines
-- No justified text. Left-aligned body. Centre-align hero only.
+**Rules:**
+- Display headings: always Space Grotesk, negative letter-spacing, base colour `#F0F4F8`.
+- **Gradient keyword rule**: at most ONE word per headline gets `italic` + orange gradient text. Never the whole headline. Never twice in one section. Pick the most emotionally charged word (*call*, *job*, *money*).
+- Eyebrows: Manrope, uppercase, `tracking-[0.12em]`, `text-orange-soft` or `text-accent`.
+- Body on dark: `text-offwhite/70`. Never full opacity.
+- Max line length: 65ch body, 40ch hero subhead.
+- Left-align body. Centre-align hero only. Never justify.
 
-### 2.3 The No-Line Rule — ABSOLUTE
-
-**There are no borders, dividers, separator lines, or rules in this design system. Zero. None.**
-
-Instead, use:
-- **Tonal surface elevation**: background-color shift between `#051426` → `#0A2340` → `#0F3060`
-- **Glassmorphism panels** that float above the surface
-- **Gradient fades** at section transitions (transparent → navy → transparent)
-- **Spacing as structure**: generous whitespace (80px–160px section gaps) is the visual separator
-- **Blueprint grid overlay** as purely decorative texture, never structural
-
-If you catch yourself writing `border`, `border-t`, `divide-`, `hr`, or any equivalent — stop. Delete it. Find the tonal alternative.
-
-**Only permitted border-adjacent usage:**
-- `ring-1 ring-white/5` on glass cards (so subtle it reads as surface depth, not a line)
-- `outline` for keyboard focus states (accessibility requirement)
-
-### 2.4 Glassmorphism 2.0
-
-Glass panels are the primary card surface in this system. Every interactive card uses this treatment.
-
-#### Base Glass Recipe
+### 3.5 Shadows (always use `#020D18`, never `rgba(0,0,0,…)`)
 
 ```css
-.glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 8px 32px rgba(2, 13, 24, 0.4),
-    0 2px 8px rgba(2, 13, 24, 0.2);
-}
+/* Level 1 — card */          0 2px 8px rgba(2,13,24,0.3), 0 1px 3px rgba(2,13,24,0.2);
+/* Level 2 — elevated */       0 8px 32px rgba(2,13,24,0.4), 0 2px 8px rgba(2,13,24,0.2);
+/* Level 3 — floating panel */ 0 20px 60px rgba(2,13,24,0.5), 0 8px 24px rgba(2,13,24,0.3);
+/* Level 4 — modal */          0 40px 80px rgba(2,13,24,0.6), 0 16px 40px rgba(2,13,24,0.4);
+
+/* Orange glow (CTAs)  */ 0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20);
+/* Blue glow (accents) */ 0 0 20px rgba(153,203,255,0.25), 0 4px 12px rgba(153,203,255,0.15);
 ```
 
-#### Tactile Hover Lift (mandatory on interactive glass cards)
+Pre-built Tailwind utilities: `shadow-orange-glow`, `shadow-orange-glow-lg`, `shadow-blue-glow`.
 
-```css
-.glass-card {
-  transition: transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-              box-shadow 300ms ease-in-out;
-}
-
-.glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 0 0 1px rgba(255, 107, 43, 0.15),
-    0 20px 60px rgba(2, 13, 24, 0.5),
-    0 4px 16px rgba(255, 107, 43, 0.08);
-}
-```
-
-#### Glass Hierarchy
+### 3.6 Glass hierarchy
 
 | Level | Opacity | Blur | Use |
 |---|---|---|---|
-| Deep glass | 4% | 16px | Background panels, hero overlays |
-| Standard glass | 6% | 24px | Feature cards, stat panels |
-| Elevated glass | 10% | 32px | Pricing cards, modals |
-| Surface glass | 15% | 40px | Tooltips, popovers, top layer |
+| Deep | 4% | 16px | Background panels, hero overlays |
+| Standard | 6% | 24px | Feature cards, stat panels |
+| Elevated | 10% | 32px | Pricing cards, modals |
+| Surface | 15% | 40px | Tooltips, popovers |
 
-### 2.5 Elevation & Shadow System
-
-**All shadows must use `#020D18` (void) as shadow color, never `rgba(0,0,0,...)`**
-
+Standard glass:
 ```css
-/* Level 0 — flat (no shadow, tonal bg only) */
-/* Level 1 — card */
-box-shadow: 0 2px 8px rgba(2,13,24,0.3), 0 1px 3px rgba(2,13,24,0.2);
-
-/* Level 2 — elevated card */
-box-shadow: 0 8px 32px rgba(2,13,24,0.4), 0 2px 8px rgba(2,13,24,0.2);
-
-/* Level 3 — floating panel */
-box-shadow: 0 20px 60px rgba(2,13,24,0.5), 0 8px 24px rgba(2,13,24,0.3);
-
-/* Level 4 — modal */
-box-shadow: 0 40px 80px rgba(2,13,24,0.6), 0 16px 40px rgba(2,13,24,0.4);
-
-/* Orange glow (CTA buttons, active elements) */
-box-shadow: 0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2);
-
-/* Blue glow (secondary accents) */
-box-shadow: 0 0 20px rgba(153,203,255,0.25), 0 4px 12px rgba(153,203,255,0.15);
+background: rgba(255,255,255,0.06);
+backdrop-filter: blur(24px);
+-webkit-backdrop-filter: blur(24px);
+border-radius: 16px;
+box-shadow:
+  0 0 0 1px rgba(255,255,255,0.08),
+  0 8px 32px rgba(2,13,24,0.4),
+  0 2px 8px rgba(2,13,24,0.2);
 ```
 
-### 2.6 Motion & Animation — PREMIUM TIER
+### 3.7 Spacing as structure
 
-**This section is the difference between "looks decent" and "looks like Framer built it."**
-**Execute every pattern here with full precision. Do not skip or simplify.**
+Sections separate by space, not by lines. Alternate `py-20 md:py-32` and `py-16 md:py-24` to break rhythm. Asymmetric column gutters on desktop (e.g., `gap-12 lg:gap-20`).
 
-Motion philosophy: **precision machinery starting up**. Every animation must feel like a heavy, well-machined component moving with intention and inertia. Never springy. Never playful.
+---
 
-#### Easing Functions
+## §4 — Motion Language
+
+Motion philosophy: **precision machinery starting up.** Heavy, intentional, smooth, inevitable. Never springy, never playful.
+
+### 4.1 Easings
 
 ```css
---ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
---ease-entrance: cubic-bezier(0, 0, 0.2, 1);
---ease-exit: cubic-bezier(0.4, 0, 1, 1);
+--ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+--ease-entrance:   cubic-bezier(0, 0, 0.2, 1);
+--ease-exit:       cubic-bezier(0.4, 0, 1, 1);
 --ease-mechanical: cubic-bezier(0.34, 1.2, 0.64, 1);
---ease-precision: cubic-bezier(0.25, 0.46, 0.45, 0.94);
---ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);    /* NEW: for large scroll reveals */
+--ease-precision:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
+--ease-smooth:     cubic-bezier(0.16, 1, 0.3, 1);
 ```
 
-#### Duration Rules
+Tailwind utilities: `ease-standard`, `ease-mechanical`, `ease-precision`, `ease-smooth`.
+
+### 4.2 Durations
 
 | Duration | Use |
 |---|---|
-| 150ms | Icon state changes, checkbox ticks |
+| 150ms | Icon state changes, ticks |
 | 200ms | Colour/opacity transitions |
-| 300ms | Hover lifts, card elevation |
+| 300ms | Hover lifts, card elevation (minimum for transforms) |
 | 400ms | Page element entrances |
-| 500ms | Section transitions, modals opening |
-| 600ms | Large reveals, sticky panel transitions |
-| 800ms | Status Gauge fills, counter animations start |
-| 1200ms | Animated counter from 0 → target value |
+| 500ms | Modals, section transitions |
+| 600ms | Sticky panel transitions, large reveals |
+| 800ms | Status gauge fills |
+| 1200ms | Animated counters 0 → target |
 
-#### ── PATTERN 1: Scroll-Triggered Entrance Animations (MANDATORY on every section) ──
+### 4.3 Patterns (apply on the marketing site, never on the dashboard)
 
-Every section's elements must animate in as they enter the viewport. Use `IntersectionObserver` (native, no library dependency).
+#### P1 — Scroll-triggered entrance (mandatory on every marketing section)
 
-```typescript
-// Add to a shared useScrollAnimation hook
-const observerOptions = {
-  threshold: 0.12,
-  rootMargin: '0px 0px -60px 0px'
-};
+Every marketing section animates in via `IntersectionObserver`. Use the existing hook at `src/hooks/useScrollAnimation.ts`. Apply `data-animate` on every animatable element; stagger children with `data-delay="0..4"` (80ms steps).
 
-// Initial state on ALL animatable elements:
-opacity: 0;
-transform: translateY(32px);
+Initial state: `opacity:0; transform: translateY(32px)`. Triggered: `is-visible` class flips to `opacity:1; transform: translateY(0)` over 600ms `ease-smooth`.
 
-// Triggered state:
-opacity: 1;
-transform: translateY(0);
-transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
-            transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+#### P2 — Sticky scroll feature showcase (signature pattern)
 
-// Stagger children with data-delay attribute:
-// data-delay="0"   → transition-delay: 0ms
-// data-delay="1"   → transition-delay: 80ms
-// data-delay="2"   → transition-delay: 160ms
-// data-delay="3"   → transition-delay: 240ms
-// data-delay="4"   → transition-delay: 320ms
-```
+Implemented in `components/StickyFeatures.tsx`. Left column scrolls a feature list; right column is `position: sticky; top: 10vh` and transitions between UI states as each feature enters the viewport. The active feature row gets `border-l-2 border-orange` + `bg-orange/[0.04]` (the only permitted internal border). On mobile (<768px), the sticky behaviour collapses — feature blocks stack vertically.
 
-Apply `data-animate` attribute to every card, headline, subheadline, and CTA group. The CSS class `is-visible` triggers the transition. Children within a grid get `data-delay="N"` for stagger.
+#### P3 — Animated stat counters (mandatory on stats and ROI)
 
-#### ── PATTERN 2: Sticky Scroll Feature Showcase (SIGNATURE SECTION — MANDATORY) ──
+Use `src/hooks/useCounter.ts` (`easeOutExpo`, 1200ms, runs once via `started` flag, formats with `toLocaleString('en-GB')`). Trigger on intersection. Never ship static numbers in marketing surfaces.
 
-This is the pattern that makes sites feel like Framer. **It must be used for the Features section.**
+#### P4 — Ambient float (hero only, max 3 elements)
 
-**Layout structure:**
-```
-[Left column — scrollable feature list]    [Right column — sticky phone/UI preview]
-  Feature 1: Always On Call Answering  →    position: sticky; top: 10vh;
-  Feature 2: Instant WhatsApp Summary  →    (transitions between UI states)
-  Feature 3: Smart Spam Filtering      →    (as each feature enters viewport)
-  Feature 4: Diary Integration         →
-```
+Continuous subtle float on hero phone mockup + up to 2 floating glass notification cards. Use Tailwind animations `animate-float-primary` (5s) and `animate-float-secondary` (4s) — already in config. Stagger card delays by 0s / 0.8s / 1.6s. **Float only product UI** (incoming call, WhatsApp summary, stats pill). Never float decorative blobs/orbs.
 
-**Implementation:**
-```tsx
-// The right panel stays fixed while left content scrolls
-// position: sticky; top: 10vh; height: 80vh;
+#### P5 — Lenis smooth scroll (already initialised)
 
-// Each feature block on the left has an IntersectionObserver
-// When feature N enters viewport → right panel transitions to show feature N's UI
+Initialised in `index.tsx`. Do not re-initialise per page. Do not replace with native scroll.
 
-// Right panel transition between states:
-transition: opacity 400ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
-// Exiting state: opacity 0, translateY(-16px)
-// Entering state: opacity 1, translateY(0)
+#### P6 — Progress bar fill (How It Works section)
 
-// The active feature on the left gets an orange left-border indicator:
-// border-left: 2px solid #FF6B2B (the ONLY permitted border use outside accessibility)
-// + background: rgba(255,107,43,0.04)
-```
+3-step progress bars fill `width: 0% → 100%` over 1200ms `ease-smooth` on intersection. Background `rgba(255,255,255,0.08)`, fill `linear-gradient(90deg, #FF6B2B, #FF8C55)`.
 
-The right panel shows a styled phone mockup or UI screenshot for each feature. When no real screenshots exist, use a glass card with an illustrated UI that represents the feature.
+#### P7 — Mouse parallax (hero only, desktop only)
 
-#### ── PATTERN 3: Animated Stat Counters (MANDATORY for stats section) ──
+Use `src/hooks/useParallax.ts`. Skip on touch devices (`window.matchMedia('(pointer: coarse)').matches`). Phone mockup: max 20px X / 12px Y. Floating cards: inverse 0.4× for depth.
 
-Stats must count up from 0 when they enter the viewport — never static numbers.
-
-```typescript
-function animateCounter(
-  element: HTMLElement,
-  target: number,
-  duration: number = 1200,
-  prefix: string = '',
-  suffix: string = ''
-) {
-  const startTime = performance.now();
-  const easeOutExpo = (t: number) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-
-  function update(currentTime: number) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const easedProgress = easeOutExpo(progress);
-    const current = Math.round(easedProgress * target);
-
-    element.textContent = prefix + current.toLocaleString('en-GB') + suffix;
-
-    if (progress < 1) requestAnimationFrame(update);
-  }
-
-  requestAnimationFrame(update);
-}
-
-// Usage examples:
-// animateCounter(el, 12847, 1200, '', '')     → "12,847"
-// animateCounter(el, 98, 1000, '', '%')        → "98%"
-// animateCounter(el, 4200, 1200, '£', '')      → "£4,200"
-```
-
-Trigger via IntersectionObserver. Counter only runs once (use a `started` flag).
-
-#### ── PATTERN 4: Ambient Float Animation (hero UI elements only) ──
-
-The phone mockup and any floating glass UI cards in the hero section must have a **continuous subtle float**. This is **not** decoration — it signals the product is alive and responsive.
+### 4.4 Reduced motion (mandatory)
 
 ```css
-@keyframes float-primary {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33%       { transform: translateY(-10px) rotate(0.3deg); }
-  66%       { transform: translateY(-5px) rotate(-0.2deg); }
-}
-
-@keyframes float-secondary {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50%       { transform: translateY(-8px) rotate(-0.3deg); }
-}
-
-.hero-phone-mockup {
-  animation: float-primary 5s ease-in-out infinite;
-}
-
-.hero-floating-card {
-  animation: float-secondary 4s ease-in-out infinite;
-  /* Offset each card's start time for organic feel: */
-  /* Card 1: animation-delay: 0s */
-  /* Card 2: animation-delay: 0.8s */
-  /* Card 3: animation-delay: 1.6s */
-}
-```
-
-**Permitted floating elements (maximum 3 per section):**
-- Phone mockup (primary float)
-- Incoming call glass card ("Sarah" answering)
-- WhatsApp message glass card (job booked notification)
-- Stats pill (calls answered today)
-
-**Forbidden floating elements:**
-- Decorative blobs, orbs, or abstract shapes without semantic meaning
-- Anything that doesn't represent a real product UI element
-
-#### ── PATTERN 5: Lenis Smooth Scroll (MANDATORY) ──
-
-Install and configure Lenis for buttery smooth scrolling across the entire page.
-
-```typescript
-// Install: npm install lenis
-import Lenis from 'lenis';
-
-// In App.tsx useEffect:
-const lenis = new Lenis({
-  duration: 1.2,
-  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-  orientation: 'vertical',
-  smoothWheel: true,
-});
-
-function raf(time: number) {
-  lenis.raf(time);
-  requestAnimationFrame(raf);
-}
-requestAnimationFrame(raf);
-
-// Cleanup:
-return () => lenis.destroy();
-```
-
-#### ── PATTERN 6: Progress Bar Loading (How It Works section) ──
-
-The 3-step How It Works section must show animated progress bars that fill on scroll.
-
-```css
-.step-progress-bar {
-  height: 3px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.step-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #FF6B2B, #FF8C55);
-  border-radius: 2px;
-  width: 0%;
-  transition: width 1200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* When step enters viewport: */
-.step-progress-fill.is-visible {
-  width: 100%;
-}
-```
-
-Each step's bar triggers independently as the user scrolls down.
-
-#### ── PATTERN 7: Mouse Parallax (Hero only) ──
-
-The hero phone mockup must respond to mouse movement on desktop.
-
-```typescript
-// In Hero component:
-useEffect(() => {
-  if (window.matchMedia('(pointer: coarse)').matches) return; // skip touch devices
-
-  const handleMouseMove = (e: MouseEvent) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 20; // max 20px offset
-    const y = (e.clientY / window.innerHeight - 0.5) * 12; // max 12px offset
-
-    phoneMockupRef.current?.style.setProperty(
-      'transform',
-      `translate(${x}px, ${y}px) translateY(var(--float-y, 0px))`
-    );
-
-    // Floating cards get inverse/reduced parallax for depth:
-    floatingCard1Ref.current?.style.setProperty(
-      'transform',
-      `translate(${-x * 0.4}px, ${-y * 0.4}px)`
-    );
-  };
-
-  window.addEventListener('mousemove', handleMouseMove, { passive: true });
-  return () => window.removeEventListener('mousemove', handleMouseMove);
-}, []);
-```
-
-#### Duration Recap & Motion Hierarchy
-
-| Minimum 300ms for any transform. No instant jumps except opacity micro-states. |
-
-```
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  [data-animate] { opacity: 1; transform: none; }
 }
 ```
 
-### 2.7 Status Gauges
+### 4.5 The Framer Standard
 
-Status Gauges are a signature industrial component — circular SVG indicators that show capacity, uptime, or performance metrics. They must appear in: Hero (calls answered stat), Pricing section (plan capacity), and any metrics section.
+Every marketing section, scrolled into view, must feel as polished as a Framer-built site:
+- Nothing simply "appears" — purposeful entrance
+- Stats count up; never static
+- Features section uses sticky scroll
+- Smooth scroll is Lenis; never native
+- Hero has floating, breathing UI
+
+If a section would look at home on a basic Webflow template, it needs more motion work.
+
+---
+
+## §5 — Component Cookbook (paste-ready)
+
+### 5.1 Section wrapper (always use this)
 
 ```tsx
-interface StatusGaugeProps {
-  value: number;        // 0–100
-  label: string;        // e.g. "Calls Answered"
-  metric: string;       // e.g. "98.7%"
-  size?: 'sm' | 'md' | 'lg';
-  color?: 'orange' | 'blue';
-}
+<section
+  data-animate
+  aria-labelledby="my-heading"
+  className="relative py-20 md:py-32 overflow-hidden"
+>
+  <div className="container mx-auto px-6 lg:px-8">
+    <span data-delay="0" className="inline-block text-[13px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body mb-4">
+      EYEBROW LABEL
+    </span>
+    <h2 data-delay="1" id="my-heading" className="font-display text-4xl md:text-5xl font-bold tracking-[-0.02em] text-offwhite mb-6">
+      Section headline with a <span className="italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent">keyword</span>.
+    </h2>
+    <p data-delay="2" className="font-body text-lg text-offwhite/70 max-w-[65ch] leading-[1.65]">
+      Body copy.
+    </p>
+  </div>
+</section>
 ```
 
-Implementation:
-- SVG `<circle>` with `stroke-dasharray` + `stroke-dashoffset` animated via CSS
-- Background ring: `rgba(255,255,255,0.08)`
-- Foreground arc: orange gradient `#FF6B2B → #FF8C55` or blue `#99cbff → #60A5FA`
-- Fill animation: 800ms precision ease on mount/intersection
-- Outer glow: matching color glow shadow on the arc
-
-### 2.8 Asymmetry & Editorial Layout
-
-**Symmetry is for amateurs. Asymmetry is for master craftsmen.**
-
-- Hero: headline left, visual right (60/40 split on desktop)
-- Feature cards: alternating left/right content + visual (not uniform grid)
-- Stats row: 3-column with largest stat centred, others smaller flanking
-- Blueprint grid: always slightly rotated 2–3° as background texture
-- Section padding: alternate `py-20 md:py-32` and `py-16 md:py-24` to break rhythm
-- Column gutters: asymmetric on desktop (e.g., `gap-12 lg:gap-20`)
-
-### 2.9 Component Anatomy
-
-#### Primary CTA Button
+### 5.2 Primary CTA
 
 ```tsx
-className="
+<button className="
   inline-flex items-center gap-2.5
   px-7 py-4
-  bg-gradient-to-r from-[#FF6B2B] to-[#FF8C55]
+  bg-gradient-to-r from-orange to-orange-glow
   text-white font-semibold text-[15px] tracking-[-0.01em]
-  rounded-[14px]
-  shadow-[0_0_24px_rgba(255,107,43,0.35),0_4px_16px_rgba(255,107,43,0.2)]
-  hover:shadow-[0_0_40px_rgba(255,107,43,0.5),0_8px_24px_rgba(255,107,43,0.3)]
-  hover:-translate-y-0.5
-  active:translate-y-0 active:shadow-[0_0_16px_rgba(255,107,43,0.25)]
-  transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)]
-  font-[Manrope]
-"
+  rounded-button
+  shadow-orange-glow
+  hover:shadow-orange-glow-lg hover:-translate-y-0.5
+  active:translate-y-0
+  transition-all duration-300 ease-mechanical
+  font-body
+  focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]
+">
+  Start Free Trial
+</button>
 ```
 
-**CTA copy must always be outcome-focused:**
-- "Start Free Trial" (primary)
-- "Book a Demo" (secondary)
-- "Hear a Live Demo" (audio CTA)
-- "Calculate My Losses" (calculator CTA)
-- Never: "Get Started", "Learn More", "Click Here", "Sign Up"
-
-#### Secondary CTA Button
+### 5.3 Secondary CTA
 
 ```tsx
-className="
+<button className="
   inline-flex items-center gap-2.5
   px-7 py-4
-  bg-[rgba(153,203,255,0.08)]
-  text-[#99cbff] font-semibold text-[15px] tracking-[-0.01em]
-  rounded-[14px]
-  ring-1 ring-[rgba(153,203,255,0.2)]
-  hover:bg-[rgba(153,203,255,0.14)]
-  hover:ring-[rgba(153,203,255,0.35)]
-  hover:-translate-y-0.5
+  bg-accent/[0.08]
+  text-accent font-semibold text-[15px] tracking-[-0.01em]
+  rounded-button
+  ring-1 ring-accent/20
+  hover:bg-accent/[0.14] hover:ring-accent/35 hover:-translate-y-0.5
   transition-all duration-300
-  font-[Manrope]
-"
+  font-body
+">
+  Hear a Live Demo
+</button>
 ```
 
-#### Glass Nav
+### 5.4 Glass feature card
 
 ```tsx
-className="
-  fixed top-0 inset-x-0 z-50
-  bg-[rgba(5,20,38,0.85)]
-  backdrop-blur-[20px]
-  border-b-0
-  shadow-[0_1px_0_rgba(255,255,255,0.05)]
-"
-```
-
-#### Section Eyebrow Label
-
-```tsx
-className="
-  inline-block
-  text-[13px] font-bold tracking-[0.12em] uppercase
-  text-[#ffb59a]
-  font-[Manrope]
-  mb-4
-"
-```
-
-#### Feature Card (Glass)
-
-```tsx
-className="
+<article className="
   relative overflow-hidden
-  bg-[rgba(255,255,255,0.06)]
-  backdrop-blur-[24px]
-  rounded-2xl
+  bg-white/[0.06] backdrop-blur-[24px]
+  rounded-card
   shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_32px_rgba(2,13,24,0.4)]
   p-8
   hover:-translate-y-1
   hover:shadow-[0_0_0_1px_rgba(255,107,43,0.15),0_20px_60px_rgba(2,13,24,0.5)]
-  transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)]
-"
+  transition-all duration-300 ease-mechanical
+">
+  {/* content */}
+</article>
 ```
 
-#### Pricing Card (Popular/Featured)
+### 5.5 Pricing card (Popular / featured tier)
 
 ```tsx
-className="
+<div className="
   relative
-  bg-gradient-to-b from-[rgba(255,107,43,0.12)] to-[rgba(255,107,43,0.04)]
+  bg-gradient-to-b from-orange/[0.12] to-orange/[0.04]
   backdrop-blur-[24px]
-  rounded-2xl
+  rounded-card
   shadow-[0_0_0_1px_rgba(255,107,43,0.25),0_20px_60px_rgba(2,13,24,0.5),0_0_40px_rgba(255,107,43,0.1)]
   p-8
   scale-[1.03]
-"
+">
+  {/* content */}
+</div>
+```
+
+### 5.6 Sticky nav
+
+```tsx
+<header className="
+  fixed top-0 inset-x-0 z-50
+  bg-navy/85 backdrop-blur-[20px]
+  shadow-[0_1px_0_rgba(255,255,255,0.05)]
+">
+  {/* content */}
+</header>
+```
+
+### 5.7 Status gauge (signature industrial component)
+
+Used in: Hero (calls answered stat), Pricing capacity indicator, metrics panels.
+
+- SVG `<circle>` with `stroke-dasharray` + `stroke-dashoffset` animated 800ms `ease-precision` on intersection
+- Background ring: `rgba(255,255,255,0.08)`
+- Foreground arc: orange gradient `#FF6B2B → #FF8C55` (or accent variant)
+- Outer glow shadow on the arc matching the colour
+
+```ts
+interface StatusGaugeProps {
+  value: number;          // 0–100
+  label: string;          // e.g. "Calls Answered"
+  metric: string;         // e.g. "98.7%"
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'orange' | 'accent';
+}
+```
+
+### 5.8 Eyebrow label
+
+```tsx
+<span className="inline-block text-[13px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body mb-4">
+  THREE STEPS TO ZERO MISSED CALLS
+</span>
 ```
 
 ---
 
-## 3. Conversion Architecture — The Revenue Blueprint
+## §6 — Marketing Page Architecture
 
-> Every page section must appear in this exact order. Do not reorder. Do not omit.
-
-### 3.1 Mandatory Section Order
+### 6.1 Mandatory section order (do not reorder, do not omit)
 
 ```
-1.  [HEADER]       Glass sticky nav — logo left, nav centre, dual CTAs right
-2.  [HERO]         Bold headline (gradient word) + outcome subheadline + dual CTAs + floating phone + animated stats
-3.  [SOCIAL PROOF] Logo strip + animated stat bar — immediate credibility
-4.  [PAIN POINTS]  Cost of doing nothing — emotional + financial stakes
-5.  [ROI CALC]     Interactive: "See exactly what you're losing" — personalised urgency
-6.  [COMPARISON]   Trade Receptionist vs alternatives — honest, factual table
-7.  [DEMO]         AudioPlayer — hear a real call handled
-8.  [HOW IT WORKS] 3-step process with animated progress bars
-9.  [USE CASES]    Trade-specific scenarios — recognition triggers
-10. [FEATURES]     STICKY SCROLL SHOWCASE — 4 features, phone panel stays fixed
-11. [TESTIMONIALS] Video quotes or text — real trades, real results
-12. [PRICING]      3 tiers, monthly/annual toggle, Popular badge, Status Gauge
-13. [FAQ]          Objection-handling accordion — 8 questions minimum
-14. [FINAL CTA]    Dark section — urgency + primary CTA
-15. [FOOTER]       Minimal — links, legal, social
-16. [MOBILE BAR]   Sticky bottom on mobile — "Start Free Trial" always visible
+1.  HEADER         Glass sticky nav. Logo left, nav centre, dual CTAs right.
+2.  HERO           Outcome headline (one gradient word) + subhead + dual CTAs + floating phone + animated stats bar.
+3.  SOCIAL PROOF   Logo strip + animated stat bar.
+4.  PAIN POINTS    Cost of doing nothing — financial + emotional stakes.
+5.  ROI CALCULATOR Personalised urgency. Component: Calculator.tsx.
+6.  COMPARISON     vs. alternatives — honest factual table.
+7.  DEMO           AudioPlayer.tsx — hear a real call handled.
+8.  HOW IT WORKS   3 steps with progress bars (P6).
+9.  USE CASES      Trade-specific scenarios.
+10. FEATURES       Sticky scroll showcase (P2). Component: StickyFeatures.tsx.
+11. TESTIMONIALS   Real UK trades. Component: Testimonials.tsx.
+12. PRICING        3 tiers, monthly/annual toggle, Pro is Popular.
+13. FAQ            8+ accordion questions.
+14. FINAL CTA      Dark band, single primary CTA.
+15. FOOTER         Minimal — links, legal, social.
+16. MOBILE BAR     Sticky bottom on mobile only — "Start Free Trial".
 ```
 
-### 3.2 Hero Requirements (Non-negotiable)
+### 6.2 Hero non-negotiables
 
-**Headline:** Maximum 8 words. Outcome-first. Present tense. ONE word gets italic + gradient treatment.
-- Current: "Never Miss A *Call*. Never Lose A *Job*." — the words *Call* and *Job* render in italic orange gradient
-- Must be `display-2xl` Space Grotesk, base colour `#F0F4F8`, gradient words use the gradient text recipe
+- Headline: max 8 words, present tense, one gradient italic keyword. Current: "Never Miss A *Call*. Never Lose A *Job*."
+- Subhead: 1–2 sentences, ≤20 words each, quantify the pain.
+- Dual CTAs in same row, 16px gap.
+- Right panel: phone mockup with float (P4) + 3 floating glass cards (incoming call, WhatsApp booking confirmation, stats pill) + mouse parallax (P7).
+- Stats bar under CTAs: 3 counters animating 0 → target on load (P3) — calls answered this month, % answered, avg annual savings in £.
 
-**Subheadline:** 1–2 sentences, max 20 words per sentence. Quantify the pain.
+### 6.3 Pricing rules
 
-**Dual CTAs:**
-- Primary: "Start Free Trial" — orange gradient, orange glow
-- Secondary: "Hear a Live Demo" — glass treatment
-- Both in same row, 16px gap
+- Starter £29/mo (≤100 calls/mo)
+- Pro £59/mo (≤300 calls/mo) — **Most Popular**, scaled card, orange glow
+- Agency £119/mo (unlimited)
+- Monthly/annual toggle (annual = 2 months free, savings shown in £)
+- Per card: "14-day free trial. No setup fees. Cancel anytime."
+- Per-card CTA: "Start Free Trial"
 
-**Hero right panel (MANDATORY):**
-- Phone mockup with ambient float animation
-- 3 floating glass notification cards (with staggered float delays):
-  - "Incoming call from Dave — Plumbing quote" (incoming call card)
-  - "Sarah answered. Job booked for Tuesday." (outcome card)
-  - "Calls answered today: 2,847" (stats pill)
-- Mouse parallax on desktop (Pattern 7)
+### 6.4 FAQ — minimum 8 questions
 
-**Animated stats bar beneath CTAs:**
-- "12,847 calls answered this month" (counter animation)
-- "98.7% answered rate" (counter animation)
-- "£4,200 avg. annual savings" (counter animation)
-These count up from 0 on page load, 1200ms easeOutExpo.
-
-### 3.3 Social Proof Rules
-
-- Use only UK trade companies and UK tradesperson names
-- Testimonial quotes must mention specific outcomes
-- Minimum 6 testimonials; show 3 at a time with carousel
-- Trade-specific logos: NICEIC, Gas Safe Register, FMB
-
-### 3.4 Pricing Section Rules
-
-```
-Tier 1: Starter   — £29/month — Up to 100 calls/month
-Tier 2: Pro       — £59/month — Up to 300 calls/month [MOST POPULAR]
-Tier 3: Agency    — £119/month — Unlimited calls
-```
-
-- Monthly/annual toggle (annual = 2 months free)
-- Pro tier: scale-up card, orange glow, "Most Popular" badge
-- Every tier: "14-day free trial" trust signal
-- CTA per card: "Start Free Trial"
-- Annual savings shown in £
-- "Cancel anytime. No setup fees." per card
-
-### 3.5 FAQ Requirements
-
-8 questions minimum:
 1. How does call diverting work?
 2. What if I'm mid-job and can't check messages?
 3. Does it work with my trade management software?
@@ -734,417 +483,372 @@ Tier 3: Agency    — £119/month — Unlimited calls
 7. What happens if I go over my call limit?
 8. How quickly can I get set up?
 
-### 3.6 Conversion Copy Principles
+### 6.5 Conversion principles
 
-| Principle | Application |
+| Principle | Apply |
 |---|---|
-| **Loss aversion over gain** | "Stop losing £4,200/year" not "Earn more money" |
-| **Specificity over vagueness** | "14 minutes setup" not "quick setup" |
-| **Social normalisation** | "Join 500+ UK tradespeople" |
-| **Risk reversal** | "14-day free trial. No card required." |
-| **Urgency without desperation** | "While you read this, a competitor is answering their calls" |
-| **Outcome in every feature** | "Smart Scheduling — so you wake up to a full diary" |
-| **UK trades vocabulary** | Call-out, quote, job, booking, diary |
+| Loss aversion over gain | "Stop losing £4,200/year" not "Earn more" |
+| Specificity over vagueness | "14 minutes setup" not "quick setup" |
+| Social normalisation | "Join 500+ UK tradespeople" |
+| Risk reversal | "14-day free trial. No card required." |
+| Urgency without desperation | "While you read this, a competitor is answering their calls." |
+| Outcome in every feature | "Smart scheduling — so you wake up to a full diary" |
+| UK trades vocabulary | call-out, quote, job, booking, diary |
 
 ---
 
-## 4. Technical Rules
+## §7 — Dashboard Conventions
 
-### 4.1 Stack (Exact, Non-Negotiable)
+The dashboard is **not** a marketing surface. It uses the same tokens but a different rhythm.
 
-```
-Runtime:     React 19.2.3
-Build:       Vite 6.2.0
-Language:    TypeScript 5.8.2
-Styling:     Tailwind CSS (local tailwind.config.ts)
-Icons:       Lucide React
-AI/Audio:    Google Gemini 2.5 Flash TTS API (@google/genai)
-Booking:     Calendly embed (components/BookDemo.tsx)
-Waitlist:    Google Apps Script webhook (components/WaitlistModal.tsx)
-Smooth Scroll: Lenis (npm install lenis)
-Deployment:  Vercel
-```
+### 7.1 Layout
 
-**Do not add:**
-- React Router
-- Redux/Zustand
-- Framer Motion (Lenis + CSS + IntersectionObserver covers all needs)
-- GSAP
-- Any CSS-in-JS library
+- Routed via `react-router-dom`. Pages live in `src/pages/`. Shell in `src/components/dashboard/DashboardShell.tsx`.
+- Onboarding flow: `WelcomePage.tsx` → `OnboardingPage.tsx` → `DashboardPage.tsx`.
+- Authed pages: Dashboard, Calls, Leads, Settings.
 
-**Permitted additions:**
-- `lenis` — smooth scroll (MANDATORY, install it)
-- `@radix-ui/react-*` — accessible modals, dropdowns, accordions
-- `canvas-confetti` — conversion events
+### 7.2 Rules that flip vs. marketing
 
-### 4.2 Tailwind Config
-
-```ts
-// tailwind.config.ts
-export default {
-  content: ['./index.html', './src/**/*.{ts,tsx}', './*.{ts,tsx}', './components/**/*.{ts,tsx}'],
-  theme: {
-    extend: {
-      colors: {
-        void: '#020D18',
-        navy: {
-          DEFAULT: '#051426',
-          mid: '#0A2340',
-          high: '#0F3060',
-        },
-        orange: {
-          DEFAULT: '#FF6B2B',
-          glow: '#FF8C55',
-          soft: '#ffb59a',
-        },
-        'blue-accent': {
-          DEFAULT: '#99cbff',
-          glow: '#60A5FA',
-        },
-        'white-primary': '#F0F4F8',
-      },
-      fontFamily: {
-        display: ['Space Grotesk', 'sans-serif'],
-        body: ['Manrope', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
-      backdropBlur: {
-        glass: '24px',
-        'glass-lg': '32px',
-        'glass-xl': '40px',
-      },
-      borderRadius: {
-        card: '16px',
-        button: '14px',
-        badge: '999px',
-      },
-      transitionTimingFunction: {
-        mechanical: 'cubic-bezier(0.34, 1.2, 0.64, 1)',
-        precision: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        smooth: 'cubic-bezier(0.16, 1, 0.3, 1)',
-      },
-      animation: {
-        'fade-up': 'fadeUp 600ms cubic-bezier(0.16,1,0.3,1) both',
-        'gauge-fill': 'gaugeFill 800ms cubic-bezier(0.25,0.46,0.45,0.94) both',
-        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
-        'float-primary': 'floatPrimary 5s ease-in-out infinite',
-        'float-secondary': 'floatSecondary 4s ease-in-out infinite',
-      },
-      keyframes: {
-        fadeUp: {
-          from: { opacity: '0', transform: 'translateY(32px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
-        pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 24px rgba(255,107,43,0.35)' },
-          '50%': { boxShadow: '0 0 48px rgba(255,107,43,0.6)' },
-        },
-        floatPrimary: {
-          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-          '33%':       { transform: 'translateY(-10px) rotate(0.3deg)' },
-          '66%':       { transform: 'translateY(-5px) rotate(-0.2deg)' },
-        },
-        floatSecondary: {
-          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-          '50%':       { transform: 'translateY(-8px) rotate(-0.3deg)' },
-        },
-      },
-    },
-  },
-}
-```
-
-### 4.3 Shared Animation Hook
-
-Create `src/hooks/useScrollAnimation.ts`:
-
-```typescript
-import { useEffect, useRef } from 'react';
-
-export function useScrollAnimation() {
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            // Add stagger delays for children
-            const children = entry.target.querySelectorAll('[data-delay]');
-            children.forEach((child) => {
-              const delay = Number((child as HTMLElement).dataset.delay) * 80;
-              (child as HTMLElement).style.transitionDelay = `${delay}ms`;
-            });
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -60px 0px' }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return ref;
-}
-```
-
-Global CSS for animation states in `src/styles/tokens.css`:
-
-```css
-[data-animate] {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-[data-animate].is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-animate] {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-```
-
-### 4.4 Performance Requirements
-
-| Metric | Target | Method |
+| Concern | Marketing | Dashboard |
 |---|---|---|
-| LCP | < 1.5s | Preload hero font + above-fold, avoid render-blocking |
-| CLS | 0 | Reserve space for async images |
-| INP | < 200ms | Offload Gemini API async |
-| FCP | < 0.8s | Critical CSS inlined, fonts preloaded |
-| Bundle | < 150KB gzipped JS | Tree-shake Lucide, lazy-load non-hero sections |
+| Float animations | Required (P4) | Forbidden |
+| Mouse parallax | Required (P7) | Forbidden |
+| Scroll entrances | Required on every section | Use sparingly — only on first load of a page section |
+| Counters | Animate 0 → target | Render values directly. No 1.2s delay before a user sees their data. |
+| Lenis smooth scroll | Required | Keep enabled at root, but never delay critical interactions |
+| Float / blueprint grid | Encouraged in hero | Subtle/absent — don't compete with data |
+| Copy density | Editorial / spacious | Information-dense, scannable, terse labels |
+| Headlines | Display-2xl / display-lg | display-sm or smaller; data is the hero |
+| Eyebrows / italic gradient words | Required | Avoid — too theatrical for app chrome |
 
-**Lazy loading rules:**
-- AudioPlayer: lazy import
-- BookDemo/Calendly: lazy import
-- Testimonials: lazy import
-- Calculator: lazy import
-- All below-fold images: `loading="lazy"`
+### 7.3 Dashboard component rules
 
-### 4.5 Accessibility
+- Reuse `components/UI.tsx` primitives (Button, Card, GlassCard, Section, Badge). Extend there before forking.
+- Tables: zebra via `bg-navy-mid` alternating rows, no row borders. Header: `text-offwhite/40 uppercase tracking-[0.1em] text-xs`.
+- Empty states: glass card with mono icon, single line of copy, single CTA. Never a giant illustration.
+- Loading: skeleton shimmer in `bg-white/[0.04]` over `bg-navy-mid`. Never spinners on full sections.
+- Errors: inline orange-soft text. Never red. Use `text-orange` for action-required, `text-accent` for info.
 
-- **WCAG AAA contrast** on all text
-- **Focus states**: orange outline on keyboard focus
-  ```css
-  :focus-visible { outline: 2px solid #FF6B2B; outline-offset: 3px; }
-  ```
-- **Touch targets**: minimum 48×48px
-- **Motion**: wrap all animations in `prefers-reduced-motion`
-- **Screen reader**: AudioPlayer must have text transcript
+### 7.4 Auth & routing
 
-### 4.6 Mobile-First Rules
-
-- Default layout assumes 375px viewport
-- All tap targets ≥ 48px
-- Sticky bottom bar always visible on mobile
-- Font sizes never below 16px on mobile
-- Float animations: reduced to 50% intensity on mobile
-- Sticky scroll feature section: stack vertically on mobile (no sticky panel)
-- Mouse parallax: disabled on touch devices
-
-### 4.7 File & Component Architecture
-
-```
-Trade-receptionist/
-├── CLAUDE.md                    ← This file
-├── App.tsx                      ← Main page orchestrator
-├── index.html                   ← Entry, SEO, font preloads
-├── index.tsx                    ← React mount + Lenis init
-├── types.ts                     ← Shared TypeScript interfaces
-├── tailwind.config.ts           ← Design token layer
-├── vite.config.ts               ← Build config
-├── src/
-│   ├── hooks/
-│   │   ├── useScrollAnimation.ts  ← IntersectionObserver hook
-│   │   ├── useCounter.ts          ← Animated counter hook
-│   │   └── useParallax.ts         ← Mouse parallax hook
-│   └── styles/
-│       └── tokens.css             ← CSS custom properties + [data-animate] states
-├── components/
-│   ├── UI.tsx                   ← Button, Card, GlassCard, Section, Badge, StatusGauge
-│   ├── AudioPlayer.tsx          ← AI demo audio (Gemini TTS)
-│   ├── Calculator.tsx           ← ROI calculator
-│   ├── BookDemo.tsx             ← Calendly embed
-│   ├── WaitlistModal.tsx        ← Google Sheets form
-│   ├── Testimonials.tsx         ← Testimonials carousel
-│   ├── BlueprintGrid.tsx        ← Canvas grid background
-│   ├── StickyFeatures.tsx       ← NEW: Sticky scroll feature showcase
-│   ├── FloatingHeroCards.tsx    ← NEW: Floating glass notification cards
-│   ├── AnimatedStats.tsx        ← NEW: Animated counter stats bar
-│   └── Logo.tsx                 ← Logo SVG
-```
+- Supabase auth via `src/lib/supabase.ts`.
+- Protect routes with the existing guard pattern in `App.tsx` / shell. Do not invent a parallel auth layer.
+- Login page: `LoginPage.tsx`. Redirect logic flows through the router, not via `window.location`.
 
 ---
 
-## 5. Guardrails & Philosophy
+## §8 — Backend & Integrations
 
-### 5.1 What You Must NEVER Do
+### 8.1 Stack (server)
 
-| Category | Forbidden | Alternative |
-|---|---|---|
-| **Colors** | Pure black, pure white, unsaturated grey | Use void/navy/white-primary tokens |
-| **Borders** | Any `border-*`, `divide-*`, `hr` for layout | Tonal elevation, glassmorphism, spacing |
-| **Borders (exception)** | — | Active feature indicator in sticky scroll: `border-left: 2px solid #FF6B2B` only |
-| **Shadows** | `rgba(0,0,0,...)` | Use `rgba(2,13,24,...)` |
-| **Typography** | Inter, system-ui, or any non-system font | Space Grotesk + Manrope only |
-| **Animation libs** | Framer Motion, GSAP | Lenis + CSS + IntersectionObserver |
-| **Animation** | Bouncy spring easing | Mechanical easing only |
-| **Animation** | Transforms under 300ms | Minimum 300ms |
-| **Motion** | Decorative blobs, particle effects, random orbs | Blueprint grid, floating product UI only |
-| **Float** | Floating shapes with no semantic meaning | Only float real product UI elements |
-| **Imagery** | AI art, American stock photos, robotic imagery | Real UK trade photography |
-| **Copy** | "Get Started", "Learn More", "Powered by AI" | Outcome-first copy per §3.6 |
-| **Layout** | Full symmetry on desktop | Asymmetric editorial |
-| **Gradients** | Purple-to-pink, rainbow, arbitrary | Only Industrial Luminescence recipes |
-| **Gradient text** | Entire headline in gradient | ONE keyword per section only |
+```
+Express (server/src/index.ts)
+TypeScript (~5.8)
+Pino logging (pino-pretty in dev)
+Zod for runtime validation at every boundary
+Supabase JS client (@supabase/supabase-js)
+Deployed on Railway
+```
 
-### 5.2 The Craftsman Test
+### 8.2 Layout
 
-Before shipping any UI change, ask: **"Does this feel like a £5,000 precision tool — or a cheap app?"**
+```
+server/src/
+├── index.ts              ← app bootstrap
+├── lib/                  ← prompt-builder, emergency, internal helpers + their tests
+├── routes/
+│   ├── auth/             ← session / signup / login
+│   ├── calls/            ← call data API for dashboard
+│   ├── clients/          ← tenant / customer mgmt
+│   ├── health/           ← liveness / readiness
+│   └── webhooks/         ← Twilio + Retell + Stripe inbound
+└── services/
+    ├── calendar.ts       ← Google Calendar
+    ├── resend.ts         ← email (Resend)
+    ├── retell.ts         ← AI voice (Retell)
+    ├── supabase.ts       ← server-side Supabase admin client
+    └── twilio.ts         ← phone numbers + SMS/voice
+```
 
-A £5,000 tool:
-- Has weight and intention in every motion
-- Uses space authoritatively
-- Has perfect contrast in any light condition
-- Makes the user feel they made a wise, professional choice
-- Feels **alive** — elements move with purpose, stats count up, sections reveal with craft
+### 8.3 Conventions
 
-A cheap app:
-- Animates for the sake of animating
-- Has static numbers that just appear
-- Has sections that snap into view with no elegance
-- Could have been built with a website builder
+- **Validate at boundaries.** Every webhook handler and every public route validates input with a Zod schema; infer types via `z.infer<typeof schema>`. Never trust external payloads.
+- **Errors**: catch `unknown`, narrow with `instanceof Error`, log with Pino with structured fields. Never `console.log`. Never swallow.
+- **Secrets**: `import.meta.env` on the client, `process.env` on the server. Validate presence on boot. No hard-coded keys.
+- **Webhook idempotency**: Twilio and Retell can retry. Persist a delivery id in Supabase before processing; reject duplicates.
+- **Logging**: include request id, tenant id, integration name, and outcome. Never log secrets, full call audio, or PII without masking.
 
-**If it fails the test: redesign it.**
+### 8.4 Supabase
 
-### 5.3 The Framer Standard
+- Schema lives in `supabase/migrations/*.sql`. Treat migrations as append-only; never edit a committed migration — write a new one.
+- Tenant isolation is via RLS. Any new table needs RLS policies before merge.
+- Use the **server** Supabase client (service role) only inside `server/`. The **browser** client (`src/lib/supabase.ts`) uses anon key + RLS.
 
-Every section, when scrolled into view, must feel as polished as a Framer-built site. This means:
-- No element simply "appears" — everything enters with a purposeful transition
-- Stats always count up — never static
-- The features section always uses the sticky scroll pattern
-- Smooth scrolling is always Lenis — never native browser scroll
-- The hero always has floating, breathing UI elements
+### 8.5 Integration boundaries (do not break)
 
-If a section would look at home on a basic Webflow template, it needs more animation work.
-
-### 5.4 Domain Constraints
-
-- **UK English only** in all copy, labels, placeholders
-- **£ not $** in all pricing
-- **Phone numbers**: UK format
-- **Trade vocabulary**: job, call-out, quote, diary, booking
-- **Never claim**: specific legal compliance without legal review
-
-### 5.5 Code Quality Guardrails
-
-- **Read before editing**: always read the target file first
-- **No speculative abstractions**
-- **No over-engineering**
-- **No breaking existing functionality**: AudioPlayer Gemini integration and WaitlistModal Sheets webhook are mission-critical
-- **No hardcoded API keys**: use `import.meta.env`
+| Integration | Where | What it does | Don't break |
+|---|---|---|---|
+| Retell | `server/src/services/retell.ts` | AI voice agent answers calls | Prompt-builder lives in `server/src/lib/prompt-builder.ts`. Changing prompt schema requires retesting against Retell. |
+| Twilio | `server/src/services/twilio.ts` + webhooks | Number provisioning, SMS, call routing. Supports both new-number and keep-existing-number modes (see commit a65cfa5). | Never log raw call recordings. Verify webhook signatures. |
+| Stripe | `components/StripeCheckoutModal.tsx` + server webhook | Subscriptions / billing | Never trust client-side price IDs alone. Verify on webhook. |
+| Resend | `server/src/services/resend.ts` | Transactional email | Templates must use UK English. |
+| Google Calendar | `server/src/services/calendar.ts` | Job booking into trade's diary | OAuth tokens stored encrypted; refresh flow runs server-side only. |
+| Gemini TTS | `components/AudioPlayer.tsx` (client) | Demo audio | Uses `import.meta.env.VITE_GEMINI_API_KEY`. Mission-critical for the demo CTA. |
 
 ---
 
-## 6. Quick Reference Tables
+## §9 — Code Conventions (TS / React)
 
-### 6.1 Complete Color → Tailwind Mapping
+### 9.1 Stack reality
 
-| Design Token | Hex / Value | Tailwind Class |
-|---|---|---|
-| Void | `#020D18` | `bg-void` |
-| Navy | `#051426` | `bg-navy` |
-| Navy Mid | `#0A2340` | `bg-navy-mid` |
-| Navy High | `#0F3060` | `bg-navy-high` |
-| Orange | `#FF6B2B` | `bg-orange text-orange` |
-| Orange glow | `#FF8C55` | `bg-orange-glow` |
-| Orange soft | `#ffb59a` | `text-orange-soft` |
-| Blue accent | `#99cbff` | `text-blue-accent` |
-| White primary | `#F0F4F8` | `text-white-primary` |
-| White secondary | `rgba(240,244,248,0.70)` | `text-white-primary/70` |
-| White muted | `rgba(240,244,248,0.40)` | `text-white-primary/40` |
-| Glass surface | `rgba(255,255,255,0.06)` | `bg-white/[0.06]` |
+```
+React 19.2
+Vite 6.2
+TypeScript ~5.8
+Tailwind v4 via @tailwindcss/vite — config lives in index.css (@theme)
+react-router-dom 7
+Lucide icons
+Lenis smooth scroll (initialised in index.tsx)
+Supabase JS
+Google Gemini TTS (@google/genai) for AudioPlayer
+```
 
-### 6.2 Animation Patterns Quick Reference
+`tailwind.config.ts` exists as legacy mirror — keep tokens in sync with `index.css` `@theme`. Do not delete it without replacing every tooling consumer.
 
-| Pattern | Section | Implementation |
-|---|---|---|
-| Scroll entrance | Every section | `[data-animate]` + `useScrollAnimation` hook |
-| Stagger | Card grids | `data-delay="N"` on children |
-| Counter | Stats bar, hero metrics | `useCounter` hook + `requestAnimationFrame` |
-| Float (primary) | Hero phone mockup | `animation: floatPrimary 5s ease-in-out infinite` |
-| Float (secondary) | Hero glass cards | `animation: floatSecondary 4s`, staggered delays |
-| Sticky scroll | Features section | `StickyFeatures.tsx` component |
-| Progress bar | How It Works | `.step-progress-fill` + IntersectionObserver |
-| Mouse parallax | Hero only | `useParallax` hook, desktop only |
-| Smooth scroll | Entire page | Lenis, init in `index.tsx` |
+### 9.2 Permitted additions
 
-### 6.3 Conversion Copy Swaps
+- `@radix-ui/react-*` for accessible modals / accordions / dropdowns
+- `canvas-confetti` for conversion events
 
-| Current | Required |
+### 9.3 Forbidden additions
+
+Framer Motion, GSAP, Redux, Zustand, any CSS-in-JS library, Next.js. (Lenis + CSS + IntersectionObserver covers all motion needs.)
+
+### 9.4 TypeScript rules
+
+- Public APIs (exported functions, hooks, components, services): explicit parameter and return types.
+- Component props: named `interface`, never inline. Don't use `React.FC`.
+- `unknown` for external input; narrow before use. `any` is forbidden in app code.
+- Validate external input with Zod (server **and** client where it crosses a trust boundary).
+- Immutability: spread/derive, never mutate. `Readonly<T>` for inputs that must not be mutated.
+
+### 9.5 File & function size
+
+- Files: 200–400 lines typical, 800 max.
+- Functions: <50 lines.
+- Components: <300 lines. If you cross it, extract subcomponents.
+- **Known landmine**: `App.tsx` is currently ~2,000 lines (see §10). Don't add to it without proposing a split first.
+
+### 9.6 Imports & paths
+
+- No deep relative chains (`../../../`). Co-locate or alias.
+- `import.meta.env` for client env vars (must be `VITE_*` prefixed).
+- `process.env` only inside `server/`.
+
+### 9.7 Logging
+
+- Client: don't ship `console.log`. Use a typed `logger` wrapper that no-ops in production.
+- Server: Pino only. Structured fields, never string concatenation for context.
+
+### 9.8 Performance budgets (marketing only)
+
+| Metric | Target |
 |---|---|
-| "Get Started" | "Start Free Trial" |
-| "Sign Up" | "Start Free Trial" |
-| "Learn More" | "See How It Works" |
-| "Contact Us" | "Talk to Our Team" |
-| "Features" (heading) | "What You Actually Get" |
-| "How it works" (eyebrow) | "THREE STEPS TO ZERO MISSED CALLS" |
-| "Pricing" (heading) | "Simple, Honest Pricing" |
-| "Testimonials" (eyebrow) | "WHAT UK TRADESPEOPLE SAY" |
+| LCP | < 1.5s |
+| CLS | 0 |
+| INP | < 200ms |
+| FCP | < 0.8s |
+| JS bundle (gzipped) | < 150KB |
 
-### 6.4 Git Commit Convention
+Lazy-load below-fold components (`AudioPlayer`, `Calculator`, `Testimonials`, `BookDemo`, `StripeCheckoutModal`). Below-fold images: `loading="lazy"`. Hero image: `fetchpriority="high"` + explicit width/height.
+
+### 9.9 Accessibility (mandatory floor)
+
+- WCAG AAA contrast on text.
+- Focus: `:focus-visible { outline: 2px solid #FF6B2B; outline-offset: 3px; }`
+- Touch targets ≥ 48×48px.
+- All animations honour `prefers-reduced-motion`.
+- AudioPlayer has a text transcript fallback.
+- Every section has a heading (`h2` typically) and `aria-labelledby`.
+
+### 9.10 Mobile-first
+
+- Default layout assumes 375px.
+- Float animations: 50% intensity on mobile.
+- Sticky-scroll Features section: collapse to vertical stack on mobile.
+- Mouse parallax: disabled on touch.
+- Sticky bottom CTA bar visible on mobile only.
+
+---
+
+## §10 — Known Landmines
+
+| File / area | Landmine | What to do |
+|---|---|---|
+| `App.tsx` | ~2,000 lines / 85KB. Violates the 800-line ceiling in §9.5. Splitting is desirable but high-risk because it owns hero, sections, and routing wiring. | Don't bulk-add to it. When you must touch it, propose extracting one section at a time into `components/sections/<Section>.tsx`. Never rewrite wholesale in a single PR. |
+| `tailwind.config.ts` vs `index.css` `@theme` | Two sources of token truth. Tailwind v4 reads CSS; the TS file is legacy. | Treat `index.css` as canonical. Mirror any token change into `tailwind.config.ts` so legacy tooling stays consistent. Do not delete the TS file without an audit. |
+| Legacy color aliases (`brand-*`, `tradeBlue.*`) | Older components still reference them. | Keep them. Don't "clean up" without a grep + replace pass. |
+| `components/AudioPlayer.tsx` | Mission-critical for the marketing demo CTA. Uses `@google/genai` with `VITE_GEMINI_API_KEY`. | Don't change the audio pipeline without a manual end-to-end test (button → audio playing). API key must remain `VITE_*`. |
+| `components/WaitlistModal.tsx` / `StripeCheckoutModal.tsx` | The original spec referenced a Google Apps Script webhook for waitlist. Reality is Supabase + Stripe. | If you see the Apps Script reference anywhere, it's stale spec, not live code. |
+| Twilio number flows | Two modes: provision new number, **or** keep customer's existing number (commit a65cfa5). | Onboarding and call routing must handle both branches. Backfill endpoint exists (commit 23e2735). |
+| Webhook backfill | `server/src/routes/webhooks` + the backfill endpoint replay missed events. | When changing webhook handlers, ensure they remain idempotent — replays are real. |
+| Supabase migrations | Append-only. | Never edit a committed migration. Add a new one. |
+| Lenis | Initialised once in `index.tsx`. | Don't re-initialise per page. Don't replace with native scroll. |
+| Float animation tax | `animate-float-*` runs forever. | Cap at 3 floating elements per section. Never on the dashboard. |
+
+---
+
+## §11 — Decision Algorithms
+
+When a request is ambiguous, follow these.
+
+### "Improve / redesign / fix the site"
+
+1. Ask: marketing landing, dashboard, or backend?
+2. Ask: which specific section / route / endpoint?
+3. Read the current implementation before proposing changes.
+4. Map the change against §0 (Five Laws). If any conflict, surface it.
+
+### "Add a new section to the landing page"
+
+1. Confirm where it sits in the §6.1 mandatory order.
+2. Use the §5.1 section wrapper.
+3. Eyebrow → headline (one gradient keyword max) → body → CTA.
+4. Wire scroll entrance via `useScrollAnimation` + `data-animate`.
+5. If it has stats, animate counters via `useCounter` (P3).
+6. Mobile-test at 375px.
+7. Run §12 Definition of Done.
+
+### "Add a button"
+
+1. Primary action? Use §5.2 Primary CTA recipe verbatim.
+2. Secondary? §5.3.
+3. Copy from §1 voice cheat sheet — never "Get Started" / "Learn More".
+4. Confirm focus-visible outline is present.
+
+### "Add a new colour / radius / shadow"
+
+Don't. Use existing tokens. If genuinely missing, propose a token addition in **both** `index.css` `@theme` and `tailwind.config.ts`.
+
+### "Add a new dependency"
+
+1. Check §9.3 forbidden list.
+2. Justify why an existing dep + small code can't do it.
+3. Check bundle impact (should fit §9.8 budget).
+4. If it's an animation library, the answer is no.
+
+### "Refactor / split a big file"
+
+1. If it's `App.tsx`: see §10. One section at a time.
+2. Preserve public exports and routing surface.
+3. After move, build and load the page in browser. Confirm no visual regression and no console errors.
+
+### "Change a webhook handler"
+
+1. Idempotency first — see §10.
+2. Validate input with Zod.
+3. Log with structured Pino fields.
+4. Verify signature where the integration provides one.
+
+### "Add a new integration"
+
+1. New service file in `server/src/services/<name>.ts`.
+2. New route(s) in `server/src/routes/`.
+3. Zod schemas at the boundary.
+4. Document in §8.5 of this file in the same PR.
+
+---
+
+## §12 — Pre-flight Ritual & Definition of Done
+
+### Before you edit
+
+- [ ] Read this file's relevant section.
+- [ ] Read the target file(s) end-to-end.
+- [ ] Identify which surface (§2) the change affects.
+- [ ] Confirm no §0 Five Laws violation.
+
+### Before you report complete
+
+- [ ] Visual diff matches intent on the affected surface (load it in browser).
+- [ ] Mobile at 375px sane.
+- [ ] No new `border-*`/`divide-*`/`<hr>` in layout (except the §0 exception).
+- [ ] No pure black, pure white, Inter.
+- [ ] All transforms ≥ 300ms with one of the §4.1 easings.
+- [ ] `prefers-reduced-motion` honoured.
+- [ ] Focus states visible on all new interactive elements.
+- [ ] No `console.log` left behind.
+- [ ] Public APIs typed; props in named interfaces.
+- [ ] No new dependency added without justification (§11).
+- [ ] If touching env: required vars listed in `.env.example`.
+- [ ] If touching webhooks: idempotency preserved.
+- [ ] If touching Supabase schema: new migration, RLS policies updated.
+- [ ] Build passes (`npm run build`); server build passes if server changed (`npm run build:api`).
+- [ ] Manually exercised the change. Type-checking is not feature-checking.
+
+### Useful commands
 
 ```
-feat:     New feature or section
-fix:      Bug fix
-style:    Design/visual change
-refactor: Code restructure
-perf:     Performance improvement
-a11y:     Accessibility improvement
-tokens:   Design token change
-copy:     Content/copy change
-anim:     Animation addition or change
+npm run dev          # web + api together (concurrently)
+npm run dev:web      # vite only
+npm run dev:api      # express only
+npm run build        # vite production build
+npm run build:api    # tsc for server
 ```
 
 ---
 
-## 7. First-Run Checklist
+## §13 — Forbidden / Permitted Quick Reference
 
-Before starting any work in a new session:
-
-- [ ] Read this file fully
-- [ ] Read the target file(s) before modifying
-- [ ] Confirm stack is Vite + React 19 (not Next.js)
-- [ ] Apply the Craftsman Test
-- [ ] Apply the Framer Standard — does every section animate in with purpose?
-- [ ] Never use arbitrary Tailwind values
-- [ ] Never use pure black, pure white, or Inter
-- [ ] Verify the No-Line Rule (exception: active feature indicator only)
-- [ ] Test mobile view at 375px
-- [ ] Check WCAG AAA contrast
-- [ ] Verify `import.meta.env` for API keys
-- [ ] Confirm Lenis is initialised in `index.tsx`
-- [ ] Confirm `[data-animate]` is on every major section element
-- [ ] Confirm the Features section uses `StickyFeatures.tsx`
-- [ ] Confirm hero has floating cards with staggered animation delays
-- [ ] Confirm stat counters animate from 0 on load
+| Category | Forbidden | Use instead |
+|---|---|---|
+| Colour | `#000`, `#FFF`, unsaturated grey | Tokens in §3.1 |
+| Borders / lines | `border-*`, `divide-*`, `<hr>` for layout | Tonal elevation, glass, gradient fades, spacing |
+| Shadow base | `rgba(0,0,0,…)` | `rgba(2,13,24,…)` (void) |
+| Font | Inter, system-ui, generic stacks | Space Grotesk + Manrope only |
+| Animation libs | Framer Motion, GSAP | Lenis + CSS + IntersectionObserver |
+| Animation feel | Bouncy spring | Mechanical / precision / smooth easings |
+| Animation duration | < 300ms for transforms | ≥ 300ms |
+| Decoration | Random blobs, particles, orbs | Blueprint grid, real product UI floats |
+| Imagery | AI art, US stock photos, robotic imagery | Real UK trade photography |
+| Copy | "Get Started", "Learn More", "Powered by AI" | §1 voice cheat sheet |
+| Headline | Whole headline in gradient | One gradient italic keyword max |
+| Layout | Full desktop symmetry | Asymmetric editorial |
+| Gradient palette | Purple→pink, rainbow | Industrial Luminescence recipes only |
+| State | Redux, Zustand, CSS-in-JS | React state + Supabase + URL |
+| Routing | Custom router | `react-router-dom` (already installed) |
 
 ---
 
-*End of CLAUDE.md — Trade Receptionist Design Constitution v2.0*
-*Built to last. Like the tools it serves. Moving like the machine it is.*
+## §14 — Project Constants
+
+| Constant | Value |
+|---|---|
+| Locale | `en-GB` (numbers, dates, currency) |
+| Currency | £ |
+| Phone format | UK |
+| Trial length | 14 days, no card required |
+| Pricing | Starter £29 / Pro £59 / Agency £119 (monthly; annual = 2 months free) |
+| Reduced-motion fallback | Mandatory |
+| Touch-target floor | 48×48px |
+| Focus outline | `2px solid #FF6B2B`, offset 3px |
+
+---
+
+## §15 — How to Update This File
+
+This file changes when reality changes. Procedure:
+
+1. Make the code change first.
+2. In the **same PR**, update the affected section here.
+3. If a §10 landmine was resolved, remove it.
+4. If a new landmine emerged, add it.
+5. If a §0 Law was challenged, do not change it without surfacing the trade-off and getting an explicit decision.
+6. Bump the version line at the bottom.
+
+When this file disagrees with the code, the code is right. Reflect reality, then debate the spec.
+
+---
+
+*Trade Receptionist Constitution — built to last, like the tools it serves.*
+*v3.0 · 2026-04-26*

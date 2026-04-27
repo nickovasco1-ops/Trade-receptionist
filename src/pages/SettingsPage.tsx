@@ -63,7 +63,7 @@ function Field({
         className="w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-all duration-200 focus:ring-1 focus:ring-orange/40"
         style={{
           background: readOnly ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
           cursor: readOnly ? 'default' : 'text',
           opacity: readOnly ? 0.6 : 1,
         }}
@@ -223,8 +223,7 @@ export default function SettingsPage() {
                   Divert activation code
                 </label>
                 <div
-                  className="flex items-center gap-3 px-3.5 py-3 rounded-[10px]"
-                  style={{ background: 'rgba(255,107,43,0.07)', boxShadow: '0 0 0 1px rgba(255,107,43,0.2)' }}
+                  className="flex items-center gap-3 px-3.5 py-3 rounded-[10px] bg-orange/[0.07] shadow-ring-orange"
                 >
                   <code className="flex-1 text-[15px] font-mono text-orange tracking-widest select-all">
                     {activationCode}
@@ -254,7 +253,7 @@ export default function SettingsPage() {
               rows={3}
               placeholder="We're closed right now but your AI receptionist has taken full details of your enquiry…"
               className="w-full px-3.5 py-2.5 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none resize-none transition-all duration-200 focus:ring-1 focus:ring-orange/40"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgba(255,255,255,0.06)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
             />
           </div>
         </SettingsSection>
@@ -301,11 +300,8 @@ export default function SettingsPage() {
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 px-6 py-3 rounded-btn font-semibold text-[14px] text-white font-body transition-all duration-300 disabled:opacity-60 hover:-translate-y-0.5"
-          style={{
-            background: saved ? 'rgba(34,197,94,0.2)' : 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-            boxShadow: saved ? '0 0 20px rgba(34,197,94,0.2)' : '0 0 24px rgba(255,107,43,0.35)',
-          }}
+          className={`flex items-center gap-2 px-6 py-3 rounded-btn font-semibold text-[14px] text-white font-body transition-all duration-300 disabled:opacity-60 hover:-translate-y-0.5${saved ? '' : ' bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg'}`}
+          style={saved ? { background: 'rgba(34,197,94,0.2)', boxShadow: '0 0 20px rgba(34,197,94,0.2)' } : undefined}
         >
           <Save size={14} />
           {saving ? 'Saving…' : saved ? 'Saved!' : 'Save changes'}

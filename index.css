@@ -42,6 +42,27 @@
   --shadow-orange-glow:    0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.20);
   --shadow-orange-glow-lg: 0 0 40px rgba(255,107,43,0.50), 0 8px 24px rgba(255,107,43,0.30);
   --shadow-blue-glow:      0 0 20px rgba(153,203,255,0.25), 0 4px 12px rgba(153,203,255,0.15);
+
+  /* ─── Dashboard: Ring Shadows (replaces border:1px solid) ─── */
+  --shadow-ring-subtle:    0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-ring-default:   0 0 0 1px rgba(255,255,255,0.08);
+  --shadow-ring-strong:    0 0 0 1px rgba(255,255,255,0.10);
+  --shadow-ring-orange:    0 0 0 1px rgba(255,107,43,0.20);
+
+  /* ─── Dashboard: Card Shadows ─── */
+  --shadow-card:           0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.30);
+  --shadow-card-hover:     0 0 0 1px rgba(255,255,255,0.10), 0 20px 48px rgba(2,13,24,0.50);
+  --shadow-card-accent:    0 0 0 1px rgba(255,107,43,0.20), 0 8px 32px rgba(2,13,24,0.40);
+
+  /* ─── Dashboard: Status Colors ─── */
+  --color-status-success:  #86efac;
+  --color-status-warn:     #fde68a;
+  --color-status-danger:   #fca5a5;
+  --color-status-muted:    #9ca3af;
+  --color-status-muted-2:  #6b7280;
+
+  /* ─── Dashboard: Field Radius ─── */
+  --radius-field: 10px;
 }
 
 /* ─── Base Overrides ─── */

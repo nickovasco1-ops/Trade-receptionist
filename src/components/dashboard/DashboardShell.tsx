@@ -80,7 +80,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </div>
 
       {/* User + sign out */}
-      <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="mt-4 pt-4">
         {userEmail && (
           <div className="px-3 mb-2">
             <p className="text-[11px] text-offwhite/25 font-body truncate">{userEmail}</p>
