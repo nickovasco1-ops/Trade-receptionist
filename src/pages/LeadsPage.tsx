@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Users, Mail, Phone, MapPin, Briefcase, AlertTriangle } from 'lucide-react';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import { supabase } from '../lib/supabase';
-import type { Lead } from '../../shared/types';
+import type { Lead, LeadStatus } from '../../shared/types';
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
   new:       { label: 'New',       bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
@@ -42,13 +42,13 @@ export default function LeadsPage() {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      setLeads(data ?? []);
+      setLeads((data ?? []) as Lead[]);
       setLoading(false);
     }
     load();
   }, []);
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: LeadStatus) {
     await supabase.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   }
@@ -115,7 +115,7 @@ export default function LeadsPage() {
                   <div className="flex items-center gap-2">
                     <select
                       value={lead.status ?? 'new'}
-                      onChange={e => updateStatus(lead.id, e.target.value)}
+                      onChange={e => updateStatus(lead.id, e.target.value as LeadStatus)}
                       className="text-[12px] font-body rounded-[8px] px-2.5 py-1 outline-none cursor-pointer transition-all duration-200"
                       style={{
                         background: statusMeta.bg,

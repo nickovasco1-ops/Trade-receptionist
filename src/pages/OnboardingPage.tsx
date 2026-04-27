@@ -237,8 +237,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => setStep('hours')}
                   disabled={!form.owner_name || !form.owner_mobile}
-                  className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 disabled:opacity-50"
-                  className="bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
+                  className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 disabled:opacity-50 bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
                 >
                   Next <ArrowRight size={15} />
                 </button>
@@ -272,8 +271,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={provision}
-                  className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300"
-                  className="bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
+                  className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body transition-all duration-300 bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5"
                 >
                   Launch my receptionist <ArrowRight size={15} />
                 </button>
