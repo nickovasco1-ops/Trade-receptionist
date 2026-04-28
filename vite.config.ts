@@ -7,13 +7,15 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
 
-    // Sentry source-map upload only runs when auth token is present (CI / Railway)
+    // Sentry source-map upload — runs automatically on every build when auth token is present.
+    // Set SENTRY_AUTH_TOKEN in Railway build env to activate. Org/project are not secrets.
     const sentryPlugin = env.SENTRY_AUTH_TOKEN
       ? sentryVitePlugin({
-          org:       env.SENTRY_ORG,
-          project:   env.SENTRY_PROJECT,
+          org:       'trade-receptionist',
+          project:   'javascript-react',
           authToken: env.SENTRY_AUTH_TOKEN,
           sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+          release:   { setCommits: { auto: true } },
         })
       : null;
 
