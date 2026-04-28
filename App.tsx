@@ -1032,22 +1032,6 @@ const DemoSection = () => {
           <AudioPlayer />
         </React.Suspense>
 
-        {/* Live call CTA */}
-        <a
-          href="tel:+447400466554"
-          className="mt-5 flex items-center justify-center gap-3 w-full h-14 rounded-btn font-bold font-body text-[15px] tracking-[-0.01em] text-white hover:-translate-y-0.5 active:translate-y-0"
-          style={{
-            background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-            boxShadow: '0 0 24px rgba(255,107,43,0.35), 0 4px 16px rgba(255,107,43,0.2)',
-            transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms ease',
-          }}
-        >
-          <Phone className="w-4 h-4 flex-shrink-0" />
-          Call the AI live — it'll answer in 2 seconds
-        </a>
-        <p className="mt-2 text-center text-[12px] text-offwhite/30 font-body">
-          UK: +44 7400 466 554
-        </p>
       </div>
     </div>
   </Section>
