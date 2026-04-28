@@ -1,9 +1,37 @@
+import * as Sentry from '@sentry/react';
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import Lenis from 'lenis';
 import './index.css';
 import App from './App';
+
+// ─── Sentry (initialise before any render) ────────────────────────────────────
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration({
+      maskAllText: true,
+      blockAllMedia: true,
+    }),
+  ],
+  // 20 % of transactions in production; 100 % locally for debugging
+  tracesSampleRate: import.meta.env.PROD ? 0.2 : 1.0,
+  tracePropagationTargets: [
+    'localhost',
+    /^https:\/\/trade-receptionist-production\.up\.railway\.app/,
+    /^https:\/\/api\.tradereceptionist\.com/,
+  ],
+  // 10 % of sessions recorded; 100 % on errors
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  // GDPR — do not forward PII by default (UK product)
+  sendDefaultPii: false,
+  enableLogs: true,
+});
 
 // Dashboard pages (lazy — keeps homepage bundle unchanged)
 const LoginPage      = React.lazy(() => import('./src/pages/LoginPage'));
@@ -80,7 +108,12 @@ function LenisInit() {
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Could not find root element to mount to');
 
-ReactDOM.createRoot(rootElement).render(
+// React 19 error handlers — pipe all error types into Sentry automatically
+ReactDOM.createRoot(rootElement, {
+  onUncaughtError:    Sentry.reactErrorHandler(),
+  onCaughtError:      Sentry.reactErrorHandler(),
+  onRecoverableError: Sentry.reactErrorHandler(),
+}).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
@@ -138,6 +171,9 @@ ReactDOM.createRoot(rootElement).render(
           </React.Suspense>
         } />
       </Routes>
+
+      {/* Vercel Analytics — auto-tracks page views across all routes */}
+      <Analytics />
     </BrowserRouter>
   </React.StrictMode>
 );
