@@ -11,6 +11,7 @@
     "start": "node dist/server/src/index.js"
   },
   "dependencies": {
+    "@notionhq/client": "^5.20.0",
     "@supabase/supabase-js": "^2.49.4",
     "cors": "^2.8.5",
     "express": "^4.21.2",

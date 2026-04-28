@@ -5,6 +5,7 @@ import { sendEmail } from '../../services/resend';
 import { buildSystemPrompt } from '../../lib/prompt-builder';
 import { createRetellAgent, importTwilioNumber } from '../../services/retell';
 import { searchUkNumbers, buyUkNumber } from '../../services/twilio';
+import { logSubscriber } from '../../services/notion';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
@@ -254,6 +255,13 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   } catch (err: unknown) {
     console.error('[stripe] welcome email failed', err instanceof Error ? err.message : err);
   }
+
+  void logSubscriber({
+    businessName: ownerName,
+    email:        ownerEmail,
+    plan,
+    signupDate:   new Date().toISOString(),
+  });
 
   console.log(`[stripe] provisioned ${ownerEmail} | plan=${plan} | number=${phoneNumber ?? 'pending'} | agent=${agentId ?? 'failed'}`);
 }

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { supabase } from '../../services/supabase';
 import { postCallWorkflow } from '../../services/retell';
 import { detectEmergency, escalateEmergency } from '../../lib/emergency';
+import { logCall, logIncident } from '../../services/notion';
 import type {
   RetellCallStartedEvent,
   RetellCallEndedEvent,
@@ -167,6 +168,13 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   if (callErr || !callRow) {
     console.error('[retell] call upsert failed', callErr);
+    void logIncident({
+      errorType:      'call_upsert_failed',
+      subscriberName: client.business_name,
+      severity:       'high',
+      detail:         callErr?.message ?? null,
+      timestamp:      new Date().toISOString(),
+    });
     return;
   }
 
@@ -208,6 +216,19 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   // Emergency escalation
   if (isEmergency) {
+    const emergencyLead = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
+    void logCall({
+      callerName:     emergencyLead.caller_name   ?? null,
+      callerNumber:   event.from_number,
+      postcode:       emergencyLead.postcode       ?? null,
+      jobType:        emergencyLead.job_type       ?? null,
+      urgency:        'emergency',
+      durationSecs,
+      subscriberName: client.business_name,
+      outcome,
+      recordingUrl:   event.recording_url          ?? null,
+      timestamp:      new Date().toISOString(),
+    });
     await escalateEmergency(client, call, summary);
     return;
   }
@@ -220,6 +241,19 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     postcode:    leadData.postcode     ?? null,
     urgency:     leadData.urgency      ?? null,
     transcript:  transcript            || null,
+  });
+
+  void logCall({
+    callerName:     leadData.caller_name   ?? null,
+    callerNumber:   event.from_number,
+    postcode:       leadData.postcode       ?? null,
+    jobType:        leadData.job_type       ?? null,
+    urgency:        leadData.urgency        ?? 'routine',
+    durationSecs,
+    subscriberName: client.business_name,
+    outcome,
+    recordingUrl:   event.recording_url    ?? null,
+    timestamp:      new Date().toISOString(),
   });
 
   console.log(`[retell] call_ended  call_id=${event.call_id}  outcome=${outcome}  duration=${durationSecs}s`);
@@ -309,6 +343,13 @@ router.post('/', async (req: Request, res: Response) => {
       }
     } catch (err) {
       console.error('[retell] unhandled error in event handler', err);
+      void logIncident({
+        errorType:      'webhook_handler_error',
+        subscriberName: null,
+        severity:       'critical',
+        detail:         err instanceof Error ? err.message : String(err),
+        timestamp:      new Date().toISOString(),
+      });
     }
   })();
 });
