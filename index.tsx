@@ -9,7 +9,7 @@ import App from './App';
 
 // ─── Sentry (initialise before any render) ────────────────────────────────────
 Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN,
+  dsn: 'https://b8748cc35c5e8e0c8fc3707e02ea5681@o4511297291288576.ingest.de.sentry.io/4511297348239440',
   environment: import.meta.env.MODE,
   integrations: [
     Sentry.browserTracingIntegration(),
@@ -28,8 +28,7 @@ Sentry.init({
   // 10 % of sessions recorded; 100 % on errors
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  // GDPR — do not forward PII by default (UK product)
-  sendDefaultPii: false,
+  sendDefaultPii: true,
   enableLogs: true,
 });
 
