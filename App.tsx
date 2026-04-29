@@ -1579,7 +1579,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
   <footer className="pt-20 pb-12" style={{ background: 'rgba(2,13,24,0.92)' }}>
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-      <div className="grid md:grid-cols-3 gap-12 mb-16">
+      <div className="grid md:grid-cols-4 gap-12 mb-16">
         <div className="md:col-span-2">
           <div className="mb-6">
             <Logo height={100} />
@@ -1612,6 +1612,22 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
               >
                 Live Demo
               </button>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/30 mb-5">Legal</h4>
+          <ul className="space-y-3 text-[14px] text-offwhite/45">
+            <li>
+              <a href="/terms" className="hover:text-offwhite transition-colors">
+                Terms of Service
+              </a>
+            </li>
+            <li>
+              <a href="/privacy" className="hover:text-offwhite transition-colors">
+                Privacy Policy
+              </a>
             </li>
           </ul>
         </div>
@@ -1706,6 +1722,42 @@ const WhatsAppButton = () => (
   </a>
 );
 
+// ─── Cookie Notice ────────────────────────────────────────────────────────────
+// Only strictly necessary cookies (Supabase auth) + cookieless Vercel Analytics.
+// No advertising tracking. ICO rules: no consent banner needed for strictly
+// necessary cookies — but a transparent notice is best practice.
+const CookieNotice: React.FC = () => {
+  const [visible, setVisible] = useState(() => !localStorage.getItem('cookie-ack'));
+  if (!visible) return null;
+  return (
+    <div
+      className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-[60] rounded-card p-4 font-body"
+      style={{
+        background:   'rgba(10,35,64,0.96)',
+        backdropFilter: 'blur(20px)',
+        boxShadow:    '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.6)',
+      }}
+      role="region"
+      aria-label="Cookie notice"
+    >
+      <p className="text-[13px] text-offwhite/60 leading-[1.6] mb-3">
+        We use strictly necessary cookies for authentication and anonymous analytics.
+        No advertising tracking.{' '}
+        <a href="/privacy#cookies" className="text-orange-soft hover:text-orange transition-colors underline underline-offset-2">
+          Privacy Policy
+        </a>
+      </p>
+      <button
+        onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
+        className="w-full h-9 rounded-btn text-[13px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
+        style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}
+      >
+        Got it
+      </button>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
@@ -1785,6 +1837,7 @@ const App: React.FC = () => {
       <WhatsAppButton />
       <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
       <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
+      <CookieNotice />
     </div>
   );
 };

@@ -32,10 +32,8 @@ export default defineConfig(({ mode }) => {
         },
       },
       plugins: [react(), tailwindcss(), ...(sentryPlugin ? [sentryPlugin] : [])],
-      define: {
-        'process.env.API_KEY':        JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      },
+      // No server-side secrets in `define` — Gemini API is no longer called from the
+      // browser (AudioPlayer uses a pre-rendered static WAV file).
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
@@ -50,7 +48,6 @@ export default defineConfig(({ mode }) => {
             manualChunks: {
               'vendor-react':  ['react', 'react-dom'],
               'vendor-icons':  ['lucide-react'],
-              'vendor-genai':  ['@google/genai'],
               'vendor-sentry': ['@sentry/react'],
             },
           },

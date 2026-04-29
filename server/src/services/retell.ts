@@ -1,4 +1,4 @@
-import { sendWhatsApp, sendOwnerSms, sendCallerSms } from './twilio';
+import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
 import type { Client, Call } from '../../../shared/types';
 
@@ -316,24 +316,6 @@ export async function postCallWorkflow(
         urgency:      extra.urgency,
         businessName: client.business_name,
       }).catch((err: unknown) => console.error('[postCall] owner SMS failed', err))
-    );
-  }
-
-  // Owner: WhatsApp (fallback if no Twilio number configured yet)
-  if (client.owner_mobile && !fromNumber) {
-    const msg = [
-      `Trade Receptionist — ${outcomeLabel(outcome)}`,
-      `Caller: ${callerNumber}`,
-      extra.callerName ? `Name: ${extra.callerName}` : null,
-      extra.jobType    ? `Job: ${extra.jobType}`     : null,
-      '',
-      summary || 'No summary available.',
-    ].filter(Boolean).join('\n');
-
-    tasks.push(
-      sendWhatsApp(client.owner_mobile, msg).catch((err: unknown) =>
-        console.error('[postCall] WhatsApp failed', err)
-      )
     );
   }
 

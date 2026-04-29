@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /welcome
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://tradereceptionist.com/sitemap.xml

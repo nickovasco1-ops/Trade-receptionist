@@ -1,4 +1,4 @@
-import { sendWhatsApp } from '../services/twilio';
+import { sendOwnerSms } from '../services/twilio';
 import { sendEmail } from '../services/resend';
 import type { Client, Call } from '../../../shared/types';
 
@@ -114,14 +114,23 @@ export async function escalateEmergency(
 
   const tasks: Promise<unknown>[] = [];
 
-  if (client.owner_mobile) {
+  // SMS via the client's Twilio number — more reliable than WhatsApp sandbox
+  if (client.owner_mobile && client.twilio_number) {
     tasks.push(
-      sendWhatsApp(client.owner_mobile, message).catch((err: unknown) => {
-        console.error('[emergency] WhatsApp failed', err);
+      sendOwnerSms({
+        to:           client.owner_mobile,
+        from:         client.twilio_number,
+        outcome:      'emergency',
+        callerNumber: caller,
+        urgency:      level === 'critical' ? 'CRITICAL' : 'emergency',
+        businessName: client.business_name,
+      }).catch((err: unknown) => {
+        console.error('[emergency] SMS failed', err);
       }),
     );
   }
 
+  // Email — always sent, carries the full summary and action instructions
   tasks.push(
     sendEmail({
       to:      client.owner_email,

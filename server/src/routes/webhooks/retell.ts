@@ -21,12 +21,9 @@ const router = Router();
 // ── Signature verification ────────────────────────────────────────────────────
 
 function verifySignature(rawBody: Buffer, signature: string): boolean {
-  const secret = process.env.RETELL_WEBHOOK_SECRET;
-
-  if (!secret) {
-    console.warn('[retell] RETELL_WEBHOOK_SECRET not set — skipping verification');
-    return true;
-  }
+  // Retell signs webhooks with HMAC-SHA256 using the API key as the secret.
+  // No separate webhook secret exists — RETELL_API_KEY is always present (required at boot).
+  const secret = process.env.RETELL_API_KEY!;
 
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   const sigBuf = Buffer.from(signature);
@@ -233,7 +230,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     return;
   }
 
-  // Normal post-call workflow (SMS + WhatsApp + email)
+  // Normal post-call workflow (SMS + email)
   const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
   await postCallWorkflow(client, call, summary, {
     callerName:  leadData.caller_name  ?? null,
@@ -306,10 +303,9 @@ router.post('/', async (req: Request, res: Response) => {
   const preview = rawBody?.toString('utf8').slice(0, 300) ?? '(empty body)';
   console.log(`[retell] inbound webhook  sig=${signature ?? 'none'}  body=${preview}`);
 
-  const webhookSecret = process.env.RETELL_WEBHOOK_SECRET;
-  if (webhookSecret && (!signature || !verifySignature(rawBody, signature))) {
-    console.warn('[retell] rejected request — invalid signature');
-    // Still return 200 so Retell doesn't retry (prevents log spam)
+  if (!verifySignature(rawBody, signature ?? '')) {
+    console.warn('[retell] rejected request — invalid or missing signature');
+    // Return 200 so Retell does not retry a rejected request (prevents log spam)
     res.status(200).json({ ok: false, reason: 'invalid_signature' });
     return;
   }

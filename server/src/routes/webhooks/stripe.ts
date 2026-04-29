@@ -10,6 +10,40 @@ import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
 
+// ── Plan detection ────────────────────────────────────────────────────────────
+
+const PRODUCT_TO_PLAN: Record<string, Plan> = {
+  'prod_UOE4uHDjaA2p2A': 'starter',  // £29/mo
+  'prod_UOE4eMY23okJjd': 'pro',      // £59/mo
+  'prod_UOE5UUmEp0cXnD': 'agency',   // £119/mo
+};
+
+/**
+ * Resolve plan by calling Stripe's line-items API.
+ * Used as a fallback when the Payment Link has no metadata.plan set.
+ */
+async function planFromStripeSession(sessionId: string): Promise<Plan> {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return 'starter';
+
+  try {
+    const res = await fetch(
+      `https://api.stripe.com/v1/checkout/sessions/${sessionId}/line_items?expand[]=data.price.product`,
+      { headers: { Authorization: `Bearer ${stripeKey}` } },
+    );
+    if (!res.ok) return 'starter';
+
+    const body = (await res.json()) as {
+      data: Array<{ price?: { product?: string | { id: string } } }>;
+    };
+    const raw = body.data[0]?.price?.product;
+    const productId = typeof raw === 'string' ? raw : raw?.id;
+    return PRODUCT_TO_PLAN[productId ?? ''] ?? 'starter';
+  } catch {
+    return 'starter';
+  }
+}
+
 // ── Signature verification ────────────────────────────────────────────────────
 
 function verifyStripeSignature(rawBody: Buffer, signature: string, secret: string): boolean {
@@ -126,8 +160,15 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   const ownerEmail  = details?.['email'];
   const ownerName   = details?.['name'] ?? 'New Customer';
   const ownerMobile = details?.['phone'] ?? null;
-  const plan        = ((metadata?.['plan'] ?? 'starter') as Plan);
   const firstName   = ownerName.split(' ')[0] ?? ownerName;
+
+  // Prefer metadata.plan (set on Stripe Payment Link); fall back to product-ID lookup
+  const metaPlan = metadata?.['plan'] as string | undefined;
+  const plan: Plan = (metaPlan && metaPlan in Object.fromEntries(
+    Object.values(PRODUCT_TO_PLAN).map((p) => [p, true])
+  ))
+    ? (metaPlan as Plan)
+    : await planFromStripeSession(session['id'] as string);
 
   if (!ownerEmail) {
     console.error('[stripe] checkout.session.completed missing customer email — cannot provision');

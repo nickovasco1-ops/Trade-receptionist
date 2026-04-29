@@ -39,24 +39,6 @@ export interface PurchasedNumber {
 
 // ── Messaging ─────────────────────────────────────────────────────────────────
 
-const FROM_WHATSAPP = process.env.TWILIO_WHATSAPP_NUMBER ?? 'whatsapp:+14155238886';
-
-export async function sendWhatsApp(to: string, body: string): Promise<string> {
-  const params = new URLSearchParams({
-    From: FROM_WHATSAPP,
-    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
-    Body: body,
-  });
-
-  const res = await fetch(`${baseUrl()}/Messages.json`, {
-    method: 'POST',
-    headers: formHeader(),
-    body:    params.toString(),
-  });
-  if (!res.ok) throw new Error(`Twilio WhatsApp failed: ${await res.text()}`);
-  return ((await res.json()) as { sid: string }).sid;
-}
-
 export async function sendSms(to: string, body: string, from: string): Promise<string> {
   const params = new URLSearchParams({ From: from, To: to, Body: body });
   const res = await fetch(`${baseUrl()}/Messages.json`, {

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError]         = useState('');
 
-  // If already logged in, skip to dashboard
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate('/dashboard', { replace: true });
@@ -33,7 +33,6 @@ export default function LoginPage() {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     setError('');
-    // Always redirect to /dashboard — it auto-redirects to /onboarding if no client exists
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -47,7 +46,7 @@ export default function LoginPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -69,16 +68,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{
-        background: 'radial-gradient(ellipse at 30% 40%, rgba(255,107,43,0.07) 0%, transparent 60%), #051426',
-        fontFamily: 'Manrope, sans-serif',
-      }}
-    >
-      {/* Blueprint grid */}
+    <div className="min-h-screen flex items-center justify-center px-4 font-body bg-[radial-gradient(ellipse_at_30%_40%,rgba(255,107,43,0.07)_0%,transparent_60%)] bg-navy">
       <div
         className="fixed inset-0 pointer-events-none opacity-30"
+        aria-hidden="true"
         style={{
           backgroundImage: 'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
@@ -86,24 +79,15 @@ export default function LoginPage() {
       />
 
       <div className="relative w-full max-w-sm">
-        {/* Logo */}
         <div className="flex justify-center mb-10">
           <Logo className="h-8 w-auto" />
         </div>
 
-        <div
-          className="rounded-card p-8"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.5)',
-          }}
-        >
+        <div className="rounded-card p-8 bg-white/[0.06] backdrop-blur-[24px] shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_20px_60px_rgba(2,13,24,0.5)]">
           {sent ? (
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <CheckCircle className="text-orange w-10 h-10" strokeWidth={1.5} />
+                <CheckCircle className="text-orange w-10 h-10" strokeWidth={1.5} aria-hidden="true" />
               </div>
               <h2 className="text-[20px] font-bold text-offwhite font-display mb-2">
                 Check your inbox
@@ -113,6 +97,7 @@ export default function LoginPage() {
                 Click it to sign in — no password needed.
               </p>
               <button
+                type="button"
                 onClick={() => setSent(false)}
                 className="mt-6 text-[13px] text-offwhite/40 hover:text-offwhite/60 transition-colors font-body"
               >
@@ -128,62 +113,54 @@ export default function LoginPage() {
                 New accounts are set up automatically.
               </p>
 
-              {/* Google sign-in */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 rounded-[10px] text-[14px] font-semibold font-body text-offwhite/80 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 mb-5"
-                style={{
-                  background: 'rgba(255,255,255,0.07)',
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.1)',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.18)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.1)'; }}
+                className="w-full flex items-center justify-center gap-3 py-3 rounded-field text-[14px] font-semibold font-body text-offwhite/80 bg-white/[0.07] shadow-ring-strong hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18)] hover:-translate-y-0.5 transition-all duration-300 ease-mechanical disabled:opacity-60 mb-5"
               >
                 <GoogleIcon />
                 {googleLoading ? 'Redirecting…' : 'Continue with Google'}
               </button>
 
-              {/* Divider */}
               <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                <div className="flex-1 h-px bg-white/[0.06]" aria-hidden="true" />
                 <span className="text-[12px] text-offwhite/20 font-body">or</span>
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                <div className="flex-1 h-px bg-white/[0.06]" aria-hidden="true" />
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.08em] mb-1.5 font-body">
+                  <label
+                    htmlFor="login-email"
+                    className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.08em] mb-1.5 font-body"
+                  >
                     Email — magic link
                   </label>
                   <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-offwhite/30" />
+                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-offwhite/30 pointer-events-none" aria-hidden="true" />
                     <input
+                      id="login-email"
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-[10px] text-[14px] font-body text-offwhite placeholder-offwhite/25 outline-none transition-shadow duration-200 focus:ring-2 focus:ring-orange/40"
-                      style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
-                      }}
+                      className="w-full pl-10 pr-4 py-3 rounded-field text-[14px] font-body text-offwhite placeholder:text-offwhite/25 outline-none bg-white/[0.06] shadow-ring-default focus:shadow-ring-strong focus:ring-2 focus:ring-orange/40 transition-shadow duration-200"
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <p className="text-[13px] text-red-400 font-body">{error}</p>
+                  <p className="text-[13px] text-orange-soft font-body" role="alert">{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 ease-mechanical disabled:opacity-60"
                 >
-                  {loading ? 'Sending…' : <>Send magic link <ArrowRight size={15} /></>}
+                  {loading ? 'Sending…' : <>Send magic link <ArrowRight size={15} aria-hidden="true" /></>}
                 </button>
               </form>
             </>

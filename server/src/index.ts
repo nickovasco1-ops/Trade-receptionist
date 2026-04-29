@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
+import rateLimit from 'express-rate-limit';
 
 import healthRouter   from './routes/health';
 import webhooksRouter from './routes/webhooks';
@@ -27,6 +28,40 @@ app.use(
   })
 );
 
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+
+// Generous default for dashboard API calls
+const defaultLimiter = rateLimit({
+  windowMs:         60_000,
+  max:              120,
+  standardHeaders:  true,
+  legacyHeaders:    false,
+  message:          { success: false, error: 'Too many requests — please slow down.' },
+});
+
+// Tight limit on write operations that trigger third-party calls
+const writeLimiter = rateLimit({
+  windowMs:         60_000,
+  max:              20,
+  standardHeaders:  true,
+  legacyHeaders:    false,
+  message:          { success: false, error: 'Too many requests — please slow down.' },
+});
+
+// Webhooks are called by Stripe/Retell/Twilio — allow high volume but still cap abuse
+const webhookLimiter = rateLimit({
+  windowMs:         60_000,
+  max:              300,
+  standardHeaders:  true,
+  legacyHeaders:    false,
+  message:          { success: false, error: 'Rate limit exceeded.' },
+});
+
+app.use('/clients',           defaultLimiter);
+app.use('/calls',             defaultLimiter);
+app.use('/auth',              writeLimiter);
+app.use('/webhooks',          webhookLimiter);
+
 // ── Body parsers ──────────────────────────────────────────────────────────────
 // /webhooks/retell and /webhooks/stripe need the raw Buffer for HMAC verification.
 // These MUST be registered before express.json() or the raw body is lost.
@@ -50,6 +85,34 @@ app.use('/auth',     authRouter);
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: 'Not found' });
 });
+
+// ── Startup validation ────────────────────────────────────────────────────────
+const REQUIRED_ENV: string[] = [
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN',
+  'RETELL_API_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+];
+
+const WARN_ENV: string[] = [
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'RESEND_API_KEY',
+];
+
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`[server] FATAL: required env var ${key} is not set. Exiting.`);
+    process.exit(1);
+  }
+}
+
+for (const key of WARN_ENV) {
+  if (!process.env[key]) {
+    console.warn(`[server] WARNING: ${key} is not set — related features will not work correctly.`);
+  }
+}
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const server = createServer(app);

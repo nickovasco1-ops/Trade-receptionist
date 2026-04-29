@@ -32,6 +32,10 @@ Sentry.init({
   enableLogs: true,
 });
 
+// Legal pages (lazy — public, no auth required)
+const TermsPage      = React.lazy(() => import('./src/pages/legal/TermsPage'));
+const PrivacyPage    = React.lazy(() => import('./src/pages/legal/PrivacyPage'));
+
 // Dashboard pages (lazy — keeps homepage bundle unchanged)
 const LoginPage      = React.lazy(() => import('./src/pages/LoginPage'));
 const DashboardPage  = React.lazy(() => import('./src/pages/DashboardPage'));
@@ -167,6 +171,18 @@ ReactDOM.createRoot(rootElement, {
         <Route path="/welcome" element={
           <React.Suspense fallback={null}>
             <WelcomePage />
+          </React.Suspense>
+        } />
+
+        {/* ── Legal pages (public) ────────────────────────────── */}
+        <Route path="/terms" element={
+          <React.Suspense fallback={null}>
+            <TermsPage />
+          </React.Suspense>
+        } />
+        <Route path="/privacy" element={
+          <React.Suspense fallback={null}>
+            <PrivacyPage />
           </React.Suspense>
         } />
       </Routes>

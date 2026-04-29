@@ -1,24 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Users, Mail, Phone, MapPin, Briefcase, AlertTriangle } from 'lucide-react';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
+import EmptyState from '../components/dashboard/ui/EmptyState';
 import { supabase } from '../lib/supabase';
-import type { Lead, LeadStatus } from '../../shared/types';
+import type { Lead, LeadStatus, LeadUrgency } from '../../shared/types';
 
-const STATUS_META: Record<string, { label: string; bg: string; text: string }> = {
-  new:       { label: 'New',       bg: 'rgba(153,203,255,0.12)', text: '#99cbff' },
-  contacted: { label: 'Contacted', bg: 'rgba(250,204,21,0.12)',  text: '#fde68a' },
-  booked:    { label: 'Booked',    bg: 'rgba(34,197,94,0.12)',   text: '#86efac' },
-  lost:      { label: 'Lost',      bg: 'rgba(255,255,255,0.06)', text: '#6b7280' },
-  spam:      { label: 'Spam',      bg: 'rgba(255,255,255,0.04)', text: '#4b5563' },
+const STATUS_META: Record<LeadStatus, { label: string; tone: string }> = {
+  new:       { label: 'New',       tone: 'bg-accent/15 text-accent' },
+  contacted: { label: 'Contacted', tone: 'bg-status-warn/15 text-status-warn' },
+  booked:    { label: 'Booked',    tone: 'bg-status-success/15 text-status-success' },
+  lost:      { label: 'Lost',      tone: 'bg-status-muted-2/10 text-status-muted-2' },
+  spam:      { label: 'Spam',      tone: 'bg-status-muted-2/10 text-status-muted-2' },
 };
 
-const URGENCY_META: Record<string, { bg: string; text: string }> = {
-  emergency: { bg: 'rgba(255,107,43,0.15)', text: '#ffb59a' },
-  urgent:    { bg: 'rgba(250,204,21,0.12)', text: '#fde68a' },
-  routine:   { bg: 'rgba(255,255,255,0.06)', text: '#6b7280' },
+const URGENCY_META: Record<LeadUrgency, string> = {
+  emergency: 'bg-orange/15 text-orange-soft',
+  urgent:    'bg-status-warn/15 text-status-warn',
+  routine:   'bg-status-muted/10 text-status-muted',
 };
 
 export default function LeadsPage() {
+  const animRef  = useScrollAnimation();
   const [leads, setLeads]     = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +62,7 @@ export default function LeadsPage() {
 
   return (
     <DashboardShell>
+      <div ref={animRef} data-animate>
       <div className="mb-8">
         <h1 className="text-[26px] font-bold text-offwhite font-display tracking-tight">Leads</h1>
         <p className="text-[14px] text-offwhite/40 font-body mt-1">
@@ -69,88 +73,79 @@ export default function LeadsPage() {
       {loading ? (
         <div className="space-y-3 animate-pulse">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-card h-28" style={{ background: 'rgba(255,255,255,0.04)' }} />
+            <div key={i} className="rounded-card h-28 bg-white/[0.04]" />
           ))}
         </div>
       ) : leads.length === 0 ? (
-        <div
-          className="rounded-card p-12 text-center"
-          style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
-        >
-          <Users size={28} className="text-offwhite/20 mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-[15px] font-bold text-offwhite font-display mb-1">No leads yet</p>
-          <p className="text-[13px] text-offwhite/40 font-body">Leads captured from calls will appear here.</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No leads yet"
+          description="Leads captured from calls will appear here."
+          action={{ label: 'Test the AI now', href: '/settings' }}
+        />
       ) : (
         <div className="space-y-3">
           {leads.map(lead => {
-            const urgencyMeta = URGENCY_META[lead.urgency ?? 'routine'] ?? URGENCY_META.routine;
-            const statusMeta  = STATUS_META[lead.status  ?? 'new']    ?? STATUS_META.new;
+            const urgency = (lead.urgency ?? 'routine') as LeadUrgency;
+            const status  = (lead.status  ?? 'new')     as LeadStatus;
+            const urgencyClass = URGENCY_META[urgency] ?? URGENCY_META.routine;
+            const statusInfo   = STATUS_META[status]   ?? STATUS_META.new;
+            const isEmergency  = urgency === 'emergency';
+
+            const cardClasses = isEmergency
+              ? 'bg-orange/[0.06] shadow-card-accent'
+              : 'bg-white/[0.04] shadow-card';
 
             return (
-              <div
+              <article
                 key={lead.id}
-                className="rounded-card p-5 transition-all duration-200 hover:-translate-y-0.5"
-                style={{
-                  background: lead.urgency === 'emergency' ? 'rgba(255,107,43,0.06)' : 'rgba(255,255,255,0.04)',
-                  boxShadow: lead.urgency === 'emergency'
-                    ? '0 0 0 1px rgba(255,107,43,0.2), 0 8px 32px rgba(2,13,24,0.3)'
-                    : '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.3)',
-                }}
+                className={`rounded-card p-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5 hover:shadow-card-hover ${cardClasses}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2.5">
-                    {lead.urgency === 'emergency' && <AlertTriangle size={14} className="text-orange flex-shrink-0" />}
+                    {isEmergency && <AlertTriangle size={14} className="text-orange flex-shrink-0" aria-hidden="true" />}
                     <span className="text-[15px] font-bold text-offwhite font-display">
                       {lead.caller_name ?? 'Unknown caller'}
                     </span>
-                    <span
-                      className="px-2 py-0.5 rounded-badge text-[11px] font-semibold font-body"
-                      style={{ background: urgencyMeta.bg, color: urgencyMeta.text }}
-                    >
-                      {lead.urgency ?? 'routine'}
+                    <span className={`px-2 py-0.5 rounded-badge text-[11px] font-semibold font-body capitalize ${urgencyClass}`}>
+                      {urgency}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <select
-                      value={lead.status ?? 'new'}
+                      value={status}
                       onChange={e => updateStatus(lead.id, e.target.value as LeadStatus)}
-                      className="text-[12px] font-body rounded-[8px] px-2.5 py-1 outline-none cursor-pointer transition-all duration-200"
-                      style={{
-                        background: statusMeta.bg,
-                        color: statusMeta.text,
-                        boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
-                      }}
+                      aria-label={`Update status for ${lead.caller_name ?? 'lead'}`}
+                      className={`text-[12px] font-body rounded-badge px-2.5 py-1 outline-none cursor-pointer appearance-none transition-shadow duration-200 shadow-ring-default focus:shadow-ring-strong focus:ring-2 focus:ring-orange/40 ${statusInfo.tone}`}
                     >
-                      {Object.entries(STATUS_META).map(([val, { label }]) => (
+                      {(Object.entries(STATUS_META) as [LeadStatus, { label: string }][]).map(([val, { label }]) => (
                         <option key={val} value={val}>{label}</option>
                       ))}
                     </select>
-                    <span className="text-[12px] text-offwhite/30 font-body">{formatDate(lead.created_at)}</span>
+                    <span className="text-[12px] text-offwhite/30 font-body tabular-nums">{formatDate(lead.created_at)}</span>
                   </div>
                 </div>
 
-                {/* Details row */}
                 <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                   {lead.caller_number && (
                     <span className="flex items-center gap-1.5 text-[13px] text-offwhite/60 font-body">
-                      <Phone size={12} className="text-offwhite/30" /> {lead.caller_number}
+                      <Phone size={12} className="text-offwhite/30" aria-hidden="true" /> {lead.caller_number}
                     </span>
                   )}
                   {lead.caller_email && (
                     <span className="flex items-center gap-1.5 text-[13px] text-offwhite/60 font-body">
-                      <Mail size={12} className="text-offwhite/30" /> {lead.caller_email}
+                      <Mail size={12} className="text-offwhite/30" aria-hidden="true" /> {lead.caller_email}
                     </span>
                   )}
                   {lead.postcode && (
                     <span className="flex items-center gap-1.5 text-[13px] text-offwhite/60 font-body">
-                      <MapPin size={12} className="text-offwhite/30" /> {lead.postcode}
+                      <MapPin size={12} className="text-offwhite/30" aria-hidden="true" /> {lead.postcode}
                     </span>
                   )}
                   {lead.job_type && (
                     <span className="flex items-center gap-1.5 text-[13px] text-offwhite/60 font-body">
-                      <Briefcase size={12} className="text-offwhite/30" /> {lead.job_type}
+                      <Briefcase size={12} className="text-offwhite/30" aria-hidden="true" /> {lead.job_type}
                     </span>
                   )}
                 </div>
@@ -160,11 +155,12 @@ export default function LeadsPage() {
                     {lead.notes}
                   </p>
                 )}
-              </div>
+              </article>
             );
           })}
         </div>
       )}
+      </div>
     </DashboardShell>
   );
 }

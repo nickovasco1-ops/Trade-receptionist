@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Phone, Users, Settings, LogOut,
@@ -14,11 +14,16 @@ const NAV = [
   { label: 'Settings',  href: '/settings',         icon: Settings },
 ];
 
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerRef  = useRef<HTMLElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -26,11 +31,44 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     });
   }, []);
 
-  // Prevent body scroll when mobile drawer is open
+  // Prevent body scroll while drawer is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  // Focus management: send focus into drawer on open, restore on close
+  useEffect(() => {
+    if (mobileOpen) {
+      drawerRef.current?.focus();
+    } else {
+      menuBtnRef.current?.focus();
+    }
+  }, [mobileOpen]);
+
+  // ESC closes drawer
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && mobileOpen) setMobileOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [mobileOpen]);
+
+  // Focus trap: keep Tab/Shift+Tab within the drawer
+  function handleDrawerKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'Tab' || !drawerRef.current) return;
+    const focusable = Array.from(
+      drawerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
+    ).filter(el => !(el as HTMLButtonElement).disabled);
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+    } else {
+      if (document.activeElement === last)  { e.preventDefault(); first?.focus(); }
+    }
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -71,9 +109,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   : 'text-offwhite/50 hover:text-offwhite/90 hover:bg-white/[0.05]',
               ].join(' ')}
             >
-              <Icon size={16} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" />
+              <Icon size={16} strokeWidth={active ? 2.5 : 2} className="flex-shrink-0" aria-hidden="true" />
               {label}
-              {active && <ChevronRight size={12} className="ml-auto opacity-50" />}
+              {active && <ChevronRight size={12} className="ml-auto opacity-50" aria-hidden="true" />}
             </Link>
           );
         })}
@@ -90,7 +128,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[14px] font-medium font-body text-offwhite/40 hover:text-offwhite/70 hover:bg-white/[0.04] transition-all duration-200 w-full text-left"
         >
-          <LogOut size={15} strokeWidth={2} />
+          <LogOut size={15} strokeWidth={2} aria-hidden="true" />
           Sign out
         </button>
       </div>
@@ -98,39 +136,37 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   );
 
   return (
-    <div className="min-h-screen bg-navy flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="min-h-screen bg-navy flex font-body">
 
       {/* ── Desktop sidebar ─────────────────────────────────── */}
-      <aside
-        className="hidden lg:flex flex-col w-56 flex-shrink-0"
-        style={{ background: '#020D18' }}
-      >
+      <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 bg-void">
         <SidebarContent />
       </aside>
 
       {/* ── Mobile drawer (always in DOM for animation) ─────── */}
       <div
-        className="fixed inset-0 z-50 lg:hidden"
-        style={{ pointerEvents: mobileOpen ? 'auto' : 'none' }}
+        className={['fixed inset-0 z-50 lg:hidden', mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'].join(' ')}
       >
         {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-void/80 backdrop-blur-sm"
-          style={{
-            opacity: mobileOpen ? 1 : 0,
-            transition: 'opacity 300ms ease',
-          }}
+          className={['absolute inset-0 bg-void/80 backdrop-blur-sm transition-opacity duration-300', mobileOpen ? 'opacity-100' : 'opacity-0'].join(' ')}
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
+
         {/* Drawer */}
         <aside
-          className="absolute left-0 top-0 bottom-0 w-64 flex flex-col"
-          style={{
-            background: '#020D18',
-            boxShadow: '8px 0 40px rgba(2,13,24,0.7)',
-            transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-            transition: 'transform 350ms cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
+          ref={drawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Main navigation"
+          tabIndex={-1}
+          onKeyDown={handleDrawerKeyDown}
+          className={[
+            'absolute left-0 top-0 bottom-0 w-64 flex flex-col bg-void shadow-[8px_0_40px_rgba(2,13,24,0.7)]',
+            'transition-transform duration-[350ms] ease-smooth outline-none',
+            mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          ].join(' ')}
         >
           <SidebarContent mobile />
         </aside>
@@ -140,19 +176,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Mobile top bar */}
-        <header
-          className="lg:hidden flex items-center gap-3 px-4 py-3"
-          style={{
-            background: 'rgba(2,13,24,0.85)',
-            boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
-          }}
-        >
+        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-void/85 backdrop-blur-[20px] shadow-[0_1px_0_rgba(255,255,255,0.05)]">
           <button
+            ref={menuBtnRef}
             onClick={() => setMobileOpen(true)}
             className="text-offwhite/60 hover:text-offwhite transition-colors p-1"
             aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
-            <Menu size={20} />
+            <Menu size={20} aria-hidden="true" />
           </button>
           <Logo className="h-6 w-auto" />
         </header>
