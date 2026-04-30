@@ -10,8 +10,22 @@ export interface PlanConfig {
   popular:    boolean;
 }
 
-// ── Update these URLs from your Stripe dashboard:
-// Dashboard → Payment Links → Create link for each product → copy the buy.stripe.com URL
+const isTest = import.meta.env.VITE_STRIPE_MODE === 'test';
+
+const LIVE_URLS = {
+  starter: 'https://buy.stripe.com/7sY3cwaXI6pl7jAd5k6wE00',
+  pro:     'https://buy.stripe.com/dRmdRa4zk5lh33ke9o6wE01',
+  agency:  'https://buy.stripe.com/00w3cwd5QeVRfQ66GW6wE02',
+};
+
+const TEST_URLS = {
+  starter: 'https://buy.stripe.com/test_eVq3cxcnbgATd4A9uA2wU00',
+  pro:     'https://buy.stripe.com/test_3cIeVf86V98r4y4bCI2wU01',
+  agency:  'https://buy.stripe.com/test_6oU14p3QF84n2pW4ag2wU02',
+};
+
+const urls = isTest ? TEST_URLS : LIVE_URLS;
+
 export const PLANS: PlanConfig[] = [
   {
     key:      'starter',
@@ -19,7 +33,7 @@ export const PLANS: PlanConfig[] = [
     price:    29,
     calls:    'Up to 100 calls/month',
     features: ['AI call answering 24/7', 'Call transcripts & summaries', 'SMS alerts to your mobile'],
-    stripeUrl: 'https://buy.stripe.com/7sY3cwaXI6pl7jAd5k6wE00',
+    stripeUrl: urls.starter,
     popular:   false,
   },
   {
@@ -28,7 +42,7 @@ export const PLANS: PlanConfig[] = [
     price:    59,
     calls:    'Up to 300 calls/month',
     features: ['Everything in Starter', 'Diary integration', 'Priority call routing', 'Custom greetings'],
-    stripeUrl: 'https://buy.stripe.com/dRmdRa4zk5lh33ke9o6wE01',
+    stripeUrl: urls.pro,
     popular:   true,
   },
   {
@@ -37,7 +51,7 @@ export const PLANS: PlanConfig[] = [
     price:    119,
     calls:    'Unlimited calls',
     features: ['Everything in Pro', 'Multiple numbers', 'Team management', 'Dedicated support'],
-    stripeUrl: 'https://buy.stripe.com/00w3cwd5QeVRfQ66GW6wE02',
+    stripeUrl: urls.agency,
     popular:   false,
   },
 ];

@@ -13,9 +13,14 @@ const router = Router();
 // ── Plan detection ────────────────────────────────────────────────────────────
 
 const PRODUCT_TO_PLAN: Record<string, Plan> = {
+  // Live-mode products
   'prod_UOE4uHDjaA2p2A': 'starter',  // £29/mo
   'prod_UOE4eMY23okJjd': 'pro',      // £59/mo
   'prod_UOE5UUmEp0cXnD': 'agency',   // £119/mo
+  // Test-mode products (created 2026-04-30)
+  'prod_UQeX2QnK9ev3bK': 'starter',
+  'prod_UQeX0UFytNZhFH': 'pro',
+  'prod_UQeXswCVtfNvZq': 'agency',
 };
 
 /**

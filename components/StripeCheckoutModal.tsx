@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, CheckCircle2, ArrowRight, Zap } from 'lucide-react';
+import { PLANS as PLAN_CONFIG } from '../src/lib/plans';
 
 interface StripeCheckoutModalProps {
   isOpen: boolean;
@@ -16,38 +17,14 @@ interface Plan {
   popular: boolean;
 }
 
-const STRIPE_LINKS: Record<string, string> = {
-  Starter: 'https://buy.stripe.com/7sY3cwaXI6pl7jAd5k6wE00',
-  Pro:     'https://buy.stripe.com/dRmdRa4zk5lh33ke9o6wE01',
-  Agency:  'https://buy.stripe.com/00w3cwd5QeVRfQ66GW6wE02',
-};
-
-const PLANS: Plan[] = [
-  {
-    name: 'Starter',
-    price: 29,
-    calls: 'Up to 100 calls/month',
-    features: ['AI call answering 24/7', 'WhatsApp job summaries', 'Call transcripts'],
-    stripeUrl: STRIPE_LINKS.Starter,
-    popular: false,
-  },
-  {
-    name: 'Pro',
-    price: 59,
-    calls: 'Up to 300 calls/month',
-    features: ['Everything in Starter', 'Diary integration', 'Priority routing', 'Custom greetings'],
-    stripeUrl: STRIPE_LINKS.Pro,
-    popular: true,
-  },
-  {
-    name: 'Agency',
-    price: 119,
-    calls: 'Unlimited calls',
-    features: ['Everything in Pro', 'Multiple numbers', 'Team management', 'Dedicated support'],
-    stripeUrl: STRIPE_LINKS.Agency,
-    popular: false,
-  },
-];
+const PLANS: Plan[] = PLAN_CONFIG.map((p) => ({
+  name:     p.name,
+  price:    p.price,
+  calls:    p.calls,
+  features: p.features,
+  stripeUrl: p.stripeUrl,
+  popular:  p.popular,
+}));
 
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen, onClose, onWaitlist }) => {
   if (!isOpen) return null;

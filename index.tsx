@@ -44,6 +44,7 @@ const LeadsPage      = React.lazy(() => import('./src/pages/LeadsPage'));
 const SettingsPage   = React.lazy(() => import('./src/pages/SettingsPage'));
 const OnboardingPage = React.lazy(() => import('./src/pages/OnboardingPage'));
 const WelcomePage    = React.lazy(() => import('./src/pages/WelcomePage'));
+const NotFoundPage   = React.lazy(() => import('./src/pages/NotFoundPage'));
 
 // Auth guard — simple: checks Supabase session cookie presence via storage
 import { supabase } from './src/lib/supabase';
@@ -183,6 +184,13 @@ ReactDOM.createRoot(rootElement, {
         <Route path="/privacy" element={
           <React.Suspense fallback={null}>
             <PrivacyPage />
+          </React.Suspense>
+        } />
+
+        {/* ── 404 catch-all ───────────────────────────────────── */}
+        <Route path="*" element={
+          <React.Suspense fallback={null}>
+            <NotFoundPage />
           </React.Suspense>
         } />
       </Routes>

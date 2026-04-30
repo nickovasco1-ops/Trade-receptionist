@@ -6,7 +6,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=../.env src/index.ts",
     "build": "tsc",
     "start": "node dist/server/src/index.js"
   },

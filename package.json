@@ -10,7 +10,11 @@
     "build": "vite build",
     "build:api": "cd server && npm run build",
     "preview": "vite preview",
-    "generate:demo-audio": "node scripts/generate-sample-call.mjs"
+    "generate:demo-audio": "node scripts/generate-sample-call.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@sentry/react": "^10.50.0",
@@ -24,6 +28,7 @@
     "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",
@@ -31,6 +36,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.8.2",
