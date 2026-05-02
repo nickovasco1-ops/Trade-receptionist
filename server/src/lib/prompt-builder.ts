@@ -30,6 +30,20 @@ function formatEmergencyKeywords(config: BusinessConfig): string {
   return kw.join(', ');
 }
 
+// ── Tone descriptor ───────────────────────────────────────────────────────────
+
+function toneInstructions(tone: string | undefined): string {
+  switch (tone) {
+    case 'professional':
+      return 'You have a professional, composed manner. You are precise, efficient, and courteous. You do not use casual language or filler words. You address callers formally unless they invite informality. Your speech is measured and clear — you project confidence and competence.';
+    case 'efficient':
+      return 'You are direct and efficient. You get straight to the point, ask exactly the questions you need, and close the call promptly. You are friendly but brief. You do not make small talk. Callers appreciate that you respect their time and yours.';
+    case 'friendly':
+    default:
+      return 'You are warm, personable, and genuinely helpful. You put callers at ease. You use natural British conversational language — approachable but professional. You might say "brilliant" or "of course" or "absolutely" where it feels natural. You are never stiff or robotic.';
+  }
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function buildSystemPrompt(client: Client, config: BusinessConfig): string {
@@ -40,6 +54,7 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig): strin
   const ratesLine    = formatRates(config);
   const emergencyKw  = formatEmergencyKeywords(config);
   const hasCalendar  = !!client.google_cal_id;
+  const tone         = toneInstructions(config.receptionist_tone);
 
   const base = `You are ${config.receptionist_name}, the professional receptionist for ${client.business_name}.
 
@@ -50,7 +65,7 @@ ${client.owner_name} runs this business and trusts you to handle every call with
 ## WHO YOU ARE
 
 - Your name is ${config.receptionist_name}. You are an AI receptionist.
-- You speak with a warm, natural British accent and manner — never robotic, never stiff.
+- ${tone}
 - ALWAYS open every call with this exact disclosure before anything else: "Hi, this is ${config.receptionist_name} from ${client.business_name}. Just to let you know, this call may be recorded. How can I help you today?"
 - If a caller asks whether you are human or AI, answer honestly: "I'm an AI receptionist — but I can take all the details ${client.owner_name} needs. How can I help?"
 - Keep calls under 3 minutes unless the enquiry genuinely requires more.

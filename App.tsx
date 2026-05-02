@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParallax } from './src/hooks/useParallax';
 import { useScrollAnimation } from './src/hooks/useScrollAnimation';
-import StickyFeatures from './components/StickyFeatures';
+const StickyFeatures    = React.lazy(() => import('./components/StickyFeatures'));
 import {
   Phone, Calendar, MessageSquare, ShieldCheck,
   Menu, X, CheckCircle2, ArrowRight,
@@ -103,11 +103,11 @@ const AnimatedCounter: React.FC<{
   return <span ref={spanRef}>{display}</span>;
 };
 
-import { Button, Section, Badge, Card, StatusGauge } from './components/UI';
+import { Button, Section, Badge, Card } from './components/UI';
 import { BlueprintGrid } from './components/BlueprintGrid';
 import { Logo } from './components/Logo';
-import { WaitlistModal } from './components/WaitlistModal';
-import { StripeCheckoutModal } from './components/StripeCheckoutModal';
+const WaitlistModal     = React.lazy(() => import('./components/WaitlistModal').then(m => ({ default: m.WaitlistModal })));
+const StripeCheckoutModal = React.lazy(() => import('./components/StripeCheckoutModal').then(m => ({ default: m.StripeCheckoutModal })));
 import { FAQItem, PricingTier } from './types';
 
 // Lazy-loaded below-fold components — keeps initial JS bundle lean
@@ -115,7 +115,6 @@ const AudioPlayer  = React.lazy(() => import('./components/AudioPlayer').then(m 
 const Calculator   = React.lazy(() => import('./components/Calculator').then(m => ({ default: m.Calculator })));
 const Testimonials = React.lazy(() => import('./components/Testimonials').then(m => ({ default: m.Testimonials })));
 const BookDemo     = React.lazy(() => import('./components/BookDemo').then(m => ({ default: m.BookDemo })));
-const ContactUs    = React.lazy(() => import('./components/ContactUs').then(m => ({ default: m.ContactUs })));
 
 const LazyFallback = ({ height = 200 }: { height?: number }) => (
   <div className="flex justify-center items-center" style={{ height }}>
@@ -193,23 +192,23 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
       className="fixed top-0 w-full z-50"
       style={{
         background: scrolled
-          ? 'rgba(5,20,38,0.92)'
-          : 'rgba(5,20,38,0.70)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        boxShadow: scrolled ? '0 1px 0 rgba(255,255,255,0.05)' : 'none',
-        transition: 'background 300ms ease, box-shadow 300ms ease',
+          ? 'rgba(5,20,38,0.82)'
+          : 'rgba(5,20,38,0.20)',
+        backdropFilter: scrolled ? 'blur(24px)' : 'blur(12px)',
+        WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'blur(12px)',
+        boxShadow: scrolled ? '0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(2,13,24,0.3)' : 'none',
+        transition: 'background 400ms ease, box-shadow 400ms ease, backdrop-filter 400ms ease',
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="flex justify-between h-20 xl:h-36 items-center">
+        <div className="flex justify-between h-14 xl:h-16 items-center">
           {/* Logo */}
           <button
             className="flex-shrink-0 flex items-center focus:outline-none"
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
           >
-            <Logo className="h-14 xl:h-24" />
+            <Logo className="h-20 xl:h-24" />
           </button>
 
           {/* Desktop nav */}
@@ -421,7 +420,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 {/* Stars */}
                 <div className="flex gap-0.5 mb-3">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} style={{ color: '#FF6B2B', fontSize: '16px' }}>★</span>
+                    <Star key={i} className="w-4 h-4" style={{ fill: '#FF6B2B', color: '#FF6B2B' }} />
                   ))}
                 </div>
                 {/* Quote */}
@@ -626,105 +625,87 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 };
 
 // ───Social Proof Strip ───────────────────────────────────────────────────────
+const TRADE_PILLS = [
+  'Electricians', 'Plumbers', 'Carpenters', 'HVAC', 'Roofers',
+  'Glaziers', 'Painters', 'Landscapers', 'Bathroom Fitters', 'Builders',
+];
+
 const SocialProof = () => (
-  <div className="relative py-12 overflow-hidden"
+  <div className="relative py-8 overflow-hidden"
     style={{
       background: 'linear-gradient(180deg, rgba(5,20,38,0.55) 0%, rgba(9,29,54,0.70) 15%, rgba(9,29,54,0.70) 85%, rgba(5,20,38,0.55) 100%)',
     }}
   >
-
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
 
-        <p className="text-[13px] font-bold tracking-[0.12em] uppercase text-offwhite/30 whitespace-nowrap flex-shrink-0 font-body">
-          Trusted by tradespeople across the UK
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-6 flex-1">
-          {['Gas Safe Registered', 'NICEIC Approved', 'FMB Member', 'TrustMark Certified', 'CHAS Registered'].map((badge) => (
-            <span key={badge} className="text-[12px] font-bold tracking-[0.08em] uppercase text-offwhite/25 whitespace-nowrap font-display">
-              {badge}
+      {/* Stat counters */}
+      <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
+        {[
+          { endValue: 98.7, decimals: 1, suffix: '%', label: 'Calls answered' },
+          { endValue: 4200, prefix: '£', label: 'Avg. revenue recovered/yr' },
+          { endValue: 500, suffix: '+', label: 'UK tradespeople' },
+          { endValue: 14, suffix: ' min', label: 'Avg. setup time' },
+        ].map(({ endValue, decimals, prefix, suffix, label }, i) => (
+          <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
+            <span className="font-mono text-[14px] font-bold text-orange-soft">
+              <AnimatedCounter endValue={endValue} decimals={decimals} prefix={prefix} suffix={suffix} duration={1000} />
             </span>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 flex-shrink-0">
-          {[
-            { endValue: 98.7, decimals: 1, suffix: '%', label: 'Calls answered' },
-            { endValue: 4200, prefix: '£', label: 'Avg. revenue recovered' },
-            { endValue: 14, suffix: ' min', label: 'Avg. setup time' },
-          ].map(({ endValue, decimals, prefix, suffix, label }, i) => (
-            <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
-              <span className="font-mono text-[14px] font-bold text-orange-soft">
-                <AnimatedCounter endValue={endValue} decimals={decimals} prefix={prefix} suffix={suffix} duration={1000} />
-              </span>
-              <span className="text-[11px] text-offwhite/35 font-body">{label}</span>
-            </div>
-          ))}
-        </div>
-
+            <span className="text-[11px] text-offwhite/35 font-body">{label}</span>
+          </div>
+        ))}
       </div>
+
+      {/* Trade pill strip */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {TRADE_PILLS.map((trade) => (
+          <span
+            key={trade}
+            className="text-[12px] font-semibold text-offwhite/40 font-body px-3 py-1 rounded-full"
+            style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
+          >
+            {trade}
+          </span>
+        ))}
+      </div>
+
     </div>
   </div>
 );
 
 // ─── Pain Points ──────────────────────────────────────────────────────────────
+const PAIN_STATS = [
+  { value: '£4,200', label: 'lost per year to missed calls', sub: 'avg. UK tradesperson' },
+  { value: '27%', label: 'of callers never ring back', sub: 'if they hit voicemail' },
+  { value: '3 in 5', label: 'jobs go to whoever answers first', sub: 'speed wins the work' },
+];
+
 const PainPoints = () => (
   <Section bg="gray" id="pain">
-    <FadeUp className="mb-16 max-w-3xl">
+    <FadeUp className="mb-10 max-w-2xl">
       <Badge>The Cost of Doing Nothing</Badge>
       <h2
         className="font-display font-bold text-offwhite"
-        style={{ fontSize: 'clamp(2.5rem, 5.5vw, 5rem)', letterSpacing: '-0.025em', lineHeight: 0.95 }}
+        style={{ fontSize: 'clamp(2rem, 4.5vw, 4rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
       >
-        Every missed call is money{' '}
-        <span className="text-offwhite/30">walking out the door.</span>
+        Every missed call is money walking out the door.
       </h2>
     </FadeUp>
 
-    <div className="grid md:grid-cols-3 gap-6 md:gap-8 items-start">
-
-      <FadeUp delay={0} className="md:col-span-1">
-        <div className="relative rounded-card p-8 overflow-hidden h-full min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
-          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
-            <StatusGauge value={67} label="" metric="" size="lg" color="orange" />
-          </div>
-          <div className="relative z-10">
-            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>
-              <AnimatedCounter endValue={4200} prefix="£" duration={1200} />
+    <div className="grid md:grid-cols-3 gap-4">
+      {PAIN_STATS.map(({ value, label, sub }, i) => (
+        <FadeUp key={i} delay={i * 60}>
+          <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+            <div
+              className="font-display font-bold mb-2 leading-none"
+              style={{ fontSize: 'clamp(2.25rem, 4vw, 3.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em', filter: 'drop-shadow(0 0 18px rgba(255,107,43,0.5))' }}
+            >
+              {value}
             </div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Per year, per tradesperson</p>
-            <p className="text-offwhite/50 text-[15px] leading-relaxed">Average annual revenue lost to missed calls. That's nearly £350 every single month walking straight to your competitor.</p>
+            <p className="text-offwhite font-semibold text-[15px] mb-1 font-display">{label}</p>
+            <p className="text-offwhite/35 text-[12px] font-body uppercase tracking-[0.08em]">{sub}</p>
           </div>
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={80} className="md:col-span-1 md:mt-10">
-        <div className="relative rounded-card p-8 overflow-hidden min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
-          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
-            <StatusGauge value={27} label="" metric="" size="lg" color="orange" />
-          </div>
-          <div className="relative z-10">
-            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>27%</div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Never ring back</p>
-            <p className="text-offwhite/50 text-[15px] leading-relaxed">Of callers who reach voicemail don't leave a message — and never ring back. They're already calling someone else.</p>
-          </div>
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={160} className="md:col-span-1 md:mt-20">
-        <div className="relative rounded-card p-8 overflow-hidden min-h-[280px]" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)' }}>
-          <div className="absolute -bottom-4 -right-4 opacity-[0.07] pointer-events-none">
-            <StatusGauge value={60} label="" metric="" size="lg" color="orange" />
-          </div>
-          <div className="relative z-10">
-            <div className="font-display font-bold mb-3 leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em' }}>3 in 5</div>
-            <p className="text-[13px] font-bold uppercase tracking-[0.10em] text-orange-soft/60 mb-3 font-body">Jobs go to first answer</p>
-            <p className="text-offwhite/50 text-[15px] leading-relaxed">Jobs are booked by whoever answers first. Speed isn't a nice-to-have — it's the difference between winning and losing the job.</p>
-          </div>
-        </div>
-      </FadeUp>
-
+        </FadeUp>
+      ))}
     </div>
   </Section>
 );
@@ -837,8 +818,8 @@ const HowItWorks = () => (
 
     <div className="relative">
       {/* Step connector */}
-      <div className="hidden md:block absolute top-[52px] left-[16.66%] right-[16.66%] pointer-events-none"
-        style={{ height: '2px', background: 'repeating-linear-gradient(90deg, rgba(255,107,43,0.25) 0px, rgba(255,107,43,0.25) 4px, transparent 4px, transparent 12px)' }} />
+      <div className="hidden md:block absolute top-[26px] left-[16.66%] right-[16.66%] pointer-events-none"
+        style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, rgba(255,107,43,0.15) 15%, rgba(255,107,43,0.45) 50%, rgba(255,107,43,0.15) 85%, transparent 100%)', filter: 'drop-shadow(0 0 4px rgba(255,107,43,0.3))' }} />
 
       <div className="grid md:grid-cols-3 gap-12 md:gap-8 lg:gap-14 relative z-10">
         {HOW_STEPS.map((step, i) => (
@@ -869,21 +850,9 @@ const ROISection = () => (
           See exactly what you're{' '}
           <span className="text-offwhite/35">losing every month.</span>
         </h2>
-        <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
-          Missing just 5 calls a week adds up to over £4,000 in lost revenue. Trade Receptionist costs less than a single small job per month.
+        <p className="text-[17px] text-offwhite/60 leading-relaxed">
+          The calculator uses your actual numbers. See exactly how much you're losing right now.
         </p>
-        <ul className="space-y-5">
-          {[
-            'Captures every lead, even when you\'re on the tools.',
-            'Filters timewasters so you only quote for real work.',
-            'Cheaper than a human VA — and works round the clock.',
-          ].map((point, i) => (
-            <li key={i} className="flex gap-3 text-offwhite/70 text-[15px]">
-              <CheckCircle2 className="w-5 h-5 text-orange-soft flex-shrink-0 mt-0.5" />
-              <span>{point}</span>
-            </li>
-          ))}
-        </ul>
       </FadeUp>
     </div>
   </Section>
@@ -895,7 +864,7 @@ const ComparisonSection = () => {
   return (
   <Section bg="white" id="comparison">
     <div ref={ref} data-animate>
-    <div className="text-center mb-14">
+    <div className="mb-14">
       <Badge color="blue">The Honest Comparison</Badge>
       <h2
         className="font-display font-bold text-offwhite"
@@ -903,7 +872,7 @@ const ComparisonSection = () => {
       >
         Trade Receptionist vs. the alternatives.
       </h2>
-      <p className="text-[17px] text-offwhite/45 mt-4 max-w-xl mx-auto">
+      <p className="text-[17px] text-offwhite/45 mt-4 max-w-xl">
         Why pay more, or lose jobs to voicemail, when you can have a 24/7 expert for less than a tank of diesel?
       </p>
     </div>
@@ -920,9 +889,10 @@ const ComparisonSection = () => {
       <div className="min-w-[760px] rounded-card overflow-hidden" style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.4)' }}>
         <div className="grid grid-cols-5 gap-0">
           <div className="p-5" style={{ background: 'rgba(255,255,255,0.02)' }} />
-          <div className="p-5 text-center" style={{ background: 'rgba(255,107,43,0.10)' }}>
+          <div className="p-5 text-center relative overflow-hidden" style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)' }}>
+            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, transparent, #FF6B2B, #FF8C55, transparent)' }} />
             <span className="font-display font-bold text-[15px] text-offwhite block">Trade Receptionist</span>
-            <span className="text-[11px] text-orange-soft/60 font-body">from £29/mo</span>
+            <span className="text-[11px] text-orange-soft/80 font-body">from £29/mo</span>
           </div>
           {['Live Receptionist', 'Virtual PA', 'Voicemail'].map((col) => (
             <div key={col} className="p-5 text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
@@ -1001,13 +971,15 @@ const DemoSection = () => {
             { title: 'Emergency Routing',     text: 'Patches urgent calls straight through to your mobile, instantly.' },
           ].map((feat, i) => (
             <div key={i} className="flex gap-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: 'rgba(255,107,43,0.12)' }}>
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{ background: 'linear-gradient(135deg, rgba(255,107,43,0.25), rgba(255,140,85,0.12))', boxShadow: '0 0 0 1px rgba(255,107,43,0.20), 0 0 12px rgba(255,107,43,0.15)' }}
+              >
                 <CheckCircle2 className="w-4 h-4 text-orange-soft" />
               </div>
               <div>
                 <h4 className="font-display font-bold text-[16px] text-offwhite mb-0.5">{feat.title}</h4>
-                <p className="text-[14px] text-offwhite/50 leading-relaxed">{feat.text}</p>
+                <p className="text-[14px] text-offwhite/55 leading-relaxed">{feat.text}</p>
               </div>
             </div>
           ))}
@@ -1038,249 +1010,6 @@ const DemoSection = () => {
   );
 };
 
-// ─── Use Cases ────────────────────────────────────────────────────────────────
-const TRADE_ITEMS = [
-  { icon: Droplets, name: 'Plumbers',      label: 'Emergency triage',       num: '01' },
-  { icon: Zap,      name: 'Electricians',  label: 'Quote qualification',    num: '02' },
-  { icon: Wrench,   name: 'HVAC',          label: 'Maintenance booking',    num: '03' },
-  { icon: Hammer,   name: 'Builders',      label: 'Site coordination',      num: '04' },
-];
-
-const UseCases = () => (
-  <Section bg="white">
-    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
-      <div>
-        <Badge>Built for Your Trade</Badge>
-        <h2
-          className="font-display font-bold text-offwhite"
-          style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}
-        >
-          Whatever you fix,{' '}
-          <span className="text-offwhite/35">we answer.</span>
-        </h2>
-      </div>
-      <p className="text-[15px] text-offwhite/45 max-w-xs md:text-right leading-relaxed">
-        Customised for each trade — the AI knows your job types, pricing, and postcode areas.
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {TRADE_ITEMS.map((trade, i) => (
-        <FadeUp
-          key={i}
-          delay={i * 60}
-          className="group relative rounded-card p-6 overflow-hidden cursor-default spotlight-card"
-          onMouseMove={e => {
-            const r = e.currentTarget.getBoundingClientRect();
-            e.currentTarget.style.setProperty('--x', `${e.clientX - r.left}px`);
-            e.currentTarget.style.setProperty('--y', `${e.clientY - r.top}px`);
-          }}
-        >
-          <div
-            className="absolute inset-0 rounded-card"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              transition: 'background 200ms ease',
-            }}
-          />
-          {/* Hover glow layer */}
-          <div
-            className="absolute inset-0 rounded-card opacity-0 group-hover:opacity-100"
-            style={{
-              background: 'rgba(255,107,43,0.05)',
-              transition: 'opacity 200ms ease',
-            }}
-          />
-
-          <div className="relative z-10">
-            {/* Number — subtle background anchor */}
-            <div
-              className="font-display font-bold leading-none select-none mb-4"
-              style={{
-                fontSize: '3.5rem',
-                color: 'rgba(255,255,255,0.06)',
-                letterSpacing: '-0.04em',
-              }}
-              aria-hidden="true"
-            >
-              {trade.num}
-            </div>
-
-            <trade.icon
-              className="w-6 h-6 mb-3 text-orange-soft/50 group-hover:text-orange-soft"
-              style={{ transition: 'color 200ms ease' }}
-            />
-            <h3
-              className="font-display font-bold text-offwhite mb-1 tracking-tight"
-              style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.3rem)' }}
-            >
-              {trade.name}
-            </h3>
-            <p className="text-[12px] text-offwhite/35 tracking-wide">{trade.label}</p>
-          </div>
-        </FadeUp>
-      ))}
-    </div>
-  </Section>
-);
-
-// ─── Features ─────────────────────────────────────────────────────────────────
-const FEATURES = [
-  {
-    icon: Phone,
-    num: '01',
-    title: 'Always-On Call Answering',
-    outcome: "Never miss a job while you're on-site",
-    desc: 'Trade Receptionist answers every call instantly — 24/7, including weekends and bank holidays. No more voicemail, no more missed work.',
-    visual: (
-      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">Calls this week</p>
-        <div className="flex items-end gap-1.5 h-16">
-          {[40, 65, 45, 80, 55, 90, 72].map((h, i) => (
-            <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 5 ? 'linear-gradient(180deg, #FF8C55, #FF6B2B)' : 'rgba(255,107,43,0.20)' }} />
-          ))}
-        </div>
-        <div className="flex justify-between mt-2">
-          {['M','T','W','T','F','S','S'].map((d, i) => (
-            <span key={i} className="flex-1 text-center text-[10px] text-offwhite/20 font-body">{d}</span>
-          ))}
-        </div>
-        <div className="flex items-baseline gap-1 mt-4">
-          <span className="font-display font-bold text-offwhite" style={{ fontSize: '1.75rem', letterSpacing: '-0.02em' }}>34</span>
-          <span className="text-[12px] text-offwhite/35 font-body">calls answered this week</span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    icon: MessageSquare,
-    num: '02',
-    title: 'Instant WhatsApp Summaries',
-    outcome: 'Wake up to every lead, captured and ready',
-    desc: "Within seconds of every call, you'll receive a WhatsApp with the caller's name, job type, postcode, and urgency level. Check it in 10 seconds between jobs.",
-    visual: (
-      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">WhatsApp message</p>
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.05)' }}>
-          <p className="text-[11px] font-bold text-orange-soft mb-2 font-display">New Job Enquiry · 14:32</p>
-          <div className="space-y-1 text-[13px] text-offwhite/60 font-body">
-            <p><span className="text-offwhite/30">Name:</span> Mrs. Helen Briggs</p>
-            <p><span className="text-offwhite/30">Job:</span> Boiler service + repair</p>
-            <p><span className="text-offwhite/30">Area:</span> SW11 3RL</p>
-            <p><span className="text-offwhite/30">Urgency:</span> <span className="text-orange-soft">This week</span></p>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    icon: ShieldCheck,
-    num: '03',
-    title: 'Smart Spam Filtering',
-    outcome: 'Only real jobs reach your diary',
-    desc: 'Cold callers, PPI claims, and insurance scams are politely deflected before they waste your time. You only hear about genuine job enquiries.',
-    visual: (
-      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">Today's calls</p>
-        <div className="space-y-2">
-          {[
-            { type: 'Job Enquiry', caller: 'Tom Baker', passed: true },
-            { type: 'Spam call', caller: 'Marketing Co.', passed: false },
-            { type: 'Emergency', caller: 'Mrs. Patel', passed: true },
-            { type: 'Cold call', caller: 'Insurance Ltd', passed: false },
-          ].map((c, i) => (
-            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div>
-                <p className="text-[12px] font-bold text-offwhite/70 font-display">{c.caller}</p>
-                <p className="text-[10px] text-offwhite/25 font-body">{c.type}</p>
-              </div>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: c.passed ? 'rgba(255,107,43,0.15)' : 'rgba(255,255,255,0.04)' }}>
-                {c.passed
-                  ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-soft" />
-                  : <XCircle className="w-3.5 h-3.5 text-offwhite/15" />
-                }
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    icon: Calendar,
-    num: '04',
-    title: 'Diary Integration',
-    outcome: 'Bookings confirmed without lifting a finger',
-    desc: 'Syncs with Google Calendar, Outlook, and ServiceM8. Jobs are booked into your actual free slots — no double-booking, no admin.',
-    visual: (
-      <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.10em] text-offwhite/30 mb-4 font-body">This Thursday</p>
-        <div className="space-y-2">
-          {[
-            { time: '08:00', job: 'Boiler service — Mrs. Andrews', confirmed: true },
-            { time: '10:30', job: 'Emergency leak — SW4 9HE', confirmed: true },
-            { time: '13:00', job: 'Bathroom quote — Tom H.', confirmed: true },
-          ].map((slot, i) => (
-            <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <span className="font-mono text-[11px] text-orange-soft/60 flex-shrink-0">{slot.time}</span>
-              <span className="text-[12px] text-offwhite/60 font-body flex-1 truncate">{slot.job}</span>
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(255,107,43,0.15)' }}>
-                <CheckCircle2 className="w-3 h-3 text-orange-soft" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-];
-
-const Features = ({ onWaitlist }: { onWaitlist: () => void }) => (
-  <Section bg="gray" id="features">
-    <FadeUp className="mb-20 max-w-xl">
-      <Badge>Built for Tradespeople</Badge>
-      <h2
-        className="font-display font-bold text-offwhite"
-        style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
-      >
-        What you actually get.
-      </h2>
-    </FadeUp>
-
-    <div className="space-y-24">
-      {FEATURES.map((feat, i) => (
-        <FadeUp key={i} delay={0} className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className={i % 2 === 1 ? 'lg:order-2' : ''}>
-            <div className="flex items-center gap-3 mb-5">
-              <span className="font-display font-bold text-[13px] tracking-[0.08em]" style={{ color: 'rgba(255,107,43,0.45)' }}>{feat.num}</span>
-              <feat.icon className="w-5 h-5 text-orange-soft/60" />
-            </div>
-            <h3
-              className="font-display font-bold text-offwhite mb-2"
-              style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', lineHeight: 1.05 }}
-            >
-              {feat.title}
-            </h3>
-            <p className="text-orange-soft text-[14px] font-semibold mb-4 font-body">{feat.outcome}</p>
-            <p className="text-offwhite/50 leading-relaxed text-[16px] mb-8 max-w-md font-body">{feat.desc}</p>
-          </div>
-          <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
-            {feat.visual}
-          </div>
-        </FadeUp>
-      ))}
-    </div>
-
-    <FadeUp className="text-center mt-20">
-      <Button variant="primary" size="lg" onClick={onWaitlist}>
-        Start Free Trial
-        <ArrowRight className="w-4 h-4 ml-2" />
-      </Button>
-    </FadeUp>
-  </Section>
-);
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
@@ -1317,7 +1046,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
   return (
     <Section id="pricing" bg="white">
-      <div className="text-center mb-14">
+      <div className="mb-14">
         <Badge>Simple, Honest Pricing</Badge>
         <h2
           className="font-display font-bold text-offwhite mb-4"
@@ -1351,7 +1080,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </div>
       </div>
 
-      <div ref={pricingRef} className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-4">
+      <div ref={pricingRef} className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-10 md:pt-12">
         {plans.map((plan, i) => (
           <div
             key={i}
@@ -1368,6 +1097,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
               background: plan.isPopular
                 ? 'linear-gradient(160deg, rgba(255,107,43,0.12) 0%, rgba(255,107,43,0.04) 100%)'
                 : 'rgba(255,255,255,0.05)',
+              animation: plan.isPopular ? 'ring-pulse 3s ease-in-out infinite' : undefined,
               transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1)',
             }}
           >
@@ -1465,7 +1195,7 @@ const FAQ = () => {
 
   return (
     <Section bg="gray" id="faq">
-      <div className="text-center mb-14">
+      <div className="mb-14">
         <Badge>Got Questions?</Badge>
         <h2
           className="font-display font-bold text-offwhite"
@@ -1522,7 +1252,9 @@ const FAQ = () => {
 const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const ref = useScrollAnimation();
   return (
-  <section className="py-24 md:py-36 relative overflow-hidden" style={{ background: 'rgba(2,13,24,0.88)' }}>
+  <section className="py-16 md:py-24 relative overflow-hidden" style={{ background: 'rgba(2,13,24,0.88)' }}>
+    {/* Top fade separator */}
+    <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(5,20,38,0.6) 0%, transparent 100%)' }} />
     {/* Atmospheric glows */}
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.12) 0%, transparent 65%)', filter: 'blur(60px)' }} />
@@ -1532,42 +1264,34 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
     <div ref={ref} data-animate className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center relative z-10">
-      {/* Status gauges */}
-      <div className="flex justify-center gap-12 mb-12">
-        <StatusGauge value={98} label="Calls Handled" metric="98%" size="md" color="orange" />
-        <StatusGauge value={94} label="Customer Satisfaction" metric="4.9★" size="md" color="blue" />
-        <StatusGauge value={100} label="Always Online" metric="24/7" size="md" color="orange" />
-      </div>
-
       <Badge color="blue">Your Competition Is Already Using This</Badge>
 
       <h2
-        className="font-display font-bold text-offwhite mb-6 leading-[1.0] mt-4"
+        className="font-display font-bold text-offwhite mb-8 leading-[1.0] mt-4"
         style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
       >
         Every call you miss today{' '}
         <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>is a job they book tomorrow.</span>
       </h2>
 
-      <p className="text-[18px] md:text-xl text-offwhite/50 mb-10 leading-relaxed max-w-2xl mx-auto">
-        Join 500+ UK tradespeople who stopped losing money to voicemail. While you're reading this, a competitor is answering their calls.
-      </p>
-
-      <div className="flex flex-col sm:flex-row justify-center gap-5 mb-6">
+      <div className="flex justify-center mb-6">
         <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
           Start Free Trial — No Card Required
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
-        <Button variant="secondary" size="lg"
-          onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
-          <Mic className="w-4 h-4 mr-2" />
-          Hear a Demo First
-        </Button>
       </div>
 
       <div className="flex flex-wrap justify-center gap-6 mt-6 text-[13px] text-offwhite/25 font-body">
-        {['⭐ 4.9/5 rating', 'Setup in 14 minutes', 'Cancel anytime', 'No card required'].map(t => (
-          <span key={t}>{t}</span>
+        {[
+          { icon: Star, label: '4.9/5 rating' },
+          { icon: CheckCircle2, label: 'Setup in 14 minutes' },
+          { icon: CheckCircle2, label: 'Cancel anytime' },
+          { icon: CheckCircle2, label: 'No card required' },
+        ].map(({ icon: Icon, label }) => (
+          <span key={label} className="flex items-center gap-1.5">
+            <Icon className="w-3.5 h-3.5 text-offwhite/25" aria-hidden="true" />
+            {label}
+          </span>
         ))}
       </div>
     </div>
@@ -1763,32 +1487,6 @@ const App: React.FC = () => {
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [isStripeOpen, setIsStripeOpen] = useState(false);
 
-  // Lenis smooth scroll — init once on mount
-  useEffect(() => {
-    let lenis: import('lenis').default | null = null;
-    let rafId: number;
-
-    import('lenis').then(({ default: Lenis }) => {
-      lenis = new Lenis({
-        duration: 1.2,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        orientation: 'vertical',
-        smoothWheel: true,
-      });
-
-      const raf = (time: number) => {
-        lenis!.raf(time);
-        rafId = requestAnimationFrame(raf);
-      };
-      rafId = requestAnimationFrame(raf);
-    });
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      lenis?.destroy();
-    };
-  }, []);
-
   const handleViewChange = (view: View) => {
     window.scrollTo(0, 0);
     setCurrentView(view);
@@ -1807,22 +1505,20 @@ const App: React.FC = () => {
         {currentView === 'home' ? (
           <>
             <Hero onWaitlist={toggleStripe} />
+            <HowItWorks />
+            <DemoSection />
             <SocialProof />
             <PainPoints />
             <ROISection />
-            <ComparisonSection />
-            <DemoSection />
-            <HowItWorks />
-            <UseCases />
-            <StickyFeatures onWaitlist={toggleStripe} />
+            <React.Suspense fallback={<LazyFallback height={480} />}>
+              <StickyFeatures onWaitlist={toggleStripe} />
+            </React.Suspense>
             <React.Suspense fallback={<LazyFallback height={320} />}>
               <Testimonials />
             </React.Suspense>
+            <ComparisonSection />
             <Pricing onWaitlist={toggleStripe} />
             <FAQ />
-            <React.Suspense fallback={<LazyFallback height={400} />}>
-              <ContactUs />
-            </React.Suspense>
             <FinalCTA onWaitlist={toggleStripe} />
           </>
         ) : (
@@ -1835,8 +1531,16 @@ const App: React.FC = () => {
       <Footer onWaitlist={toggleStripe} />
       <StickyBottomBar onWaitlist={toggleStripe} />
       <WhatsAppButton />
-      <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
-      <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
+      {isStripeOpen && (
+        <React.Suspense fallback={null}>
+          <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
+        </React.Suspense>
+      )}
+      {isWaitlistOpen && (
+        <React.Suspense fallback={null}>
+          <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
+        </React.Suspense>
+      )}
       <CookieNotice />
     </div>
   );

@@ -137,8 +137,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variants: Record<string, string> = {
     primary:
-      'bg-gradient-to-r from-orange to-orange-glow text-white rounded-btn ' +
-      'shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5',
+      'bg-orange text-white rounded-btn ' +
+      'hover:bg-orange-glow hover:-translate-y-0.5',
     secondary:
       'bg-white/[0.08] text-accent rounded-btn ' +
       'ring-1 ring-accent/20 hover:bg-white/[0.14] hover:ring-accent/35 hover:-translate-y-0.5',

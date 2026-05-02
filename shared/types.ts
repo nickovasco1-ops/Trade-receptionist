@@ -47,10 +47,13 @@ export interface ClientProvisionResponse extends Client {
   activation_instructions: string | null;
 }
 
+export type ReceptionistTone = 'friendly' | 'professional' | 'efficient';
+
 export interface BusinessConfig {
   id: string;
   client_id: string;
   receptionist_name: string;
+  receptionist_tone: ReceptionistTone;
   services: string[];
   service_areas: string[];
   hourly_rate_min: number | null;

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle, Phone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../../components/Logo';
 
@@ -17,17 +17,22 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const [email, setEmail]         = useState('');
-  const [sent, setSent]           = useState(false);
-  const [loading, setLoading]     = useState(false);
+  const navigate      = useNavigate();
+  const emailRef      = useRef<HTMLInputElement>(null);
+  const [email, setEmail]                 = useState('');
+  const [sent, setSent]                   = useState(false);
+  const [loading, setLoading]             = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError]         = useState('');
+  const [error, setError]                 = useState('');
+  const [mounted, setMounted]             = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate('/dashboard', { replace: true });
     });
+    // Staggered entrance
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
   }, [navigate]);
 
   async function handleGoogleSignIn() {
@@ -38,10 +43,7 @@ export default function LoginPage() {
       options: {
         redirectTo: `${window.location.origin}/dashboard`,
         scopes: 'https://www.googleapis.com/auth/calendar',
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
   }
@@ -50,127 +52,254 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     const { error: err } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
-
     setLoading(false);
-
-    if (err) {
-      setError(err.message);
-    } else {
-      setSent(true);
-    }
+    if (err) setError(err.message);
+    else setSent(true);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 font-body bg-[radial-gradient(ellipse_at_30%_40%,rgba(255,107,43,0.07)_0%,transparent_60%)] bg-navy">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-5 py-12 font-body relative overflow-hidden"
+      style={{ background: '#020D18' }}
+    >
+      {/* ── Atmospheric scene ─────────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
+        {/* Primary warm lamp — top left */}
+        <div style={{
+          position: 'absolute', top: '-20%', left: '-20%',
+          width: '80%', height: '80%',
+          background: 'radial-gradient(ellipse at center, rgba(255,107,43,0.22) 0%, rgba(255,107,43,0.08) 40%, transparent 70%)',
+          filter: 'blur(60px)',
+        }} />
+        {/* Cool fill — bottom right */}
+        <div style={{
+          position: 'absolute', bottom: '-15%', right: '-10%',
+          width: '55%', height: '55%',
+          background: 'radial-gradient(ellipse at center, rgba(153,203,255,0.12) 0%, transparent 70%)',
+          filter: 'blur(50px)',
+        }} />
+        {/* Mid accent */}
+        <div style={{
+          position: 'absolute', top: '40%', left: '60%',
+          width: '30%', height: '30%',
+          background: 'radial-gradient(ellipse at center, rgba(255,140,85,0.07) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+        }} />
+      </div>
+
+      {/* Blueprint grid */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-30"
+        className="fixed inset-0 pointer-events-none"
         aria-hidden="true"
         style={{
-          backgroundImage: 'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
+          backgroundImage:
+            'linear-gradient(rgba(153,203,255,0.035) 1px, transparent 1px),' +
+            'linear-gradient(90deg, rgba(153,203,255,0.035) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />
 
-      <div className="relative w-full max-w-sm">
-        <div className="flex justify-center mb-10">
-          <Logo className="h-8 w-auto" />
+      {/* ── Content ───────────────────────────────────────────────────── */}
+      <div
+        className="relative w-full max-w-[360px] flex flex-col items-center"
+        style={{
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
+
+        {/* Logo with bloom */}
+        <div className="relative mb-6 flex items-center justify-center">
+          <div style={{
+            position: 'absolute',
+            width: '220px', height: '120px',
+            background: 'radial-gradient(ellipse, rgba(255,107,43,0.28) 0%, transparent 65%)',
+            filter: 'blur(28px)',
+            pointerEvents: 'none',
+          }} />
+          <Logo className="h-[50px] w-auto relative z-10" />
         </div>
 
-        <div className="rounded-card p-8 bg-white/[0.06] backdrop-blur-[24px] shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_20px_60px_rgba(2,13,24,0.5)]">
+        {/* Brand statement — outside the card */}
+        <div className="text-center mb-8" style={{ transitionDelay: '80ms' }}>
+          <p className="text-[11px] font-bold tracking-[0.14em] uppercase text-orange-soft font-body mb-3">
+            AI RECEPTIONIST FOR UK TRADESPEOPLE
+          </p>
+          <h1 className="font-display font-bold text-offwhite tracking-tight leading-[1.08] mb-3" style={{ fontSize: 'clamp(26px, 5vw, 32px)' }}>
+            Your calls are{' '}
+            <span
+              className="italic"
+              style={{
+                background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              covered.
+            </span>
+          </h1>
+          <p className="text-[14px] text-offwhite/45 font-body">
+            Sign in to see what Sarah has handled today.
+          </p>
+        </div>
+
+        {/* Live status pill */}
+        <div
+          role="status"
+          aria-label="Sarah is live and answering calls"
+          className="flex items-center gap-2 px-4 py-2 rounded-full mb-8 font-body"
+          style={{
+            background: 'rgba(255,107,43,0.08)',
+            boxShadow: '0 0 0 1px rgba(255,107,43,0.16)',
+          }}
+        >
+          <div className="relative flex items-center justify-center w-2 h-2">
+            <span className="absolute w-full h-full rounded-full bg-orange animate-ping opacity-60" />
+            <span className="relative w-2 h-2 rounded-full bg-orange" />
+          </div>
+          <Phone size={11} className="text-orange-soft" aria-hidden="true" />
+          <span className="text-[12px] text-orange-soft font-semibold tracking-[-0.01em]">
+            Sarah is live and answering calls
+          </span>
+        </div>
+
+        {/* Glass card */}
+        <div
+          className="w-full rounded-card"
+          style={{
+            background: 'rgba(255,255,255,0.065)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            boxShadow:
+              '0 0 0 1px rgba(255,255,255,0.09),' +
+              '0 24px 64px rgba(2,13,24,0.70),' +
+              '0 0 0 1px rgba(255,107,43,0.04) inset',
+          }}
+        >
           {sent ? (
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="text-orange w-10 h-10" strokeWidth={1.5} aria-hidden="true" />
+            /* ── Sent state ──────────────────────────────────────── */
+            <div className="p-8 text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                style={{
+                  background: 'rgba(255,107,43,0.11)',
+                  boxShadow: '0 0 0 1px rgba(255,107,43,0.22), 0 0 36px rgba(255,107,43,0.18)',
+                }}
+              >
+                <CheckCircle className="text-orange w-8 h-8" strokeWidth={1.5} aria-hidden="true" />
               </div>
-              <h2 className="text-[20px] font-bold text-offwhite font-display mb-2">
+              <h2 className="text-[21px] font-bold text-offwhite font-display tracking-tight mb-2">
                 Check your inbox
               </h2>
-              <p className="text-[14px] text-offwhite/50 font-body leading-relaxed">
-                We sent a magic link to <span className="text-offwhite/70">{email}</span>.
-                Click it to sign in — no password needed.
+              <p className="text-[14px] text-offwhite/50 font-body leading-relaxed mb-1">
+                Magic link sent to
+              </p>
+              <p className="text-[14px] text-offwhite/80 font-semibold font-body mb-6 break-all">
+                {email}
+              </p>
+              <p className="text-[13px] text-offwhite/35 font-body mb-6">
+                Click the link to sign in — no password needed.
               </p>
               <button
                 type="button"
-                onClick={() => setSent(false)}
-                className="mt-6 text-[13px] text-offwhite/40 hover:text-offwhite/60 transition-colors font-body"
+                onClick={() => { setSent(false); setTimeout(() => emailRef.current?.focus(), 50); }}
+                className="text-[13px] text-offwhite/30 hover:text-orange-soft transition-colors duration-200 font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px] rounded"
               >
-                Wrong email? Go back
+                Wrong email? Try again
               </button>
             </div>
           ) : (
-            <>
-              <h1 className="text-[22px] font-bold text-offwhite font-display mb-1">
-                Sign in or get started
-              </h1>
-              <p className="text-[14px] text-offwhite/40 font-body mb-6">
-                New accounts are set up automatically.
-              </p>
-
+            /* ── Sign-in form ────────────────────────────────────── */
+            <div className="p-7">
+              {/* Google */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 rounded-field text-[14px] font-semibold font-body text-offwhite/80 bg-white/[0.07] shadow-ring-strong hover:shadow-[0_0_0_1px_rgba(255,255,255,0.18)] hover:-translate-y-0.5 transition-all duration-300 ease-mechanical disabled:opacity-60 mb-5"
+                className="w-full flex items-center justify-center gap-2.5 rounded-field text-[14px] font-semibold font-body text-offwhite/75 transition-all duration-300 ease-mechanical disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px] hover:-translate-y-0.5 mb-4"
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.10)',
+                  minHeight: '48px',
+                }}
               >
                 <GoogleIcon />
                 {googleLoading ? 'Redirecting…' : 'Continue with Google'}
               </button>
 
-              <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-px bg-white/[0.06]" aria-hidden="true" />
-                <span className="text-[12px] text-offwhite/20 font-body">or</span>
-                <div className="flex-1 h-px bg-white/[0.06]" aria-hidden="true" />
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-4" aria-hidden="true">
+                <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07))' }} />
+                <span className="text-[11px] text-offwhite/20 font-body uppercase tracking-[0.09em]">or</span>
+                <div className="flex-1 h-px" style={{ background: 'linear-gradient(270deg, transparent, rgba(255,255,255,0.07))' }} />
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
                   <label
                     htmlFor="login-email"
-                    className="block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.08em] mb-1.5 font-body"
+                    className="block text-[11px] font-bold text-offwhite/35 uppercase tracking-[0.09em] mb-1.5 font-body"
                   >
-                    Email — magic link
+                    Email address
                   </label>
                   <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-offwhite/30 pointer-events-none" aria-hidden="true" />
+                    <Mail
+                      size={14}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-offwhite/25 pointer-events-none"
+                      aria-hidden="true"
+                    />
                     <input
+                      ref={emailRef}
                       id="login-email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-field text-[14px] font-body text-offwhite placeholder:text-offwhite/25 outline-none bg-white/[0.06] shadow-ring-default focus:shadow-ring-strong focus:ring-2 focus:ring-orange/40 transition-shadow duration-200"
+                      className="w-full pl-10 pr-4 rounded-field text-[14px] font-body text-offwhite placeholder:text-offwhite/20 outline-none bg-white/[0.06] shadow-ring-default focus:shadow-ring-strong focus:ring-2 focus:ring-orange/40 transition-shadow duration-200"
+                      style={{ minHeight: '48px' }}
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <p className="text-[13px] text-orange-soft font-body" role="alert">{error}</p>
+                  <p className="text-[13px] text-orange-soft font-body py-1" role="alert">
+                    {error}
+                  </p>
                 )}
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 ease-mechanical disabled:opacity-60"
+                  disabled={loading || !email}
+                  className="w-full flex items-center justify-center gap-2 rounded-btn font-semibold text-[15px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                  style={{ minHeight: '52px' }}
                 >
-                  {loading ? 'Sending…' : <>Send magic link <ArrowRight size={15} aria-hidden="true" /></>}
+                  {loading
+                    ? 'Sending…'
+                    : <><span>Send magic link</span><ArrowRight size={14} aria-hidden="true" /></>
+                  }
                 </button>
               </form>
-            </>
+
+              <p className="text-center text-[11px] text-offwhite/20 font-body mt-5">
+                No password. No account needed. Just your email.
+              </p>
+            </div>
           )}
         </div>
 
-        <p className="text-center text-[12px] text-offwhite/25 font-body mt-6">
+        <p className="text-center text-[11px] text-offwhite/15 font-body mt-6">
           &copy; {new Date().getFullYear()} Trade Receptionist Ltd
         </p>
       </div>
+
     </div>
   );
 }

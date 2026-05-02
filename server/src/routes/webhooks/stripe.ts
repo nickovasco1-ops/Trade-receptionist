@@ -259,35 +259,47 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   if (agentId) {
     try {
       const available = await searchUkNumbers(5);
-      if (available.length) {
+      if (!available.length) {
+        console.error('[stripe] No UK numbers available from Twilio');
+      } else {
         const purchased = await buyUkNumber(available[0].phoneNumber);
         phoneNumber     = purchased.phoneNumber;
-        await importTwilioNumber(phoneNumber, agentId);
+        console.log(`[stripe] Twilio number purchased: ${phoneNumber} (SID: ${purchased.sid})`);
+
+        try {
+          await importTwilioNumber(phoneNumber, agentId);
+          console.log(`[stripe] Retell import succeeded — ${phoneNumber} linked to agent ${agentId}`);
+        } catch (importErr: unknown) {
+          console.error('[stripe] Retell importTwilioNumber FAILED — number purchased but not linked to agent. Call routing will not work.', importErr instanceof Error ? importErr.message : importErr);
+        }
+
         await supabase
           .from('clients')
           .update({ twilio_number: phoneNumber, updated_at: new Date().toISOString() })
           .eq('id', client.id);
       }
     } catch (err: unknown) {
-      console.warn('[stripe] phone number purchase skipped', err instanceof Error ? err.message : err);
+      console.error('[stripe] Twilio number provisioning failed', err instanceof Error ? err.message : err);
     }
   }
 
   // ── 5. Supabase auth user + magic link ────────────────────────────────────────
 
-  let loginUrl = 'https://tradereceptionist.com/login';
+  const siteUrl = process.env.SITE_URL ?? 'https://tradereceptionist.com';
+  let loginUrl = `${siteUrl}/onboarding`;
 
   try {
     await supabase.auth.admin.createUser({ email: ownerEmail, email_confirm: true });
     const { data: linkData } = await supabase.auth.admin.generateLink({
-      type:  'magiclink',
-      email: ownerEmail,
+      type:    'magiclink',
+      email:   ownerEmail,
+      options: { redirectTo: `${siteUrl}/onboarding` },
     });
     const actionLink = (linkData as { properties?: { action_link?: string } } | null)
       ?.properties?.action_link;
     if (actionLink) loginUrl = actionLink;
   } catch (err: unknown) {
-    console.warn('[stripe] Supabase auth setup failed', err instanceof Error ? err.message : err);
+    console.error('[stripe] Supabase auth setup failed', err instanceof Error ? err.message : err);
   }
 
   // ── 6. Welcome email ──────────────────────────────────────────────────────────

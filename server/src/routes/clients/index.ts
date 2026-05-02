@@ -561,4 +561,44 @@ router.get('/:id/activation-code', async (req: Request, res: Response) => {
   } satisfies ApiResponse);
 });
 
+// ── POST /clients/rebuild-agent ───────────────────────────────────────────────
+// Called by the frontend after onboarding saves new business_config data.
+// Fetches the latest client + config and pushes a fresh prompt to Retell.
+
+router.post('/rebuild-agent', async (req: Request, res: Response) => {
+  const { clientId } = req.body as { clientId?: string };
+  if (!clientId) {
+    res.status(400).json({ success: false, error: 'clientId required' } satisfies ApiResponse);
+    return;
+  }
+
+  const [{ data: client }, { data: config }] = await Promise.all([
+    supabase.from('clients').select('*').eq('id', clientId).single(),
+    supabase.from('business_config').select('*').eq('client_id', clientId).single(),
+  ]);
+
+  if (!client || !config) {
+    res.status(404).json({ success: false, error: 'Client or config not found' } satisfies ApiResponse);
+    return;
+  }
+
+  if (!client.retell_agent_id) {
+    res.status(200).json({ success: true, data: { skipped: true, reason: 'No Retell agent yet' } } satisfies ApiResponse);
+    return;
+  }
+
+  try {
+    const prompt = buildSystemPrompt(client as Client, config as BusinessConfig);
+    await updateAgentPrompt(client.retell_agent_id as string, prompt);
+    console.log(`[clients] Rebuilt Retell prompt for ${client.business_name} (${client.id})`);
+    res.json({ success: true } satisfies ApiResponse);
+  } catch (err: unknown) {
+    console.error('[clients] rebuild-agent failed', err);
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Retell update failed',
+    } satisfies ApiResponse);
+  }
+});
+
 export default router;

@@ -1,34 +1,57 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Mail, Phone, ArrowRight } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 
 export default function WelcomePage() {
-  const [dots, setDots] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const id = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 500);
-    return () => clearInterval(id);
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
   }, []);
 
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
-      style={{ background: 'linear-gradient(135deg, #020D18 0%, #051426 60%, #0A2340 100%)' }}
+      style={{
+        background:
+          'radial-gradient(ellipse at 20% 20%, rgba(255,107,43,0.09) 0%, transparent 55%), ' +
+          'radial-gradient(ellipse at 80% 80%, rgba(153,203,255,0.06) 0%, transparent 50%), ' +
+          '#051426',
+      }}
     >
       {/* Blueprint grid */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-30"
+        className="fixed inset-0 pointer-events-none"
         style={{
           backgroundImage:
             'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
+          opacity: 0.4,
         }}
       />
 
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <Logo className="h-8 w-auto" />
+      <div
+        className="relative w-full max-w-md"
+        style={{
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
+
+        {/* Logo — prominent, centred, with ambient glow beneath */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="relative flex items-center justify-center">
+            <div style={{
+              position: 'absolute',
+              width: '220px', height: '120px',
+              background: 'radial-gradient(ellipse, rgba(255,107,43,0.28) 0%, transparent 65%)',
+              filter: 'blur(32px)',
+              pointerEvents: 'none',
+            }} />
+            <Logo className="h-[50px] w-auto relative z-10" />
+          </div>
         </div>
 
         {/* Card */}
@@ -38,51 +61,75 @@ export default function WelcomePage() {
             background: 'rgba(255,255,255,0.06)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(2,13,24,0.6)',
+            boxShadow:
+              '0 0 0 1px rgba(255,255,255,0.08), ' +
+              '0 40px 80px rgba(2,13,24,0.6), ' +
+              '0 0 60px rgba(255,107,43,0.05)',
           }}
         >
-          {/* Success icon */}
+          {/* Success icon — on-brand orange */}
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
-            style={{ background: 'rgba(34,197,94,0.12)', boxShadow: '0 0 32px rgba(34,197,94,0.2)' }}
+            style={{
+              background: 'rgba(255,107,43,0.12)',
+              boxShadow: '0 0 0 1px rgba(255,107,43,0.20), 0 0 32px rgba(255,107,43,0.20)',
+            }}
           >
-            <CheckCircle2 className="w-8 h-8 text-green-400" strokeWidth={2} />
+            <CheckCircle2 className="w-8 h-8 text-orange" strokeWidth={2} />
           </div>
 
-          <h1 className="font-display text-[28px] font-bold text-offwhite tracking-tight leading-tight mb-3">
-            You're in!
+          <h1 className="font-display text-[30px] font-bold text-offwhite tracking-tight leading-tight mb-3">
+            You're{' '}
+            <span
+              className="italic"
+              style={{
+                background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              in!
+            </span>
           </h1>
-          <p className="text-offwhite/60 text-[15px] leading-relaxed font-body mb-8">
-            Sarah is being set up right now. You'll receive a welcome email within 2 minutes with your dedicated phone number and a one-click login link.
+
+          <p className="text-offwhite/55 text-[14px] leading-relaxed font-body mb-8 max-w-[320px] mx-auto">
+            Your receptionist is being set up right now. Check your email — your dedicated UK number and one-click login link will arrive within 2 minutes.
           </p>
 
           {/* Steps */}
-          <div className="space-y-3 mb-8 text-left">
+          <div className="space-y-3 mb-7 text-left">
             {[
-              { icon: Phone, text: 'Your dedicated UK number is being provisioned' },
-              { icon: Mail,  text: 'Welcome email arriving shortly with your login link' },
-              { icon: ArrowRight, text: 'Log in and customise Sarah for your business' },
+              { icon: Phone,      text: 'Your dedicated UK number is being provisioned' },
+              { icon: Mail,       text: 'Welcome email arriving shortly with your login link' },
+              { icon: ArrowRight, text: 'Log in and personalise your receptionist' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,107,43,0.12)' }}
+                  style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.15)' }}
                 >
-                  <Icon className="w-4 h-4 text-orange-soft" strokeWidth={2} />
+                  <Icon className="w-4 h-4 text-orange-soft" strokeWidth={2} aria-hidden="true" />
                 </div>
-                <span className="text-[13px] text-offwhite/70 font-body">{text}</span>
+                <span className="text-[13px] text-offwhite/65 font-body">{text}</span>
               </div>
             ))}
           </div>
 
-          {/* Animated setting up indicator */}
+          {/* Animated status indicator */}
           <div
-            className="rounded-[10px] px-4 py-3 flex items-center justify-center gap-2"
-            style={{ background: 'rgba(255,107,43,0.08)' }}
+            role="status"
+            aria-live="polite"
+            aria-label="Setting up your account"
+            className="rounded-[10px] px-4 py-3 flex items-center justify-center gap-2.5"
+            style={{
+              background: 'rgba(255,107,43,0.07)',
+              boxShadow: '0 0 0 1px rgba(255,107,43,0.12)',
+            }}
           >
-            <div className="w-2 h-2 rounded-full bg-orange animate-pulse" />
-            <span className="text-[13px] text-orange-soft font-body font-semibold">
-              Setting up your account{dots}
+            <div className="w-2 h-2 rounded-full bg-orange flex-shrink-0 motion-safe:animate-ping opacity-75" />
+            <span className="text-[13px] text-orange-soft font-body font-semibold tracking-[-0.01em]">
+              Setting up your account…
             </span>
           </div>
         </div>
@@ -90,8 +137,11 @@ export default function WelcomePage() {
         {/* Footer */}
         <p className="text-center text-[12px] text-offwhite/25 font-body mt-6">
           Questions? Email us at{' '}
-          <a href="mailto:hello@tradereceptionist.com" className="text-offwhite/40 hover:text-orange-soft transition-colors">
-            hello@tradereceptionist.com
+          <a
+            href="mailto:hello@tradereceptionist.co.uk"
+            className="text-offwhite/40 hover:text-orange-soft transition-colors duration-200"
+          >
+            hello@tradereceptionist.co.uk
           </a>
         </p>
       </div>

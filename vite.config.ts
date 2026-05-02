@@ -46,9 +46,10 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           output: {
             manualChunks: {
-              'vendor-react':  ['react', 'react-dom'],
-              'vendor-icons':  ['lucide-react'],
-              'vendor-sentry': ['@sentry/react'],
+              'vendor-react':    ['react', 'react-dom', 'react-router-dom'],
+              'vendor-icons':    ['lucide-react'],
+              'vendor-sentry':   ['@sentry/react'],
+              'vendor-supabase': ['@supabase/supabase-js'],
             },
           },
         },

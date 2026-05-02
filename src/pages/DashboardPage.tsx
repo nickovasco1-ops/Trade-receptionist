@@ -77,11 +77,11 @@ export default function DashboardPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, onboarding_complete')
         .eq('owner_email', user.email)
         .maybeSingle();
 
-      if (!clientRow) { navigate('/onboarding', { replace: true }); return; }
+      if (!clientRow || !clientRow.onboarding_complete) { navigate('/onboarding', { replace: true }); return; }
 
       const [callsRes, leadsRes] = await Promise.all([
         supabase

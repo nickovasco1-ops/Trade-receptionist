@@ -57,8 +57,9 @@ export async function sendSms(to: string, body: string, from: string): Promise<s
  * Results are random — call once and pick the first available.
  */
 export async function searchUkNumbers(count = 5): Promise<AvailableNumber[]> {
-  // Try Local first, fall back to Mobile (which supports SMS natively in UK)
-  for (const type of ['Local', 'Mobile']) {
+  // UK Local numbers require a separate regulatory bundle (not yet approved).
+  // Mobile numbers work with the existing twilio-approved bundle — prefer them.
+  for (const type of ['Mobile', 'Local']) {
     const params = new URLSearchParams({
       VoiceEnabled: 'true',
       Limit:        String(count),
@@ -95,6 +96,15 @@ export async function searchUkNumbers(count = 5): Promise<AvailableNumber[]> {
 /** Purchase a UK phone number. Returns the SID needed for later release. */
 export async function buyUkNumber(phoneNumber: string): Promise<PurchasedNumber> {
   const params = new URLSearchParams({ PhoneNumber: phoneNumber });
+
+  // UK numbers require a registered address + regulatory bundle (Ofcom / Twilio policy).
+  // Address: Trade Receptionist Ltd, 3 Dorothea Close, KT15 2GR.
+  // Bundle: twilio-approved UK Mobile bundle (BU173d57f5aa2ce576e6d9b480a05bc95b).
+  const addressSid = process.env.TWILIO_ADDRESS_SID;
+  const bundleSid  = process.env.TWILIO_BUNDLE_SID;
+  if (addressSid) params.set('AddressSid', addressSid);
+  if (bundleSid)  params.set('BundleSid',  bundleSid);
+
   const res = await fetch(`${baseUrl()}/IncomingPhoneNumbers.json`, {
     method:  'POST',
     headers: formHeader(),
