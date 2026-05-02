@@ -1418,7 +1418,7 @@ const WhatsAppButton = () => (
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Chat with us on WhatsApp"
-    className="group fixed right-4 md:right-6 bottom-20 md:bottom-6 z-40 flex items-center justify-center w-14 h-14 rounded-full animate-pulse-glow-green hover:scale-110 active:scale-95 transition-transform duration-300"
+    className="group fixed right-4 md:right-6 bottom-28 md:bottom-6 z-40 flex items-center justify-center w-14 h-14 rounded-full animate-pulse-glow-green hover:scale-110 active:scale-95 transition-transform duration-300"
     style={{ background: '#25D366' }}
   >
     {/* WhatsApp SVG */}
@@ -1455,7 +1455,7 @@ const CookieNotice: React.FC = () => {
   if (!visible) return null;
   return (
     <div
-      className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-[60] rounded-card p-4 font-body"
+      className="fixed bottom-36 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-[60] rounded-card p-4 font-body"
       style={{
         background:   'rgba(10,35,64,0.96)',
         backdropFilter: 'blur(20px)',

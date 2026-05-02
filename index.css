@@ -348,6 +348,24 @@ input[type="range"]::-moz-range-thumb {
 /* ─── Mobile Safe Area ─── */
 .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px); }
 
+/* ─── Mobile / Touch Globals ─── */
+/* Prevent gray flash on tap for all interactive elements (iOS/Android) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Eliminate 300ms tap delay on Android without disabling pinch-zoom */
+button, a, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+/* Prevent pull-to-refresh hijack on iOS Chrome / Android Chrome */
+html {
+  overscroll-behavior-y: none;
+}
+/* Ensure inputs never trigger iOS auto-zoom (requires font-size ≥ 16px) */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
 /* ─── Section Fade Overlays ─── */
 .section-fade-top    { background: linear-gradient(180deg, var(--color-void) 0%, transparent 100%); }
 .section-fade-bottom { background: linear-gradient(0deg, var(--color-void) 0%, transparent 100%); }

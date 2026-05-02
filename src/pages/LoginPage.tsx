@@ -63,7 +63,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-5 py-12 font-body relative overflow-hidden"
+      className="min-h-[100dvh] flex flex-col items-center justify-center px-5 py-12 font-body relative overflow-hidden"
       style={{ background: '#020D18' }}
     >
       {/* ── Atmospheric scene ─────────────────────────────────────────── */}

@@ -12,7 +12,7 @@ export default function WelcomePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-16"
+      className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-16"
       style={{
         background:
           'radial-gradient(ellipse at 20% 20%, rgba(255,107,43,0.09) 0%, transparent 55%), ' +

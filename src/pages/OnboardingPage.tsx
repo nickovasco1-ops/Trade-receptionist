@@ -414,7 +414,7 @@ export default function OnboardingPage() {
 
   return (
     <div
-        className="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-body"
+        className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10 font-body"
         style={{
           background:
             'radial-gradient(ellipse at 20% 30%, rgba(255,107,43,0.07) 0%, transparent 55%), ' +
