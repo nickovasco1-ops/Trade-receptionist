@@ -83,7 +83,7 @@ export const StatusGauge: React.FC<StatusGaugeProps> = ({
             fill={color === 'orange' ? '#FF8C55' : '#99cbff'}
             fontSize={fontSizes[size]}
             fontWeight="700"
-            fontFamily="Barlow Condensed, sans-serif"
+            fontFamily="JetBrains Mono, monospace"
           >
             {metric}
           </text>
@@ -118,34 +118,34 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!buttonRef.current) return;
     const { left, top, width, height } = buttonRef.current.getBoundingClientRect();
     setOffset({
-      x: (e.clientX - (left + width  / 2)) * 0.10,
-      y: (e.clientY - (top  + height / 2)) * 0.10,
+      x: (e.clientX - (left + width  / 2)) * 0.08,
+      y: (e.clientY - (top  + height / 2)) * 0.08,
     });
   };
 
   const handleMouseLeave = () => setOffset({ x: 0, y: 0 });
 
   const base =
-    'inline-flex items-center justify-center font-semibold tracking-[-0.01em] ' +
+    'inline-flex items-center justify-center font-semibold tracking-[-0.015em] ' +
     'disabled:opacity-50 disabled:pointer-events-none select-none relative ' +
-    'active:scale-[0.97]';
+    'active:scale-[0.985] will-change-transform';
 
   const variants: Record<string, string> = {
     primary:
-      'bg-orange text-white rounded-btn ' +
-      'hover:bg-orange-glow hover:-translate-y-0.5',
+      'rounded-btn text-white ring-1 ring-[#ffc49f]/10 ' +
+      'shadow-[0_16px_36px_rgba(249,115,22,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]',
     secondary:
-      'bg-white/[0.08] text-accent rounded-btn ' +
-      'ring-1 ring-accent/20 hover:bg-white/[0.14] hover:ring-accent/35 hover:-translate-y-0.5',
+      'rounded-btn bg-[linear-gradient(180deg,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.06)_100%)] text-accent ' +
+      'ring-1 ring-white/10 shadow-[0_12px_26px_rgba(2,13,24,0.22)] hover:bg-white/[0.13] hover:ring-accent/20',
     outline:
-      'bg-white/[0.06] text-offwhite rounded-btn ' +
-      'ring-1 ring-white/10 hover:bg-white/[0.10] hover:ring-white/20 ' +
-      'hover:-translate-y-0.5 backdrop-blur-sm',
+      'rounded-btn bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.04)_100%)] text-offwhite ' +
+      'ring-1 ring-white/10 shadow-[0_10px_24px_rgba(2,13,24,0.18)] hover:bg-white/[0.10] hover:ring-white/18 backdrop-blur-sm',
     ghost:
       'bg-transparent text-offwhite/60 hover:text-offwhite hover:bg-white/[0.06] rounded-btn',
   };
@@ -160,10 +160,17 @@ export const Button: React.FC<ButtonProps> = ({
     <button
       ref={buttonRef}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        setHovered(false);
+        handleMouseLeave();
+      }}
       style={{
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        transform: `translate(${offset.x}px, ${offset.y + (hovered ? -2 : 0)}px)`,
         transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), box-shadow 200ms cubic-bezier(0.23,1,0.32,1), background-color 150ms ease, opacity 150ms ease',
+        background: variant === 'primary'
+          ? 'linear-gradient(135deg, #F97316 0%, #F4A261 100%)'
+          : style?.background,
         ...style,
       }}
       className={`${base} ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}

@@ -29,7 +29,7 @@ export default function TradesMarquee() {
   return (
     <section
       aria-label="Built for every trade"
-      style={{ background: '#051426', padding: '56px 0' }}
+      style={{ background: 'var(--color-navy)', padding: '56px 0' }}
     >
       {/* Title */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 mb-8">
@@ -51,12 +51,12 @@ export default function TradesMarquee() {
         {/* Left fade */}
         <div
           className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: 'linear-gradient(to right, #051426, transparent)' }}
+          style={{ background: 'linear-gradient(to right, var(--color-navy), transparent)' }}
         />
         {/* Right fade */}
         <div
           className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
-          style={{ background: 'linear-gradient(to left, #051426, transparent)' }}
+          style={{ background: 'linear-gradient(to left, var(--color-navy), transparent)' }}
         />
 
         {prefersReduced ? (

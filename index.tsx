@@ -43,6 +43,17 @@ const CallsPage      = React.lazy(() => import('./src/pages/CallsPage'));
 const LeadsPage      = React.lazy(() => import('./src/pages/LeadsPage'));
 const SettingsPage   = React.lazy(() => import('./src/pages/SettingsPage'));
 const OnboardingPage = React.lazy(() => import('./src/pages/OnboardingPage'));
+const OnboardingPreviewPage = React.lazy(() => import('./src/pages/OnboardingPreviewPage'));
+const DashboardPreviewPage = React.lazy(() => import('./src/pages/DashboardPreviewPage'));
+const DashboardPreviewCallsPage = React.lazy(() =>
+  import('./src/pages/DashboardPreviewPage').then(module => ({ default: module.DashboardPreviewCallsPage }))
+);
+const DashboardPreviewLeadsPage = React.lazy(() =>
+  import('./src/pages/DashboardPreviewPage').then(module => ({ default: module.DashboardPreviewLeadsPage }))
+);
+const DashboardPreviewSettingsPage = React.lazy(() =>
+  import('./src/pages/DashboardPreviewPage').then(module => ({ default: module.DashboardPreviewSettingsPage }))
+);
 const WelcomePage    = React.lazy(() => import('./src/pages/WelcomePage'));
 const NotFoundPage   = React.lazy(() => import('./src/pages/NotFoundPage'));
 
@@ -166,6 +177,31 @@ ReactDOM.createRoot(rootElement, {
               <OnboardingPage />
             </React.Suspense>
           </RequireAuth>
+        } />
+        <Route path="/onboarding-preview" element={
+          <React.Suspense fallback={null}>
+            <OnboardingPreviewPage />
+          </React.Suspense>
+        } />
+        <Route path="/dashboard-preview" element={
+          <React.Suspense fallback={null}>
+            <DashboardPreviewPage />
+          </React.Suspense>
+        } />
+        <Route path="/dashboard-preview/calls" element={
+          <React.Suspense fallback={null}>
+            <DashboardPreviewCallsPage />
+          </React.Suspense>
+        } />
+        <Route path="/dashboard-preview/leads" element={
+          <React.Suspense fallback={null}>
+            <DashboardPreviewLeadsPage />
+          </React.Suspense>
+        } />
+        <Route path="/dashboard-preview/settings" element={
+          <React.Suspense fallback={null}>
+            <DashboardPreviewSettingsPage />
+          </React.Suspense>
         } />
 
         {/* ── Post-payment landing page (no auth required) ─────── */}

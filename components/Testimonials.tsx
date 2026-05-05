@@ -10,6 +10,7 @@ interface TestimonialData {
   tag: string;
   initials: string;
   avatarColor: string;
+  avatar?: string;
 }
 
 const AVATAR_COLORS = [
@@ -30,6 +31,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Diary fully booked',
     initials: 'MA',
     avatarColor: AVATAR_COLORS[0],
+    avatar: '/assets/generated/testimonials/avatar-1.png',
   },
   {
     name: 'Dean Kowalski',
@@ -39,6 +41,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Works mid-job',
     initials: 'DK',
     avatarColor: AVATAR_COLORS[1],
+    avatar: '/assets/generated/testimonials/avatar-2.png',
   },
   {
     name: 'Alfred Charles',
@@ -48,6 +51,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Bookings up',
     initials: 'AC',
     avatarColor: AVATAR_COLORS[2],
+    avatar: '/assets/generated/testimonials/avatar-3.png',
   },
   {
     name: 'Zahir Akram',
@@ -57,6 +61,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Schedule fills itself',
     initials: 'ZA',
     avatarColor: AVATAR_COLORS[3],
+    avatar: '/assets/generated/testimonials/avatar-6.png',
   },
   {
     name: 'Craig Donnelly',
@@ -66,6 +71,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Family time back',
     initials: 'CD',
     avatarColor: AVATAR_COLORS[4],
+    avatar: '/assets/generated/testimonials/avatar-5.png',
   },
   {
     name: 'Priya Nair',
@@ -75,6 +81,7 @@ const TESTIMONIALS: TestimonialData[] = [
     tag: 'Game changer',
     initials: 'PN',
     avatarColor: AVATAR_COLORS[5],
+    avatar: '/assets/generated/testimonials/avatar-4.png',
   },
 ];
 
@@ -124,13 +131,23 @@ function TestimonialCard({ t, truncate = false }: { t: TestimonialData; truncate
 
       {/* Avatar + name */}
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-display font-bold text-[12px]"
-          style={{ background: t.avatarColor }}
-          aria-hidden="true"
-        >
-          {t.initials}
-        </div>
+        {t.avatar ? (
+          <img
+            src={t.avatar}
+            alt={t.name}
+            loading="lazy"
+            className="w-9 h-9 rounded-full flex-shrink-0 object-cover object-top"
+            style={{ boxShadow: '0 0 0 2px rgba(255,107,43,0.25)' }}
+          />
+        ) : (
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-display font-bold text-[12px]"
+            style={{ background: t.avatarColor }}
+            aria-hidden="true"
+          >
+            {t.initials}
+          </div>
+        )}
         <div>
           <p className="font-display font-bold text-[13px] text-offwhite leading-tight">{t.name}</p>
           <p className="text-[11px] text-offwhite/35 leading-tight mt-0.5">{t.company}</p>
@@ -190,7 +207,18 @@ export const Testimonials: React.FC = () => {
             className="font-display font-bold text-offwhite"
             style={{ fontSize: 'clamp(2rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
           >
-            Trusted by trades across the UK.
+            Trusted by trades{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontStyle: 'italic',
+              }}
+            >
+              across the UK.
+            </span>
           </h2>
         </div>
         <p className="text-[14px] md:text-[15px] text-offwhite/45 max-w-xs md:text-right leading-relaxed flex-shrink-0">

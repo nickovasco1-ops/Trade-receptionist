@@ -20,7 +20,7 @@ export default function StatusBadge({ outcome, className = '' }: StatusBadgeProp
   const info = outcome ? (OUTCOME_TONE[outcome] ?? FALLBACK_OUTCOME) : FALLBACK_OUTCOME;
   return (
     <span
-      className={`px-2 py-0.5 rounded-badge text-[11px] font-semibold font-body ${TONE_CLASSES[info.tone]} ${className}`}
+      className={`inline-flex min-h-[24px] items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] font-body shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${TONE_CLASSES[info.tone]} ${className}`}
     >
       {info.label}
     </span>

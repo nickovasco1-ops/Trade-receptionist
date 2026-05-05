@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParallax } from './src/hooks/useParallax';
 import { useScrollAnimation } from './src/hooks/useScrollAnimation';
-const StickyFeatures    = React.lazy(() => import('./components/StickyFeatures'));
+const FeaturesGrid      = React.lazy(() => import('./components/FeaturesGrid'));
 import {
   Phone, Calendar, MessageSquare, ShieldCheck,
   Menu, X, CheckCircle2, ArrowRight,
@@ -181,23 +181,26 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
   };
 
   const navLinks = [
-    { label: 'How It Works',  target: 'how-it-works' },
-    { label: 'Calculator',    target: 'roi' },
-    { label: 'Pricing',       target: 'pricing' },
-    { label: 'Book a Demo',   target: 'book-demo' },
+    { label: 'Calculator',  target: 'roi' },
+    { label: 'Features',    target: 'features' },
+    { label: 'Proof',       target: 'comparison' },
+    { label: 'Pricing',     target: 'pricing' },
+    { label: 'Book a Demo', target: 'book-demo' },
   ];
+
+  const showFullChrome = currentView !== 'home' || scrolled;
 
   return (
     <nav
       className="fixed top-0 w-full z-50"
       style={{
-        background: scrolled
+        background: showFullChrome
           ? 'rgba(5,20,38,0.82)'
-          : 'rgba(5,20,38,0.20)',
-        backdropFilter: scrolled ? 'blur(24px)' : 'blur(12px)',
-        WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'blur(12px)',
-        boxShadow: scrolled ? '0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(2,13,24,0.3)' : 'none',
-        transition: 'background 400ms ease, box-shadow 400ms ease, backdrop-filter 400ms ease',
+          : 'transparent',
+        backdropFilter: showFullChrome ? 'blur(24px)' : 'none',
+        WebkitBackdropFilter: showFullChrome ? 'blur(24px)' : 'none',
+        boxShadow: showFullChrome ? '0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(2,13,24,0.3)' : 'none',
+        transition: 'background 300ms ease, box-shadow 300ms ease, backdrop-filter 300ms ease',
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
@@ -207,12 +210,17 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
             className="flex-shrink-0 flex items-center focus:outline-none"
             onClick={() => handleNav('hero')}
             aria-label="Trade Receptionist home"
+            style={{
+              opacity: showFullChrome ? 1 : 0,
+              pointerEvents: showFullChrome ? 'auto' : 'none',
+              transition: 'opacity 220ms ease',
+            }}
           >
             <Logo className="h-20 xl:h-24" />
           </button>
 
           {/* Desktop nav */}
-          <div className="hidden xl:flex items-center gap-8">
+          <div className={`${showFullChrome ? 'hidden xl:flex' : 'hidden'} items-center gap-8`}>
             {navLinks.map(({ label, target }) => {
               const isActive = currentView === 'book-demo' && target === 'book-demo';
               return (
@@ -235,7 +243,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
           </div>
 
           {/* Desktop CTAs */}
-          <div className="hidden xl:flex items-center gap-3">
+          <div className={`${showFullChrome ? 'hidden xl:flex' : 'hidden'} items-center gap-3`}>
             <Button variant="ghost" size="sm" onClick={() => window.location.href = '/login'}>Log in</Button>
             <Button variant="primary" size="sm" onClick={onWaitlist}>
               Start Free Trial
@@ -245,7 +253,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
           {/* Mobile hamburger */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="xl:hidden text-offwhite/70 hover:text-offwhite p-3 transition-colors"
+            className={`xl:hidden text-offwhite/70 hover:text-offwhite p-3 transition-all ${showFullChrome ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             aria-label={isOpen ? 'Close menu' : 'Open menu'}
           >
             {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
@@ -298,373 +306,330 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const { primary: parallax, secondary: cardParallax } = useParallax();
 
-  const gradientText: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-    fontStyle: 'italic',
-  };
-
   return (
     <section
       id="hero"
-      className="relative pt-28 pb-24 md:pt-44 xl:pt-56 md:pb-36 overflow-hidden"
+      className="relative overflow-hidden pt-24 pb-20 md:pt-36 md:pb-28 xl:pt-40 xl:pb-36"
       style={{
         background:
-          'radial-gradient(ellipse at 15% 60%, rgba(255,107,43,0.06) 0%, transparent 55%),' +
-          'radial-gradient(ellipse at 85% 15%, rgba(153,203,255,0.05) 0%, transparent 50%)',
+          'radial-gradient(circle at 18% 42%, rgba(255,166,82,0.08) 0%, transparent 34%),' +
+          'radial-gradient(circle at 83% 22%, rgba(255,166,82,0.07) 0%, transparent 28%),' +
+          'radial-gradient(circle at 70% 55%, rgba(76,117,182,0.10) 0%, transparent 35%)',
       }}
     >
       <BlueprintGrid />
 
-      {/* Atmospheric glow blobs */}
-      <div className="absolute top-1/3 right-[5%] w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.15) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-      <div className="absolute bottom-0 left-[10%] w-[400px] h-[400px] rounded-full opacity-10 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(153,203,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.18]"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent 0%, transparent 63%, rgba(100,130,175,0.18) 63%, transparent 64%, transparent 100%),' +
+            'linear-gradient(0deg, transparent 0%, transparent 71%, rgba(100,130,175,0.10) 71%, transparent 72%, transparent 100%)',
+          maskImage: 'radial-gradient(circle at 70% 38%, black 0%, black 38%, transparent 72%)',
+          WebkitMaskImage: 'radial-gradient(circle at 70% 38%, black 0%, black 38%, transparent 72%)',
+        }}
+      />
+
+      <div className="absolute right-[14%] top-[18%] h-[360px] w-[360px] rounded-full opacity-45 pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(255,155,72,0.22) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+      <div className="absolute left-[8%] bottom-[12%] h-[320px] w-[320px] rounded-full opacity-30 pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(44,86,148,0.16) 0%, transparent 72%)', filter: 'blur(60px)' }} />
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
-        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center">
-
-          {/* Left: Copy */}
-          <div className="text-center lg:text-left">
-            <div className="hero-fade" style={{ animationDelay: '0ms' }}>
-              <div className="flex items-center gap-2 mb-7 justify-center lg:justify-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse flex-shrink-0" />
-                <span className="text-[13px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body">
-                  The UK's #1 AI Trade Receptionist
-                </span>
+        <div className="grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8">
+          <div className="max-w-[42rem]">
+            <div className="mb-10 flex items-center gap-3">
+              <div
+                className="rounded-[14px] px-3 py-2"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.28)',
+                }}
+              >
+                <Logo height={24} />
+              </div>
+              <div>
+                <div className="font-display text-[22px] font-bold leading-tight text-offwhite">Trade Receptionist</div>
+                <div className="text-[13px] text-offwhite/45 font-body">The UK&apos;s #1 AI Trade Receptionist</div>
               </div>
             </div>
 
             <h1
-              className="font-display font-bold text-offwhite mb-7"
-              style={{ fontSize: 'clamp(3.5rem, 8.5vw, 8.5rem)', lineHeight: 0.93, letterSpacing: '-0.025em' }}
+              className="font-display font-bold text-offwhite"
+              style={{ fontSize: 'clamp(3.4rem, 6.8vw, 5.65rem)', lineHeight: 0.92, letterSpacing: '-0.055em' }}
             >
-              <span className="line-reveal-wrapper">
-                <span className="line-reveal" style={{ animationDelay: '80ms' }}>
-                  Never miss a{' '}
-                  <span style={gradientText}>call.</span>
-                </span>
-              </span>
-              <span className="line-reveal-wrapper">
-                <span className="line-reveal" style={{ animationDelay: '230ms' }}>
-                  Never lose a{' '}
-                  <span style={gradientText}>job.</span>
-                </span>
-              </span>
+              <span className="block whitespace-nowrap">Never miss a call.</span>
+              <span className="block whitespace-nowrap">Never lose a job.</span>
             </h1>
 
-            <div className="hero-fade" style={{ animationDelay: '390ms' }}>
-              <p className="text-lg md:text-xl text-offwhite/65 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-10 font-body">
-                While you're on the tools, Sarah answers every call, books every job, and sends you a WhatsApp summary. 24/7. Never misses.
-              </p>
-            </div>
+            <p className="mt-6 max-w-[34rem] text-[clamp(1.15rem,2vw,1.75rem)] leading-[1.38] text-offwhite/78 font-body">
+              Meet Sarah, the AI receptionist that answers every call, books every job, and sends you a WhatsApp summary 24/7. Never miss a lead again.
+            </p>
 
-            {/* CTAs */}
-            <div className="hero-fade" style={{ animationDelay: '510ms' }}>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
-                  Start Free Trial
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <Button
-                  variant="secondary" size="lg"
-                  onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  <Play className="w-4 h-4 mr-2 text-accent" />
-                  Hear a Live Demo
-                </Button>
-              </div>
-            </div>
-
-            {/* Trust badges */}
-            <div className="hero-fade" style={{ animationDelay: '630ms' }}>
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 text-[13px] font-semibold text-offwhite/50 mb-8">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-orange-soft/70" />
-                  14-day free trial
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-orange-soft/70" />
-                  No card required
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-orange-soft/70" />
-                  Setup in 14 minutes
-                </div>
-              </div>
-            </div>
-
-            {/* Live status strip — mobile only, replaces the visual weight of the phone mockup */}
-            <div className="hero-fade md:hidden mb-4" style={{ animationDelay: '700ms' }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold font-body"
-                style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-orange animate-pulse flex-shrink-0" />
-                <span className="text-orange-soft">AI is live — 98.7% answer rate</span>
-              </div>
-            </div>
-
-            {/* Testimonial card */}
-            <div className="hero-fade" style={{ animationDelay: '740ms' }}>
-              <div
-                className="rounded-card p-5 max-w-md mx-auto lg:mx-0"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  backdropFilter: 'blur(24px)',
-                  WebkitBackdropFilter: 'blur(24px)',
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(2,13,24,0.4)',
-                }}
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
+                Start Free Trial
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                {/* Stars */}
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4" style={{ fill: '#FF6B2B', color: '#FF6B2B' }} />
-                  ))}
-                </div>
-                {/* Quote */}
-                <p className="text-[15px] text-offwhite/80 leading-relaxed mb-3 font-body">
-                  "Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal."
-                </p>
-                {/* Attribution */}
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(255,107,43,0.15)' }}
-                  >
-                    <Droplets className="w-4 h-4 text-orange-soft" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-offwhite font-display">Mark T.</p>
-                    <p className="text-[11px] text-offwhite/40 font-body">Plumber · South London</p>
-                  </div>
-                </div>
-              </div>
+                Hear Sarah in Action
+                <Play className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+
+            <div className="mt-5 flex items-center gap-2 text-[14px] text-offwhite/48 font-body">
+              <ShieldCheck className="h-4 w-4 text-offwhite/40" />
+              <span>14-day free trial. No card required. Setup in 14 minutes.</span>
+            </div>
+
+            <div className="mt-10 max-w-[31rem]">
+              <div className="mb-3 text-[62px] leading-none text-[#A46C42] font-display">&ldquo;</div>
+              <p className="mt-[-10px] text-[clamp(1.1rem,1.55vw,1.45rem)] leading-[1.45] text-offwhite/85 font-body">
+                “Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal.”
+              </p>
+              <p className="mt-4 text-[15px] text-offwhite/45 font-body">- Mark T., Plumber, South London</p>
             </div>
           </div>
 
-          {/* Right: Phone mockup + floating glass cards — hidden on mobile to keep CTA above fold */}
-          <div
-            className="hidden md:block relative mx-auto lg:ml-auto w-full max-w-[340px] lg:max-w-[420px] z-20 hero-fade"
-            style={{ animationDelay: '150ms' }}
-          >
-            {/* Float animation wrapper → parallax inner */}
-            <div className="animate-float-primary">
-              <div style={{ transform: `translate(${parallax.x}px, ${parallax.y}px)`, transition: 'transform 100ms ease-out' }}>
+          <div className="relative mx-auto w-full max-w-[650px]">
+            <div className="absolute right-[10%] top-[12%] h-[320px] w-[320px] rounded-full opacity-55 pointer-events-none"
+              style={{ background: 'radial-gradient(circle, rgba(255,166,82,0.26) 0%, transparent 70%)', filter: 'blur(54px)' }} />
 
-                {/* Floating glow behind phone */}
-                <div className="absolute inset-0 rounded-[2.5rem] opacity-40 pointer-events-none"
-                  style={{ filter: 'blur(40px)', background: 'radial-gradient(ellipse, rgba(255,107,43,0.25) 0%, transparent 70%)' }} />
-
+            <div className="relative mx-auto h-[640px] w-full max-w-[540px] md:h-[720px]">
+              <div
+                className="absolute right-[8%] top-[8%] z-20"
+                style={{
+                  transform: `translate(${parallax.x}px, ${parallax.y}px) rotate(9deg)`,
+                  transition: 'transform 100ms ease-out',
+                }}
+              >
                 <div
-                  className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-[9/19] max-h-[680px] mx-auto"
+                  className="relative overflow-hidden rounded-[42px]"
                   style={{
-                    background: '#0A2340',
-                    border: '6px solid #0F3060',
-                    boxShadow: '0 24px 80px rgba(2,13,24,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
+                    width: 'min(100vw - 5rem, 350px)',
+                    background: '#0B1629',
+                    border: '7px solid rgba(19,26,40,0.96)',
+                    boxShadow: '0 34px 80px rgba(2,13,24,0.72), 0 0 0 1px rgba(255,255,255,0.06)',
                   }}
                 >
-              {/* Notch */}
-              <div className="absolute top-0 inset-x-0 h-7 rounded-b-xl w-32 mx-auto z-20 bg-navy" />
-
-              <div className="w-full h-full flex flex-col pt-10 select-none pointer-events-none">
-                {/* App header */}
-                <div className="px-5 mb-5">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="h-8 w-8 rounded-full bg-navy-high" />
-                    <div className="h-3.5 w-16 rounded-full bg-navy-high" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-offwhite mb-0.5 tracking-tight">
-                    Good morning, Dave
-                  </h3>
-                  <p className="text-[12px] text-offwhite/40 font-body">3 new jobs booked today</p>
-                </div>
-
-                {/* Job card 1 */}
-                <div className="flex-1 px-4 space-y-3 overflow-hidden">
-                  <div className="rounded-2xl p-4"
-                    style={{ background: 'rgba(255,255,255,0.07)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full text-orange bg-orange/10">
-                        Just Now
-                      </span>
-                      <span className="text-[11px] text-offwhite/30">09:42</span>
-                    </div>
-                    <p className="font-display font-bold text-[15px] text-offwhite leading-tight mb-1">Emergency Boiler Repair</p>
-                    <p className="text-[12px] text-offwhite/45 mb-3">SE15 4TW · Mrs. Higgins</p>
-                    <div className="flex gap-2">
-                      <div className="flex-1 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-offwhite/50"
-                        style={{ background: 'rgba(255,255,255,0.05)' }}>
-                        View Notes
+                  <div className="absolute inset-x-0 top-0 z-20 mx-auto h-8 w-36 rounded-b-[20px] bg-[#05080f]" />
+                  <div className="min-h-[560px] bg-[linear-gradient(180deg,#0f1727_0%,#1d2738_100%)] px-7 pb-7 pt-12">
+                    <div className="flex items-center justify-between text-[12px] text-offwhite/72">
+                      <span>9:41</span>
+                      <div className="flex gap-1 text-offwhite/50">
+                        <span>◦</span>
+                        <span>◦</span>
+                        <span>◦</span>
                       </div>
-                      <div className="flex-1 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}>
+                    </div>
+
+                    <div className="mt-11 text-center">
+                      <h3 className="font-display text-[31px] font-medium leading-[1.15] text-offwhite">
+                        Emergency Boiler Repair
+                        <br />
+                        - Dave Hendricks
+                      </h3>
+                    </div>
+
+                    <div
+                      className="mx-auto mt-10 rounded-[24px] px-6 py-7 text-center"
+                      style={{
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.08) 100%)',
+                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
+                      }}
+                    >
+                      <div className="relative mx-auto mb-5 h-24 w-24">
+                        <img
+                          src="/assets/generated/testimonials/avatar-3.png"
+                          alt="Caller avatar"
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                        <div className="absolute bottom-1 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#1d2738] bg-[#31c95d]">
+                          <Phone className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+                      <div className="text-[33px] leading-none text-offwhite">Incoming Call...</div>
+                      <div className="mt-5 flex items-center justify-center gap-3">
+                        <div className="rounded-full bg-white/12 px-4 py-2 text-[14px] text-offwhite/88">View Notes</div>
+                        <div className="rounded-full bg-white/12 px-4 py-2 text-[14px] text-offwhite/88">Call Back</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-9 space-y-3">
+                      <button
+                        className="w-full rounded-full px-5 py-4 text-[18px] font-semibold text-[#1b1b1b]"
+                        style={{ background: 'linear-gradient(135deg, #F97316 0%, #F4A261 100%)' }}
+                        onClick={onWaitlist}
+                      >
+                        Start Free Trial
+                      </button>
+                      <div className="w-full rounded-full bg-white/10 px-5 py-4 text-center text-[18px] text-offwhite/86">
                         Call Back
                       </div>
                     </div>
                   </div>
-
-                  <div className="rounded-2xl p-4 opacity-50"
-                    style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.04)' }}>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full text-accent bg-accent/10">
-                        Quote
-                      </span>
-                      <span className="text-[11px] text-offwhite/25">08:15</span>
-                    </div>
-                    <p className="font-display font-bold text-[15px] text-offwhite leading-tight mb-1">Bathroom Renovation</p>
-                    <p className="text-[12px] text-offwhite/35">SW4 9HE · Tom Baker</p>
-                  </div>
                 </div>
+              </div>
 
-                {/* Incoming call notification */}
-                <div className="absolute bottom-5 left-3 right-3 rounded-2xl p-4"
+              <div
+                className="absolute left-[4%] top-[13%] z-30 hidden md:block"
+                style={{
+                  transform: `translate(${cardParallax.x}px, ${cardParallax.y}px) rotate(-6deg)`,
+                  transition: 'transform 100ms ease-out',
+                }}
+              >
+                <div
+                  className="rounded-[22px] px-4 py-4 backdrop-blur-xl"
                   style={{
-                    background: 'rgba(10,35,64,0.96)',
-                    backdropFilter: 'blur(12px)',
-                    boxShadow: '0 0 0 1px rgba(255,107,43,0.25), 0 0 24px rgba(255,107,43,0.15)',
-                    animation: 'incomingPulse 2s ease-in-out infinite',
-                  }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse-glow"
-                      style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}>
-                      <Phone className="w-5 h-5 text-white" />
+                    width: '208px',
+                    background: 'rgba(130,143,165,0.28)',
+                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 14px 30px rgba(2,13,24,0.38)',
+                  }}
+                >
+                  <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-white">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#32d05f]">
+                      <MessageSquare className="h-4 w-4 text-white" />
                     </div>
-                    <div>
-                      <p className="font-bold text-[14px] text-offwhite">Incoming Call…</p>
-                      <p className="text-[11px] text-accent/70">AI is answering now</p>
-                    </div>
-                    <div className="ml-auto">
-                      <div className="flex gap-0.5 items-end">
-                        {[3,5,8,5,3].map((h, i) => (
-                          <div key={i} className="w-1 rounded-full bg-orange/60"
-                            style={{ height: h * 3, animation: `floatUp ${0.6 + i * 0.1}s ease-in-out infinite alternate` }} />
-                        ))}
-                      </div>
-                    </div>
+                    WhatsApp
                   </div>
+                  <p className="text-[13px] leading-[1.45] text-offwhite/88 font-body">
+                    Sarah answered!
+                    <br />
+                    Dave Hendricks: Emergency Boiler Repair.
+                    <br />
+                    He&apos;s available Tuesday 9am.
+                    <br />
+                    Confirmed via calendar.
+                  </p>
                 </div>
               </div>
-            </div>
-              </div>{/* close parallax inner */}
-            </div>{/* close float-primary */}
 
-            {/* Floating glass card 1: Incoming call — top-left */}
-            <div
-              className="absolute top-[10%] -left-[30%] z-30 hidden lg:block"
-              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '0s' }}
-            >
-              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
-                <div className="glass rounded-2xl p-3"
-                  style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(2,13,24,0.6)', maxWidth: '190px' }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}>
-                      <Phone className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-offwhite leading-tight">Incoming call</p>
-                      <p className="text-[10px] text-offwhite/45 mt-0.5">Dave Hendricks · Plumbing</p>
-                    </div>
+              <div
+                className="absolute left-[0%] top-[47%] z-30 hidden md:block"
+                style={{
+                  transform: `translate(${cardParallax.x}px, ${cardParallax.y}px) rotate(-8deg)`,
+                  transition: 'transform 100ms ease-out',
+                }}
+              >
+                <div
+                  className="rounded-[22px] px-4 py-4 backdrop-blur-xl"
+                  style={{
+                    width: '214px',
+                    background: 'rgba(130,143,165,0.24)',
+                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 14px 30px rgba(2,13,24,0.38)',
+                  }}
+                >
+                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/10 text-offwhite/80">
+                    <Calendar className="h-4 w-4" />
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Floating glass card 2: Job booked — bottom-right */}
-            <div
-              className="absolute bottom-[20%] -right-[25%] z-30 hidden lg:block"
-              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '0.8s' }}
-            >
-              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
-                <div className="glass rounded-2xl p-3"
-                  style={{ boxShadow: '0 0 0 1px rgba(255,107,43,0.15), 0 8px 32px rgba(2,13,24,0.6)', maxWidth: '200px' }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'rgba(255,107,43,0.15)' }}>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-soft" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-offwhite leading-tight">Sarah answered</p>
-                      <p className="text-[10px] text-offwhite/45 mt-0.5">Job booked · Tuesday 9am</p>
-                    </div>
+                  <div className="text-[18px] leading-tight text-offwhite">Emergency Boiler Repair</div>
+                  <div className="mt-3 text-[13px] leading-[1.45] text-offwhite/60 font-body">
+                    Wednesday, Jowguler St, 2021
+                    <br />
+                    3:00 - 3:30 pm
                   </div>
+                  <div className="mt-3 h-1 w-12 rounded-full bg-[#F4A261]" />
+                </div>
+              </div>
+
+              <div className="absolute bottom-[17%] right-[2%] z-30 hidden md:block">
+                <div
+                  className="flex h-24 w-24 items-center justify-center rounded-[26px]"
+                  style={{
+                    background: 'linear-gradient(135deg, #42e96a 0%, #20c14e 100%)',
+                    boxShadow: '0 18px 48px rgba(66,233,106,0.36), 0 0 26px rgba(66,233,106,0.28)',
+                  }}
+                >
+                  <MessageSquare className="h-11 w-11 text-white" />
                 </div>
               </div>
             </div>
-
-            {/* Floating stats pill — above phone */}
-            <div
-              className="absolute -top-[4%] right-[5%] z-30 hidden lg:block"
-              style={{ animation: 'float-secondary 4s ease-in-out infinite', animationDelay: '1.6s' }}
-            >
-              <div style={{ transform: `translate(${cardParallax.x}px, ${cardParallax.y}px)`, transition: 'transform 100ms ease-out' }}>
-                <div className="glass rounded-full px-4 py-2 flex items-center gap-2"
-                  style={{ boxShadow: '0 0 0 1px rgba(153,203,255,0.15), 0 4px 16px rgba(2,13,24,0.5)' }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
-                  <span className="text-[11px] font-bold text-offwhite/80 font-body whitespace-nowrap">Calls today: 24 · Booked: 18</span>
-                </div>
-              </div>
-            </div>
-
-          </div>{/* close right column */}
-
+          </div>
         </div>
-
       </div>
-
-      {/* Scroll cue */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-2 pointer-events-none">
-        <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/25">Scroll</span>
-        <div className="scroll-cue w-px h-10 bg-gradient-to-b from-offwhite/25 to-transparent" />
-      </div>
-
     </section>
   );
 };
 
-// ───Social Proof Strip ───────────────────────────────────────────────────────
-const TRADE_PILLS = [
-  'Electricians', 'Plumbers', 'Carpenters', 'HVAC', 'Roofers',
-  'Glaziers', 'Painters', 'Landscapers', 'Bathroom Fitters', 'Builders',
+// ─── Social Proof Strip ───────────────────────────────────────────────────────
+const SOCIAL_STATS = [
+  { endValue: 98.7, decimals: 1, suffix: '%', label: 'Answer rate', icon: Phone },
+  { endValue: 4200, prefix: '£', label: 'Revenue recovered/yr', icon: Banknote },
+  { endValue: 500,  suffix: '+', label: 'UK tradespeople', icon: Wrench },
+  { endValue: 14,   suffix: ' min', label: 'Avg. setup time', icon: Clock },
 ];
 
 const SocialProof = () => (
-  <div className="relative py-8 overflow-hidden"
+  <div
+    className="relative py-14 overflow-hidden"
     style={{
-      background: 'linear-gradient(180deg, rgba(5,20,38,0.55) 0%, rgba(9,29,54,0.70) 15%, rgba(9,29,54,0.70) 85%, rgba(5,20,38,0.55) 100%)',
+      background:
+        'linear-gradient(180deg, rgba(5,20,38,0) 0%, rgba(9,29,54,0.80) 20%, rgba(9,29,54,0.80) 80%, rgba(5,20,38,0) 100%)',
     }}
   >
-    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+    {/* Subtle blueprint grid overlay */}
+    <div
+      className="absolute inset-0 pointer-events-none opacity-[0.025]"
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(153,203,255,1) 1px, transparent 1px),' +
+          'linear-gradient(90deg, rgba(153,203,255,1) 1px, transparent 1px)',
+        backgroundSize: '40px 40px',
+      }}
+    />
 
-      {/* Stat counters */}
-      <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
-        {[
-          { endValue: 98.7, decimals: 1, suffix: '%', label: 'Calls answered' },
-          { endValue: 4200, prefix: '£', label: 'Avg. revenue recovered/yr' },
-          { endValue: 500, suffix: '+', label: 'UK tradespeople' },
-          { endValue: 14, suffix: ' min', label: 'Avg. setup time' },
-        ].map(({ endValue, decimals, prefix, suffix, label }, i) => (
-          <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
-            <span className="font-mono text-[14px] font-bold text-orange-soft">
-              <AnimatedCounter endValue={endValue} decimals={decimals} prefix={prefix} suffix={suffix} duration={1000} />
-            </span>
-            <span className="text-[11px] text-offwhite/35 font-body">{label}</span>
-          </div>
-        ))}
-      </div>
+    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
 
-      {/* Trade pill strip */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {TRADE_PILLS.map((trade) => (
-          <span
-            key={trade}
-            className="text-[12px] font-semibold text-offwhite/40 font-body px-3 py-1 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
+      {/* Label */}
+      <p className="text-center text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/25 mb-10 font-body">
+        Trusted by UK tradespeople
+      </p>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        {SOCIAL_STATS.map(({ endValue, decimals, prefix, suffix, label, icon: Icon }, i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center gap-3 py-6 px-4 rounded-card"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 4px 24px rgba(2,13,24,0.3)',
+            }}
           >
-            {trade}
-          </span>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'rgba(255,107,43,0.12)',
+                boxShadow: '0 0 0 1px rgba(255,107,43,0.18)',
+              }}
+            >
+              <Icon className="w-4 h-4 text-orange-soft" />
+            </div>
+            <div className="text-center">
+              <div
+                className="font-mono font-bold leading-none mb-1"
+                style={{
+                  fontSize: 'clamp(1.6rem, 3.5vw, 2.25rem)',
+                  letterSpacing: '-0.02em',
+                  color: '#FF8C55',
+                  filter: 'drop-shadow(0 0 12px rgba(255,107,43,0.4))',
+                }}
+              >
+                <AnimatedCounter
+                  endValue={endValue}
+                  decimals={decimals}
+                  prefix={prefix}
+                  suffix={suffix}
+                  duration={1200}
+                />
+              </div>
+              <p className="text-[11px] font-semibold text-offwhite/35 font-body leading-tight">{label}</p>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -674,35 +639,198 @@ const SocialProof = () => (
 
 // ─── Pain Points ──────────────────────────────────────────────────────────────
 const PAIN_STATS = [
-  { value: '£4,200', label: 'lost per year to missed calls', sub: 'avg. UK tradesperson' },
-  { value: '27%', label: 'of callers never ring back', sub: 'if they hit voicemail' },
-  { value: '3 in 5', label: 'jobs go to whoever answers first', sub: 'speed wins the work' },
+  {
+    value: '£4,200',
+    label: 'lost every year to missed calls',
+    sub: 'avg. UK tradesperson',
+    detail: "That's a van service, a week's holiday, or new tools. Gone.",
+  },
+  {
+    value: '27%',
+    label: 'of callers never ring back',
+    sub: 'when they hit voicemail',
+    detail: 'They called your competitor instead. You never knew.',
+  },
+  {
+    value: '3 in 5',
+    label: 'jobs go to whoever answers first',
+    sub: 'speed wins the work',
+    detail: "Being on a job costs you the next one. Not anymore.",
+  },
 ];
+
+// ─── Use Cases ────────────────────────────────────────────────────────────────
+const USE_CASES = [
+  {
+    trade: 'Plumbers',
+    headline: 'Never lose a call from under the sink.',
+    desc: "You can't answer mid-job. Sarah does. Every enquiry captured, every booking confirmed — while your hands stay clean.",
+    image: '/assets/generated/use-cases/plumber.webp',
+  },
+  {
+    trade: 'Electricians',
+    headline: 'Answer every call from the fuseboard.',
+    desc: "Working in a live panel? Sarah picks up. She qualifies the job, books the slot, sends you the details when you're clear.",
+    image: '/assets/generated/use-cases/electrician.webp',
+  },
+  {
+    trade: 'Builders',
+    headline: 'Jobs fill your diary while you fill the skip.',
+    desc: "On-site noise means missed calls. Sarah handles every enquiry professionally — you get a full diary without the phone tag.",
+    image: '/assets/generated/use-cases/builder.webp',
+  },
+  {
+    trade: 'HVAC',
+    headline: 'Emergency call-outs answered instantly.',
+    desc: "Boiler breakdowns don't wait for you to finish the current job. Sarah routes urgent calls to you and books the rest in.",
+    image: '/assets/generated/use-cases/hvac.webp',
+  },
+];
+
+const UseCases = () => {
+  const ref = useScrollAnimation();
+  return (
+    <Section bg="white" id="trades">
+      <div ref={ref} data-animate>
+        <FadeUp className="mb-14 max-w-2xl">
+          <Badge>Built for Every Trade</Badge>
+          <h2
+            className="font-display font-bold text-offwhite"
+            style={{ fontSize: 'clamp(2rem, 4.5vw, 4rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
+          >
+            Works on every{' '}
+            <span style={{
+              background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontStyle: 'italic',
+            }}>job site.</span>
+          </h2>
+        </FadeUp>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {USE_CASES.map(({ trade, headline, desc, image }, i) => (
+            <FadeUp key={i} delay={i * 80}>
+              <div
+                className="rounded-card overflow-hidden flex flex-col h-full"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.5)',
+                  transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms ease',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px rgba(255,107,43,0.20), 0 20px 50px rgba(2,13,24,0.6)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.5)';
+                }}
+              >
+                {/* Photo */}
+                <div className="relative overflow-hidden" style={{ paddingBottom: '65%' }}>
+                  <img
+                    src={image}
+                    alt={trade}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ filter: 'brightness(0.85) saturate(0.9)' }}
+                  />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(9,29,54,0.9) 100%)' }}
+                  />
+                  <span
+                    className="absolute bottom-3 left-4 font-display font-bold text-[11px] uppercase tracking-[0.12em] px-2.5 py-1 rounded-full"
+                    style={{ background: 'rgba(255,107,43,0.20)', color: '#ffb59a', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)' }}
+                  >
+                    {trade}
+                  </span>
+                </div>
+
+                {/* Text */}
+                <div className="p-5 flex flex-col gap-2 flex-1">
+                  <h3 className="font-display font-bold text-offwhite text-[15px] leading-snug">{headline}</h3>
+                  <p className="text-[13px] text-offwhite/45 font-body leading-relaxed flex-1">{desc}</p>
+                </div>
+              </div>
+            </FadeUp>
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+};
 
 const PainPoints = () => (
   <Section bg="gray" id="pain">
-    <FadeUp className="mb-10 max-w-2xl">
+    <FadeUp className="mb-14 max-w-2xl">
       <Badge>The Cost of Doing Nothing</Badge>
       <h2
         className="font-display font-bold text-offwhite"
         style={{ fontSize: 'clamp(2rem, 4.5vw, 4rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
       >
-        Every missed call is money walking out the door.
+        Every missed call is{' '}
+        <span
+          style={{
+            background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            fontStyle: 'italic',
+          }}
+        >
+          money
+        </span>{' '}
+        walking out the door.
       </h2>
     </FadeUp>
 
-    <div className="grid md:grid-cols-3 gap-4">
-      {PAIN_STATS.map(({ value, label, sub }, i) => (
-        <FadeUp key={i} delay={i * 60}>
-          <div className="rounded-card p-6" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}>
+    <div className="grid md:grid-cols-3 gap-5">
+      {PAIN_STATS.map(({ value, label, sub, detail }, i) => (
+        <FadeUp key={i} delay={i * 80}>
+          <div
+            className="rounded-card p-8 flex flex-col gap-4 h-full"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)',
+              transition: 'box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1), transform 300ms cubic-bezier(0.34,1.2,0.64,1)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px rgba(255,107,43,0.18), 0 20px 60px rgba(2,13,24,0.5)';
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(2,13,24,0.4)';
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+            }}
+          >
+            {/* Big stat number */}
             <div
-              className="font-display font-bold mb-2 leading-none"
-              style={{ fontSize: 'clamp(2.25rem, 4vw, 3.5rem)', color: '#FF6B2B', letterSpacing: '-0.03em', filter: 'drop-shadow(0 0 18px rgba(255,107,43,0.5))' }}
+              className="font-display font-bold leading-none"
+              style={{
+                fontSize: 'clamp(2.75rem, 5vw, 4.25rem)',
+                color: '#FF6B2B',
+                letterSpacing: '-0.03em',
+                filter: 'drop-shadow(0 0 20px rgba(255,107,43,0.45))',
+              }}
             >
               {value}
             </div>
-            <p className="text-offwhite font-semibold text-[15px] mb-1 font-display">{label}</p>
-            <p className="text-offwhite/35 text-[12px] font-body uppercase tracking-[0.08em]">{sub}</p>
+
+            <div>
+              <p className="text-offwhite font-semibold text-[16px] mb-1 font-display leading-snug">{label}</p>
+              <p className="text-offwhite/30 text-[11px] font-body uppercase tracking-[0.10em]">{sub}</p>
+            </div>
+
+            {/* Separator */}
+            <div
+              className="w-full h-px"
+              style={{ background: 'linear-gradient(90deg, rgba(255,107,43,0.25) 0%, transparent 100%)' }}
+            />
+
+            <p className="text-[14px] text-offwhite/45 font-body leading-relaxed flex-1">{detail}</p>
           </div>
         </FadeUp>
       ))}
@@ -718,6 +846,7 @@ const HOW_STEPS = [
     icon: Phone,
     title: 'Build Your Profile',
     desc: 'Give Sarah your business name, services, pricing, and availability. 14 minutes. No technical knowledge needed.',
+    image: '/assets/generated/how-it-works/step-1.webp',
   },
   {
     num: '02',
@@ -725,6 +854,7 @@ const HOW_STEPS = [
     icon: Mic,
     title: 'Divert Your Calls',
     desc: 'Forward your business number to Sarah — or get a dedicated number. She answers every call instantly, 24/7.',
+    image: '/assets/generated/how-it-works/step-2.webp',
   },
   {
     num: '03',
@@ -732,6 +862,7 @@ const HOW_STEPS = [
     icon: MessageSquare,
     title: 'Focus on the Job',
     desc: 'Get on with the work. Sarah handles every call, books every appointment, and sends you a WhatsApp summary.',
+    image: '/assets/generated/how-it-works/step-3.webp',
   },
 ];
 
@@ -762,29 +893,53 @@ const HowItWorksStep = ({ step, index }: { step: typeof HOW_STEPS[number]; index
 
   return (
     <div ref={ref} className="flex flex-col items-start">
-      {/* Step number circle */}
-      <div
-        className="w-[52px] h-[52px] rounded-full flex items-center justify-center mb-6"
-        style={{
-          background: filled ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)' : 'rgba(255,255,255,0.06)',
-          boxShadow: filled ? '0 0 24px rgba(255,107,43,0.4)' : '0 0 0 1px rgba(255,255,255,0.08)',
-          transition: 'background 600ms ease, box-shadow 600ms ease',
-        }}
-      >
-        <span
-          className="font-display font-bold leading-none"
+      {/* Step image */}
+      {step.image && (
+        <div
+          className="w-full rounded-[14px] overflow-hidden mb-6"
           style={{
-            fontSize: '18px',
-            color: filled ? '#ffffff' : 'rgba(255,107,43,0.6)',
-            letterSpacing: '-0.02em',
-            transition: 'color 600ms ease',
+            boxShadow: filled
+              ? '0 0 0 1px rgba(255,107,43,0.25), 0 12px 40px rgba(2,13,24,0.6)'
+              : '0 0 0 1px rgba(255,255,255,0.07), 0 8px 24px rgba(2,13,24,0.4)',
+            transition: 'box-shadow 600ms ease',
           }}
         >
-          {step.num}
-        </span>
-      </div>
+          <img
+            src={step.image}
+            alt={step.title}
+            loading="lazy"
+            width={480}
+            height={270}
+            className="w-full object-cover"
+            style={{ aspectRatio: '16/9', display: 'block' }}
+          />
+        </div>
+      )}
 
-      <Icon className="w-5 h-5 mb-4" style={{ color: filled ? '#ffb59a' : 'rgba(240,244,248,0.2)', transition: 'color 400ms ease' }} />
+      {/* Step number + icon row */}
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className="w-[44px] h-[44px] rounded-full flex items-center justify-center flex-shrink-0"
+          style={{
+            background: filled ? 'linear-gradient(135deg, #FF6B2B, #FF8C55)' : 'rgba(255,255,255,0.06)',
+            boxShadow: filled ? '0 0 20px rgba(255,107,43,0.4)' : '0 0 0 1px rgba(255,255,255,0.08)',
+            transition: 'background 600ms ease, box-shadow 600ms ease',
+          }}
+        >
+          <span
+            className="font-display font-bold leading-none"
+            style={{
+              fontSize: '16px',
+              color: filled ? '#ffffff' : 'rgba(255,107,43,0.6)',
+              letterSpacing: '-0.02em',
+              transition: 'color 600ms ease',
+            }}
+          >
+            {step.num}
+          </span>
+        </div>
+        <Icon className="w-5 h-5" style={{ color: filled ? '#ffb59a' : 'rgba(240,244,248,0.2)', transition: 'color 400ms ease' }} />
+      </div>
 
       <h3
         className="font-display font-bold text-offwhite mb-3"
@@ -833,115 +988,281 @@ const HowItWorks = () => (
 );
 
 // ─── ROI Section ──────────────────────────────────────────────────────────────
+const ROI_STATS = [
+  { value: '£4,200', label: 'avg. lost per year', sublabel: 'to missed calls' },
+  { value: '27%', label: 'of callers never', sublabel: 'ring back' },
+  { value: '3 in 5', label: 'jobs go to whoever', sublabel: 'answers first' },
+];
+
 const ROISection = () => (
-  <Section id="roi" bg="gray">
-    <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-      <FadeUp className="order-2 lg:order-1">
+  <Section id="roi" bg="gray" className="relative overflow-hidden">
+    <div
+      className="absolute inset-0 pointer-events-none opacity-[0.10]"
+      style={{
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 35%, rgba(255,255,255,0.02) 35%, transparent 36%, transparent 100%)',
+      }}
+    />
+
+    <FadeUp className="mb-14 mx-auto max-w-4xl text-center">
+      <h2
+        className="font-display font-bold text-offwhite"
+        style={{ fontSize: 'clamp(2.8rem, 5.8vw, 5.4rem)', letterSpacing: '-0.055em', lineHeight: 0.95 }}
+      >
+        Every missed call is money
+        <br />
+        walking out the door.
+      </h2>
+    </FadeUp>
+
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,280px)] lg:justify-center lg:gap-14">
+      <FadeUp className="lg:justify-self-end">
         <React.Suspense fallback={<LazyFallback height={480} />}>
           <Calculator />
         </React.Suspense>
       </FadeUp>
-      <FadeUp delay={80} className="order-1 lg:order-2">
-        <Badge>Calculate Your Losses</Badge>
-        <h2
-          className="font-display font-bold text-offwhite mb-6"
-          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
-        >
-          See exactly what you're{' '}
-          <span className="text-offwhite/35">losing every month.</span>
-        </h2>
-        <p className="text-[17px] text-offwhite/60 leading-relaxed">
-          The calculator uses your actual numbers. See exactly how much you're losing right now.
-        </p>
+
+      <FadeUp delay={80} className="flex flex-col gap-5">
+        {ROI_STATS.map(({ value, label, sublabel }, i) => (
+          <div
+            key={i}
+            className="rounded-[22px] p-7 text-center lg:p-8"
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,250,244,0.98) 0%, rgba(255,255,255,0.98) 100%)',
+              boxShadow: '0 0 0 1px rgba(244,162,97,0.60), 0 16px 36px rgba(2,13,24,0.18)',
+            }}
+          >
+            <div
+              className="font-display font-bold leading-none mb-3"
+              style={{
+                fontSize: 'clamp(3.2rem, 5vw, 4.5rem)',
+                color: '#F08F45',
+                letterSpacing: '-0.05em',
+              }}
+            >
+              {value}
+            </div>
+            <p className="text-[16px] leading-tight text-[#111827] font-body">{label}</p>
+            <p className="text-[16px] leading-tight text-[#111827] font-body">{sublabel}</p>
+            {i > 0 && (
+              <p className="mt-4 text-[11px] tracking-[0.12em] uppercase text-[#111827]/70 font-body">
+                {i === 1 ? 'Speed is the key' : 'Speed wins the work'}
+              </p>
+            )}
+          </div>
+        ))}
       </FadeUp>
     </div>
   </Section>
 );
 
 // ─── Comparison ───────────────────────────────────────────────────────────────
+const PROOF_QUOTES = [
+  {
+    quote: "Running a busy plumbing firm means I can't answer every call. Since we started using Trade Receptionist, our diary's fuller than ever. No more chasing. No more lost time.",
+    name: 'John Davies',
+    company: 'JD Plumbing & Heating',
+    photo: '/assets/generated/testimonials/avatar-5.png',
+    badge: 'Safe',
+    badgeStyle: {
+      background: '#F3DA34',
+      color: '#1f2937',
+    },
+  },
+  {
+    quote: "The best decision I made for my electrical business. Sounds professional, and actually books jobs. My evenings back. My bookings up.",
+    name: 'David Miller',
+    company: 'Miller Electrical',
+    photo: '/assets/generated/testimonials/avatar-3.png',
+    badge: 'Miller Electrical Services',
+    badgeStyle: {
+      background: '#ffffff',
+      color: '#b91c1c',
+    },
+  },
+  {
+    quote: "My diary used to be chaotic. Now Trade Receptionist filters and books jobs for me. No more evenings working.",
+    name: 'Sarah Lee',
+    company: 'SL Carpentry',
+    photo: '/assets/generated/testimonials/avatar-4.png',
+    badge: 'TradeVoice',
+    badgeStyle: {
+      background: '#eef2ff',
+      color: '#1d4ed8',
+    },
+  },
+];
+
 const ComparisonSection = () => {
   const ref = useScrollAnimation();
+  const comparisonRows = [
+    { feature: 'Cost', tradeReceptionist: 'Affordable, flat fee', missedCalls: 'Lost Revenue', voicemail: 'Free, but ineffective', traditional: 'High hourly rates' },
+    { feature: 'Availability', tradeReceptionist: '24/7, 365 days', missedCalls: 'Zero', voicemail: 'Limited to message', traditional: 'Business Hours Only' },
+    { feature: 'Booking Speed', tradeReceptionist: 'Instant', missedCalls: 'Never', voicemail: 'Delayed', traditional: 'Slow, manual' },
+    { feature: 'Job Capture', tradeReceptionist: 'Guaranteed', missedCalls: 'None', voicemail: 'Low', traditional: 'Variable' },
+    { feature: 'Setup Time', tradeReceptionist: '<15 Minutes', missedCalls: 'N/A', voicemail: 'Instant', traditional: 'Days/Weeks' },
+  ];
+
   return (
-  <Section bg="white" id="comparison">
-    <div ref={ref} data-animate>
-    <div className="mb-14">
-      <Badge color="blue">The Honest Comparison</Badge>
-      <h2
-        className="font-display font-bold text-offwhite"
-        style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
-      >
-        Trade Receptionist vs. the alternatives.
-      </h2>
-      <p className="text-[17px] text-offwhite/45 mt-4 max-w-xl">
-        Why pay more, or lose jobs to voicemail, when you can have a 24/7 expert for less than a tank of diesel?
-      </p>
-    </div>
-
-    {/* Scroll hint — mobile only */}
-    <p className="md:hidden text-center text-[12px] text-offwhite/30 mb-3 font-body">← Swipe to compare →</p>
-
-    <div className="relative">
-      {/* Right fade gradient — mobile only */}
-      <div className="md:hidden absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to left, #051426 0%, transparent 100%)' }} />
-
-    <div className="overflow-x-auto pb-4">
-      <div className="min-w-[760px] rounded-card overflow-hidden" style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(2,13,24,0.4)' }}>
-        <div className="grid grid-cols-5 gap-0">
-          <div className="p-5" style={{ background: 'rgba(255,255,255,0.02)' }} />
-          <div className="p-5 text-center relative overflow-hidden" style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)' }}>
-            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, transparent, #FF6B2B, #FF8C55, transparent)' }} />
-            <span className="font-display font-bold text-[15px] text-offwhite block">Trade Receptionist</span>
-            <span className="text-[11px] text-orange-soft/80 font-body">from £29/mo</span>
+    <Section bg="white" id="comparison" className="relative overflow-hidden">
+      <div ref={ref} data-animate>
+        <div className="mb-24">
+          <div className="mb-3 flex items-start justify-between gap-6">
+            <p className="pt-2 text-[11px] font-semibold tracking-[0.18em] uppercase text-offwhite/35 font-body">
+              Why UK tradespeople stay
+            </p>
+            <p className="hidden max-w-[15rem] text-right text-[12px] leading-relaxed text-offwhite/30 font-body md:block">
+              100+ professionals who stopped tracking calls and started booking more.
+            </p>
           </div>
-          {['Live Receptionist', 'Virtual PA', 'Voicemail'].map((col) => (
-            <div key={col} className="p-5 text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
-              <span className="font-display font-bold text-[14px] text-offwhite/30 block">{col}</span>
-            </div>
-          ))}
+
+          <h2
+            className="font-display font-bold text-offwhite"
+            style={{ fontSize: 'clamp(3rem, 5.5vw, 5.25rem)', letterSpacing: '-0.055em', lineHeight: 0.92 }}
+          >
+            Trusted by trades across
+            <br />
+            the UK.
+          </h2>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {PROOF_QUOTES.map(({ quote, name, company, photo, badge, badgeStyle }, index) => (
+              <div
+                key={name}
+                data-delay={index}
+                className="overflow-hidden rounded-[18px]"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(18,31,56,0.96) 0%, rgba(33,44,67,0.96) 100%)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 42px rgba(2,13,24,0.34)',
+                }}
+              >
+                <img src={photo} alt={name} className="h-[290px] w-full object-cover object-top" loading="lazy" />
+                <div className="p-5">
+                  <div className="mb-3 text-[42px] leading-none text-[#F29C5C]">&ldquo;</div>
+                  <p className="mt-[-10px] min-h-[140px] text-[15px] leading-[1.45] text-offwhite/86 font-body">
+                    "{quote}"
+                  </p>
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <div className="font-display text-[24px] font-bold leading-none text-offwhite">{name}</div>
+                      <div className="mt-1 text-[15px] text-offwhite/45 font-body">{company}</div>
+                    </div>
+                    <div
+                      className="rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.05em]"
+                      style={badgeStyle}
+                    >
+                      {badge}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {[
-          { label: 'Always available',    us: true,            them1: false,           them2: false,          them3: true  },
-          { label: 'Monthly cost',         us: '£29–£119',      them1: '£800–£2,000',  them2: '£300–£600',    them3: '£0*' },
-          { label: 'WhatsApp summaries',   us: true,            them1: false,           them2: false,          them3: false },
-          { label: 'Trade knowledge',      us: true,            them1: false,           them2: false,          them3: false },
-          { label: 'Setup time',           us: '14 minutes',    them1: '2–4 weeks',     them2: '1–2 weeks',    them3: 'Instant' },
-          { label: 'Spam filtering',       us: true,            them1: false,           them2: false,          them3: false },
-          { label: 'No contract',          us: true,            them1: false,           them2: false,          them3: true  },
-          { label: 'UK-based voice',       us: true,            them1: true,            them2: true,           them3: false },
-        ].map((row, i) => {
-          const cells = [row.us, row.them1, row.them2, row.them3];
-          const bg = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)';
-          return (
-            <div key={i} className="grid grid-cols-5 gap-0 items-center">
-              <div className="p-4 pl-5 font-body text-[14px] text-offwhite/55" style={{ background: bg }}>{row.label}</div>
-              {cells.map((val, j) => (
-                <div key={j} className="p-4 flex justify-center items-center" style={{ background: j === 0 ? 'rgba(255,107,43,0.06)' : bg }}>
-                  {val === true ? (
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center"
-                      style={{ background: j === 0 ? 'rgba(255,107,43,0.2)' : 'rgba(255,255,255,0.06)' }}>
-                      <CheckCircle2 className={`w-3.5 h-3.5 ${j === 0 ? 'text-orange-soft' : 'text-offwhite/25'}`} />
-                    </div>
-                  ) : val === false ? (
-                    <XCircle className="w-4 h-4 text-offwhite/15" />
-                  ) : (
-                    <span className={`text-[13px] font-semibold font-body ${j === 0 ? 'text-orange-soft' : 'text-offwhite/30'}`}>{val as string}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-    </div>{/* close relative scroll wrapper */}
+        <div className="pt-12">
+          <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] uppercase text-offwhite/35 font-body">
+            High-contrast comparison
+          </p>
+          <h2
+            className="font-display font-bold text-offwhite"
+            style={{ fontSize: 'clamp(3rem, 5.5vw, 5.15rem)', letterSpacing: '-0.055em', lineHeight: 0.92 }}
+          >
+            Trade Receptionist vs.
+            <br />
+            The Alternatives
+          </h2>
 
-    <p className="text-[12px] text-offwhite/20 text-center mt-4 font-body">
-      * Voicemail appears "free" but costs an average of £4,200/year in missed jobs.
-    </p>
-    </div>{/* close data-animate wrapper */}
-  </Section>
+          <div className="mt-10 overflow-x-auto pb-3">
+            <div
+              className="min-w-[920px] overflow-hidden rounded-[20px]"
+              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px rgba(2,13,24,0.36)' }}
+            >
+              <div className="grid grid-cols-[1.15fr_1.3fr_1fr_1fr_1.2fr]">
+                <div className="px-5 py-6 text-[17px] font-semibold text-offwhite" style={{ background: 'rgba(255,255,255,0.05)' }}>Feature</div>
+                <div
+                  className="relative px-5 py-6 text-center"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(249,115,22,0.86) 0%, rgba(242,159,87,0.92) 100%)',
+                    boxShadow: '0 0 28px rgba(249,115,22,0.34)',
+                  }}
+                >
+                  <div className="font-display text-[28px] font-bold leading-none text-white">Trade</div>
+                  <div className="font-display text-[28px] font-bold leading-none text-white">Receptionist</div>
+                </div>
+                {['Missed Calls', 'Voicemail', 'Traditional Services'].map((label) => (
+                  <div key={label} className="px-5 py-6 text-center text-[17px] font-semibold text-offwhite" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              {comparisonRows.map((row, rowIndex) => {
+                const baseBg = rowIndex % 2 === 0 ? 'rgba(8,18,34,0.82)' : 'rgba(10,22,40,0.88)';
+                return (
+                  <div key={row.feature} className="grid grid-cols-[1.15fr_1.3fr_1fr_1fr_1.2fr]">
+                    <div className="border-t border-white/8 px-5 py-5 text-[16px] text-offwhite/88 font-body" style={{ background: baseBg }}>
+                      {row.feature}
+                    </div>
+                    <div className="border-t border-white/8 px-5 py-5" style={{ background: 'rgba(249,115,22,0.12)' }}>
+                      <div className="flex items-center gap-3 text-[16px] text-offwhite font-body">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F29C5C] text-white">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </span>
+                        {row.tradeReceptionist}
+                      </div>
+                    </div>
+                    {[
+                      row.missedCalls,
+                      row.voicemail,
+                      row.traditional,
+                    ].map((cell, index) => {
+                      const showCheck = row.feature === 'Setup Time' && index === 1;
+                      return (
+                        <div key={`${row.feature}-${index}`} className="border-t border-white/8 px-5 py-5" style={{ background: baseBg }}>
+                          <div className="flex items-center gap-3 text-[16px] text-offwhite/78 font-body">
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full ${showCheck ? 'bg-[#F29C5C] text-white' : 'text-[#d25967]'}`}>
+                              {showCheck ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                            </span>
+                            {cell}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div
+            className="mt-14 flex flex-col items-start justify-between gap-6 rounded-[24px] px-8 py-8 md:flex-row md:items-center md:px-10 md:py-10"
+            style={{
+              background: 'linear-gradient(135deg, rgba(38,28,36,0.55) 0%, rgba(22,36,63,0.88) 100%)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 18px 44px rgba(2,13,24,0.30)',
+            }}
+          >
+            <h3
+              className="font-display font-bold text-offwhite"
+              style={{ fontSize: 'clamp(2.4rem, 4.2vw, 4.5rem)', lineHeight: 0.95, letterSpacing: '-0.05em' }}
+            >
+              Stop losing jobs today
+            </h3>
+            <button
+              className="inline-flex items-center gap-2 rounded-[16px] px-8 py-4 text-[18px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5"
+              style={{
+                background: 'linear-gradient(135deg, #F97316 0%, #F4A261 100%)',
+                boxShadow: '0 18px 36px rgba(249,115,22,0.28)',
+              }}
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Start Free Trial
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Section>
   );
 };
 
@@ -950,8 +1271,8 @@ const DemoSection = () => {
   const ref = useScrollAnimation();
   return (
   <Section id="demo" bg="gray">
-    <div ref={ref} data-animate className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
-      <div>
+    <div ref={ref} data-animate className="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-14 lg:gap-18 items-center">
+      <div className="max-w-xl">
         <Badge>Hear It in Action</Badge>
         <h2
           className="font-display font-bold text-offwhite mb-5 leading-[1.1]"
@@ -964,21 +1285,43 @@ const DemoSection = () => {
           Listen to Trade Receptionist handle a real boiler repair enquiry — from greeting to job booked, in under 90 seconds.
         </p>
 
+        <div className="mb-8 flex flex-wrap gap-3">
+          {['Books the slot', 'Calendar-aware', 'Urgency routing'].map((item) => (
+            <span
+              key={item}
+              className="rounded-full px-4 py-2 text-[12px] font-semibold tracking-[0.02em] text-offwhite/72"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+              }}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+
         <div className="space-y-6">
           {[
             { title: 'Handles Qualification', text: 'Asks for postcode, job type, and urgency before booking.' },
             { title: 'Checks Your Calendar', text: 'Only books slots you\'re actually free — syncs with Google and Outlook.' },
             { title: 'Emergency Routing',     text: 'Patches urgent calls straight through to your mobile, instantly.' },
           ].map((feat, i) => (
-            <div key={i} className="flex gap-4">
+            <div
+              key={i}
+              className="flex gap-4 rounded-[20px] p-5"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 30px rgba(2,13,24,0.20)',
+              }}
+            >
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: 'linear-gradient(135deg, rgba(255,107,43,0.25), rgba(255,140,85,0.12))', boxShadow: '0 0 0 1px rgba(255,107,43,0.20), 0 0 12px rgba(255,107,43,0.15)' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{ background: 'linear-gradient(135deg, rgba(255,107,43,0.26), rgba(255,140,85,0.14))', boxShadow: '0 0 0 1px rgba(255,107,43,0.22), 0 0 16px rgba(255,107,43,0.12)' }}
               >
                 <CheckCircle2 className="w-4 h-4 text-orange-soft" />
               </div>
-              <div>
-                <h4 className="font-display font-bold text-[16px] text-offwhite mb-0.5">{feat.title}</h4>
+              <div className="pt-0.5">
+                <h4 className="font-display font-bold text-[17px] text-offwhite mb-1">{feat.title}</h4>
                 <p className="text-[14px] text-offwhite/55 leading-relaxed">{feat.text}</p>
               </div>
             </div>
@@ -987,6 +1330,10 @@ const DemoSection = () => {
       </div>
 
       <div className="relative">
+        <div
+          className="absolute inset-x-6 -top-10 h-44 rounded-full blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(255,138,72,0.18) 0%, transparent 72%)' }}
+        />
         {/* Floating transcript card */}
         <div
           className="absolute -left-8 top-8 max-w-[260px] rounded-card p-6 z-20 hidden xl:block glass-elevated animate-float"
@@ -1000,9 +1347,30 @@ const DemoSection = () => {
           </div>
         </div>
 
-        <React.Suspense fallback={<LazyFallback height={200} />}>
-          <AudioPlayer />
-        </React.Suspense>
+        <div
+          className="rounded-[28px] p-4 md:p-5"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.04) 100%)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 44px rgba(2,13,24,0.34)',
+          }}
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-2">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Sample Call</p>
+              <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Boiler repair enquiry, handled end to end</p>
+            </div>
+            <div
+              className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-soft"
+              style={{ background: 'rgba(255,107,43,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.16)' }}
+            >
+              90 sec booking flow
+            </div>
+          </div>
+
+          <React.Suspense fallback={<LazyFallback height={200} />}>
+            <AudioPlayer />
+          </React.Suspense>
+        </div>
 
       </div>
     </div>
@@ -1045,8 +1413,13 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
   ];
 
   return (
-    <Section id="pricing" bg="white">
-      <div className="mb-14">
+    <Section id="pricing" bg="white" className="relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute right-[8%] top-16 h-64 w-64 rounded-full opacity-40 blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(255,145,73,0.12) 0%, transparent 72%)' }}
+      />
+
+      <div className="mb-14 max-w-3xl">
         <Badge>Simple, Honest Pricing</Badge>
         <h2
           className="font-display font-bold text-offwhite mb-4"
@@ -1054,13 +1427,13 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         >
           No contracts. Cancel anytime.
         </h2>
-        <p className="text-[17px] text-offwhite/50 mb-8">
+        <p className="text-[17px] text-offwhite/52 mb-8 leading-relaxed">
           Early access available now. Prices locked for life when you join.
         </p>
 
         {/* Toggle */}
         <div className="inline-flex rounded-full p-1.5"
-          style={{ background: 'rgba(255,255,255,0.06)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}>
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 10px 26px rgba(2,13,24,0.18)' }}>
           {(['monthly', 'yearly'] as const).map((b) => (
             <button
               key={b}
@@ -1086,7 +1459,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             key={i}
             data-animate
             data-delay={i}
-            className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-card p-8 ${
+            className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-[24px] p-8 ${
               plan.isPopular
                 ? 'popular-ring md:scale-[1.04] order-first md:order-none'
                 : i === 0
@@ -1095,8 +1468,11 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             }`}
             style={{
               background: plan.isPopular
-                ? 'linear-gradient(160deg, rgba(255,107,43,0.12) 0%, rgba(255,107,43,0.04) 100%)'
-                : 'rgba(255,255,255,0.05)',
+                ? 'linear-gradient(180deg, rgba(31,23,26,0.92) 0%, rgba(17,39,69,0.92) 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)',
+              boxShadow: plan.isPopular
+                ? '0 0 0 1px rgba(255,168,102,0.22), 0 24px 60px rgba(2,13,24,0.38)'
+                : '0 0 0 1px rgba(255,255,255,0.08), 0 16px 34px rgba(2,13,24,0.22)',
               animation: plan.isPopular ? 'ring-pulse 3s ease-in-out infinite' : undefined,
               transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1)',
             }}
@@ -1110,8 +1486,20 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </div>
             )}
 
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/32">Best for</p>
+              <div
+                className="rounded-full px-3 py-1.5 text-[11px] font-semibold text-offwhite/72"
+                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
+              >
+                {plan.description}
+              </div>
+            </div>
+
             <h3 className="font-display text-2xl font-bold text-offwhite mb-1">{plan.name}</h3>
-            <p className="text-[13px] text-offwhite/35 mb-7">{plan.description}</p>
+            <p className="text-[13px] text-offwhite/40 mb-7 leading-relaxed">
+              {plan.isPopular ? 'The best balance of speed, reliability, and automation for growing trades businesses.' : plan.name === 'Starter' ? 'A fast, professional front desk for solo operators who want every enquiry captured.' : 'A heavier-duty setup for teams running multiple vans, departments, or brands.'}
+            </p>
 
             <div className="flex items-baseline gap-1.5 mb-7">
               <span className="font-display text-5xl font-bold text-offwhite tracking-[-0.03em]">
@@ -1135,9 +1523,14 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
               ))}
             </ul>
 
-            <p className="text-[11px] text-offwhite/25 text-center mb-4">
+            <div
+              className="mb-4 rounded-[16px] px-4 py-3 text-center"
+              style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+            >
+              <p className="text-[11px] text-offwhite/28">
               14-day free trial · No card required · Cancel anytime
-            </p>
+              </p>
+            </div>
 
             <Button
               variant={plan.isPopular ? 'primary' : 'outline'}
@@ -1195,54 +1588,80 @@ const FAQ = () => {
 
   return (
     <Section bg="gray" id="faq">
-      <div className="mb-14">
-        <Badge>Got Questions?</Badge>
-        <h2
-          className="font-display font-bold text-offwhite"
-          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
-        >
-          Frequently asked questions
-        </h2>
-      </div>
-
-      <div ref={faqRef} data-animate className="max-w-3xl mx-auto space-y-3">
-        {faqs.map((faq, i) => (
-          <div
-            key={i}
-            data-delay={i}
-            className="rounded-card overflow-hidden"
-            style={{
-              background: openIndex === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
-              boxShadow: openIndex === i
-                ? '0 0 0 1px rgba(255,107,43,0.15)'
-                : '0 0 0 1px rgba(255,255,255,0.05)',
-              transition: 'background-color 300ms ease, box-shadow 300ms ease',
-            }}
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] xl:gap-14">
+        <div className="xl:pt-2">
+          <Badge>Got Questions?</Badge>
+          <h2
+            className="font-display font-bold text-offwhite"
+            style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
           >
-            <button
-              onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              className="w-full flex items-center justify-between p-6 text-left focus:outline-none group"
-              aria-expanded={openIndex === i}
-            >
-              <span className="font-display font-semibold text-[16px] text-offwhite pr-8 leading-snug">
-                {faq.question}
-              </span>
-              <ChevronDown
-                className={`w-5 h-5 flex-shrink-0 transition-[transform,color] duration-300 ${
-                  openIndex === i
-                    ? 'rotate-180 text-orange-soft'
-                    : 'text-offwhite/30 group-hover:text-offwhite/60'
-                }`}
-              />
-            </button>
+            Frequently asked questions
+          </h2>
+          <p className="mt-5 max-w-md text-[16px] leading-relaxed text-offwhite/52">
+            Everything trades businesses usually ask before switching from missed calls, voicemail, or manual answering.
+          </p>
 
-            <div className={`accordion-body${openIndex === i ? ' is-open' : ''}`}>
-              <div className="px-6 pb-6 text-[15px] text-offwhite/55 leading-relaxed">
-                {faq.answer}
+          <div className="mt-8 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {[
+              'Setup takes around 14 minutes',
+              'No contract or lock-in',
+              'Works with your existing number',
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-[18px] px-4 py-4 text-[13px] font-semibold text-offwhite/72"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.035) 100%)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div ref={faqRef} data-animate className="space-y-3">
+          {faqs.map((faq, i) => (
+            <div
+              key={i}
+              data-delay={i}
+              className="overflow-hidden rounded-[20px]"
+              style={{
+                background: openIndex === i
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.085) 0%, rgba(255,255,255,0.045) 100%)'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.032) 100%)',
+                boxShadow: openIndex === i
+                  ? '0 0 0 1px rgba(255,107,43,0.18), 0 16px 36px rgba(2,13,24,0.22)'
+                  : '0 0 0 1px rgba(255,255,255,0.06), 0 10px 24px rgba(2,13,24,0.16)',
+                transition: 'background-color 300ms ease, box-shadow 300ms ease',
+              }}
+            >
+              <button
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className="w-full flex items-center justify-between p-6 text-left focus:outline-none group"
+                aria-expanded={openIndex === i}
+              >
+                <span className="font-display font-semibold text-[16px] text-offwhite pr-8 leading-snug">
+                  {faq.question}
+                </span>
+                <ChevronDown
+                  className={`w-5 h-5 flex-shrink-0 transition-[transform,color] duration-300 ${
+                    openIndex === i
+                      ? 'rotate-180 text-orange-soft'
+                      : 'text-offwhite/30 group-hover:text-offwhite/60'
+                  }`}
+                />
+              </button>
+
+              <div className={`accordion-body${openIndex === i ? ' is-open' : ''}`}>
+                <div className="px-6 pb-6 text-[15px] text-offwhite/56 leading-relaxed">
+                  {faq.answer}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </Section>
   );
@@ -1263,36 +1682,70 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
     <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none opacity-20"
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
-    <div ref={ref} data-animate className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10 text-center relative z-10">
-      <Badge color="blue">Your Competition Is Already Using This</Badge>
-
-      <h2
-        className="font-display font-bold text-offwhite mb-8 leading-[1.0] mt-4"
-        style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
+    <div ref={ref} data-animate className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
+      <div
+        className="rounded-[30px] px-6 py-10 text-center sm:px-8 md:px-12 md:py-14"
+        style={{
+          background: 'linear-gradient(135deg, rgba(31,22,28,0.72) 0%, rgba(16,32,57,0.90) 100%)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 56px rgba(2,13,24,0.36)',
+        }}
       >
-        Every call you miss today{' '}
-        <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>is a job they book tomorrow.</span>
-      </h2>
+        <Badge color="blue">Your Competition Is Already Using This</Badge>
 
-      <div className="flex justify-center mb-6">
-        <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
-          Start Free Trial — No Card Required
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
+        <h2
+          className="font-display font-bold text-offwhite mb-6 leading-[1.0] mt-4"
+          style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
+        >
+          Stop losing{' '}
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontStyle: 'italic',
+            }}
+          >
+            jobs
+          </span>{' '}
+          to missed calls.
+        </h2>
 
-      <div className="flex flex-wrap justify-center gap-6 mt-6 text-[13px] text-offwhite/25 font-body">
-        {[
-          { icon: Star, label: '4.9/5 rating' },
-          { icon: CheckCircle2, label: 'Setup in 14 minutes' },
-          { icon: CheckCircle2, label: 'Cancel anytime' },
-          { icon: CheckCircle2, label: 'No card required' },
-        ].map(({ icon: Icon, label }) => (
-          <span key={label} className="flex items-center gap-1.5">
-            <Icon className="w-3.5 h-3.5 text-offwhite/25" aria-hidden="true" />
-            {label}
-          </span>
-        ))}
+        <p className="text-[17px] text-offwhite/44 max-w-2xl mx-auto mb-10 font-body leading-relaxed">
+          While you read this, a competitor is answering their calls. Every unanswered ring is a job that goes to someone else.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+          <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
+            Start Free Trial — No Card Required
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+          <Button
+            variant="secondary" size="lg"
+            onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            <Play className="w-4 h-4 mr-2 text-accent" />
+            Hear a Live Demo
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-3 text-[13px] text-offwhite/28 font-body">
+          {[
+            { icon: Star, label: '4.9/5 rating' },
+            { icon: CheckCircle2, label: 'Setup in 14 minutes' },
+            { icon: CheckCircle2, label: 'Cancel anytime' },
+            { icon: CheckCircle2, label: 'No card required' },
+          ].map(({ icon: Icon, label }) => (
+            <span
+              key={label}
+              className="flex items-center gap-2 rounded-full px-4 py-2"
+              style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+            >
+              <Icon className="w-3.5 h-3.5 text-offwhite/25" aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   </section>
@@ -1303,14 +1756,46 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
 const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
   <footer className="pt-20 pb-12" style={{ background: 'rgba(2,13,24,0.92)' }}>
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-      <div className="grid md:grid-cols-4 gap-12 mb-16">
+      <div
+        className="mb-12 rounded-[28px] px-6 py-8 md:px-8 md:py-9"
+        style={{
+          background: 'linear-gradient(135deg, rgba(26,22,27,0.58) 0%, rgba(14,28,49,0.88) 100%)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 18px 44px rgba(2,13,24,0.28)',
+        }}
+      >
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Trade Receptionist</p>
+            <h3 className="mt-2 font-display text-[clamp(2rem,3vw,3rem)] font-bold leading-[0.98] text-offwhite">
+              The premium AI receptionist for UK trades.
+            </h3>
+          </div>
+          <Button variant="primary" size="lg" onClick={onWaitlist}>
+            Start Free Trial
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-12 border-t border-white/6 pt-12 md:grid-cols-4 mb-16">
         <div className="md:col-span-2">
           <div className="mb-6">
             <Logo height={100} />
           </div>
-          <p className="text-[15px] text-offwhite/35 leading-relaxed max-w-xs">
+          <p className="text-[15px] text-offwhite/35 leading-relaxed max-w-sm">
             The UK's #1 AI receptionist for tradespeople. Never miss a call. Never lose a job.
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {['Plumbers', 'Electricians', 'Builders', 'HVAC', 'Carpenters'].map((trade) => (
+              <span
+                key={trade}
+                className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-offwhite/58"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+              >
+                {trade}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -1341,8 +1826,24 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </div>
 
         <div>
-          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/30 mb-5">Legal</h4>
+          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/30 mb-5">Company</h4>
           <ul className="space-y-3 text-[14px] text-offwhite/45">
+            <li>
+              <button
+                onClick={() => document.getElementById('comparison')?.scrollIntoView({ behavior: 'smooth' })}
+                className="hover:text-offwhite transition-colors"
+              >
+                Why Trade Receptionist
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
+                className="hover:text-offwhite transition-colors"
+              >
+                FAQs
+              </button>
+            </li>
             <li>
               <a href="/terms" className="hover:text-offwhite transition-colors">
                 Terms of Service
@@ -1455,28 +1956,53 @@ const CookieNotice: React.FC = () => {
   if (!visible) return null;
   return (
     <div
-      className="fixed bottom-36 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-[60] rounded-card p-4 font-body"
+      className="fixed bottom-36 md:bottom-5 left-4 right-4 md:left-auto md:right-5 md:max-w-[360px] z-[60] rounded-[20px] p-4 font-body"
       style={{
-        background:   'rgba(10,35,64,0.96)',
+        background:   'linear-gradient(180deg, rgba(10,35,64,0.96) 0%, rgba(8,26,48,0.96) 100%)',
         backdropFilter: 'blur(20px)',
-        boxShadow:    '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.6)',
+        boxShadow:    '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.45)',
       }}
       role="region"
       aria-label="Cookie notice"
     >
-      <p className="text-[13px] text-offwhite/60 leading-[1.6] mb-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Privacy-first by default</p>
+        <button
+          onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
+          className="text-[12px] text-offwhite/40 transition-colors hover:text-offwhite/75"
+          aria-label="Dismiss cookie notice"
+        >
+          Dismiss
+        </button>
+      </div>
+      <p className="text-[13px] text-offwhite/60 leading-[1.6] mb-3 md:hidden">
         We use strictly necessary cookies for authentication and anonymous analytics.
         No advertising tracking.{' '}
         <a href="/privacy#cookies" className="text-orange-soft hover:text-orange transition-colors underline underline-offset-2">
           Privacy Policy
         </a>
       </p>
+      <div className="hidden md:flex items-center justify-between gap-3 mb-1">
+        <p className="text-[12px] leading-relaxed text-offwhite/54">
+          Necessary cookies only. No ad tracking.{' '}
+          <a href="/privacy#cookies" className="text-orange-soft hover:text-orange transition-colors underline underline-offset-2">
+            Privacy Policy
+          </a>
+        </p>
+        <button
+          onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
+          className="min-w-[122px] h-10 rounded-btn px-4 text-[13px] font-semibold text-white transition-all duration-200"
+          style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 12px 26px rgba(249,115,22,0.24)' }}
+        >
+          Continue
+        </button>
+      </div>
       <button
         onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
-        className="w-full h-9 rounded-btn text-[13px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
-        style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}
+        className="w-full h-10 rounded-btn text-[13px] font-semibold text-white transition-all duration-200 md:hidden"
+        style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 12px 26px rgba(249,115,22,0.24)' }}
       >
-        Got it
+        Continue
       </button>
     </div>
   );
@@ -1505,18 +2031,12 @@ const App: React.FC = () => {
         {currentView === 'home' ? (
           <>
             <Hero onWaitlist={toggleStripe} />
-            <HowItWorks />
-            <DemoSection />
-            <SocialProof />
-            <PainPoints />
             <ROISection />
-            <React.Suspense fallback={<LazyFallback height={480} />}>
-              <StickyFeatures onWaitlist={toggleStripe} />
-            </React.Suspense>
-            <React.Suspense fallback={<LazyFallback height={320} />}>
-              <Testimonials />
+            <React.Suspense fallback={<LazyFallback height={800} />}>
+              <FeaturesGrid onWaitlist={toggleStripe} />
             </React.Suspense>
             <ComparisonSection />
+            <DemoSection />
             <Pricing onWaitlist={toggleStripe} />
             <FAQ />
             <FinalCTA onWaitlist={toggleStripe} />

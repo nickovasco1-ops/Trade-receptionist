@@ -1,42 +1,139 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import type { ElementType } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import {
-  CheckCircle, ArrowRight, User, Briefcase, Clock,
-  Loader2, Bot, Wrench, CheckCircle2, Plus, X, AlertCircle,
+  AlertCircle,
+  ArrowRight,
+  Bot,
+  Briefcase,
+  CalendarDays,
+  CheckCircle,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  MapPinned,
+  MessageSquareText,
+  Phone,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  User,
+  Wrench,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../../components/Logo';
 import type { ReceptionistTone } from '../../shared/types';
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
 type Step = 'receptionist' | 'business' | 'services' | 'hours' | 'contact' | 'ready';
 
 interface FormData {
   receptionist_name: string;
   receptionist_tone: ReceptionistTone;
-  business_name:     string;
-  trade_type:        string;
-  city:              string;
-  services:          string[];
-  work_start:        string;
-  work_end:          string;
-  working_days:      number[];
-  owner_name:        string;
-  owner_mobile:      string;
+  business_name: string;
+  trade_type: string;
+  city: string;
+  services: string[];
+  work_start: string;
+  work_end: string;
+  working_days: number[];
+  owner_name: string;
+  owner_mobile: string;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const STEPS: { key: Step; label: string; icon: ElementType }[] = [
-  { key: 'receptionist', label: 'Receptionist', icon: Bot },
-  { key: 'business',     label: 'Business',     icon: Briefcase },
-  { key: 'services',     label: 'Services',     icon: Wrench },
-  { key: 'hours',        label: 'Hours',        icon: Clock },
-  { key: 'contact',      label: 'Contact',      icon: User },
-  { key: 'ready',        label: 'Ready',        icon: CheckCircle2 },
+const STEPS: { key: Step; label: string; shortLabel: string; icon: ElementType }[] = [
+  { key: 'receptionist', label: 'Receptionist', shortLabel: 'Voice', icon: Bot },
+  { key: 'business', label: 'Business', shortLabel: 'Business', icon: Briefcase },
+  { key: 'services', label: 'Services', shortLabel: 'Services', icon: Wrench },
+  { key: 'hours', label: 'Hours', shortLabel: 'Hours', icon: Clock },
+  { key: 'contact', label: 'Contact', shortLabel: 'Alerts', icon: User },
+  { key: 'ready', label: 'Ready', shortLabel: 'Launch', icon: CheckCircle2 },
 ];
+
+const STEP_META: Record<
+  Step,
+  {
+    eyebrow: string;
+    title: string;
+    description: string;
+    asideTitle: string;
+    asideCopy: string;
+    checkpoints: string[];
+  }
+> = {
+  receptionist: {
+    eyebrow: 'Voice & first impression',
+    title: 'Shape how every caller meets your business.',
+    description: 'Pick the name and tone Sarah will use every time the phone rings, so the experience feels human, calm, and professional from the first sentence.',
+    asideTitle: 'What callers hear first',
+    asideCopy: 'This is the moment that decides whether your business feels trustworthy, rushed, or forgettable.',
+    checkpoints: [
+      'Natural UK greeting',
+      'Matches your brand personality',
+      'Sets expectations immediately',
+    ],
+  },
+  business: {
+    eyebrow: 'Business identity',
+    title: 'Give Sarah the business context she needs.',
+    description: 'Your trade, business name, and service area help her sound specific, credible, and useful instead of generic.',
+    asideTitle: 'How she introduces the business',
+    asideCopy: 'A precise intro tells callers they reached the right trade business before they explain the job.',
+    checkpoints: [
+      'Correct trade language',
+      'Service area handled cleanly',
+      'Confident business introduction',
+    ],
+  },
+  services: {
+    eyebrow: 'Job qualification',
+    title: 'Tell Sarah what work you actually take on.',
+    description: 'Choose the jobs you want more of so she can qualify calls properly and stop wasting your time on poor-fit enquiries.',
+    asideTitle: 'What she can qualify instantly',
+    asideCopy: 'The more accurate this list is, the faster callers get routed and the fewer dead-end calls you see.',
+    checkpoints: [
+      'Better fit enquiries',
+      'Faster qualification',
+      'Less time on the wrong jobs',
+    ],
+  },
+  hours: {
+    eyebrow: 'Availability & coverage',
+    title: 'Set when you work and how after-hours calls are handled.',
+    description: 'Sarah uses this to set expectations, protect your evenings, and still capture work when you are off the tools.',
+    asideTitle: 'How availability is communicated',
+    asideCopy: 'Callers still feel looked after, even when you are on-site, out of hours, or not taking calls directly.',
+    checkpoints: [
+      'Clear working window',
+      'Accurate callback expectations',
+      'Out-of-hours covered professionally',
+    ],
+  },
+  contact: {
+    eyebrow: 'Alerts & owner details',
+    title: 'Choose where the important follow-up lands.',
+    description: 'These details control who gets the summaries after each call, so you see the next job at the right moment.',
+    asideTitle: 'Where the summaries go',
+    asideCopy: 'Your phone becomes the hand-off point between Sarah answering the call and you deciding what to do next.',
+    checkpoints: [
+      'SMS summaries after every call',
+      'Urgent jobs routed clearly',
+      'Owner details stored correctly',
+    ],
+  },
+  ready: {
+    eyebrow: 'Launch review',
+    title: 'Review the setup before Sarah goes live.',
+    description: 'One final pass, then your receptionist is activated with the exact business context, service rules, and contact flow you chose.',
+    asideTitle: 'What goes live next',
+    asideCopy: 'As soon as you confirm, this setup becomes the live logic behind how Sarah answers, qualifies, and reports every call.',
+    checkpoints: [
+      'Call handling rules locked in',
+      'Summaries routed to you',
+      'Ready to activate immediately',
+    ],
+  },
+};
 
 const TRADES = [
   'Plumber', 'Electrician', 'HVAC Engineer', 'Builder', 'Plasterer',
@@ -44,193 +141,235 @@ const TRADES = [
 ];
 
 const SERVICES_BY_TRADE: Record<string, string[]> = {
-  'Plumber':             ['Boiler repair', 'Boiler installation', 'Bathroom fitting', 'Leak detection', 'Drain unblocking', 'Emergency callouts', 'Central heating', 'Water pressure issues', 'Radiator installation', 'Outdoor tap fitting'],
-  'Electrician':         ['Full rewiring', 'Fuse board upgrade', 'Lighting installation', 'EV charger installation', 'PAT testing', 'Emergency electrical', 'Smart home wiring', 'Garden lighting', 'Socket installation', 'CCTV installation'],
-  'HVAC Engineer':       ['AC installation', 'AC servicing', 'Boiler service', 'Heat pump installation', 'Ventilation systems', 'Emergency callouts', 'Annual maintenance', 'Duct cleaning', 'Refrigerant recharge'],
-  'Builder':             ['Extensions', 'Loft conversions', 'New builds', 'Renovations', 'Brickwork & blockwork', 'Damp proofing', 'Underpinning', 'Garage conversions', 'Structural repairs'],
-  'Plasterer':           ['Skim coat', 'Full replaster', 'Artex removal', 'Coving installation', 'External render', 'Dry lining', 'Patch repairs'],
-  'Tiler':               ['Bathroom tiling', 'Kitchen tiling', 'Floor tiling', 'Wall tiling', 'Wet room fitting', 'Grout repair', 'Tile removal'],
-  'Roofer':              ['Roof repairs', 'Full re-roof', 'Flat roof installation', 'Guttering', 'Fascia & soffits', 'Chimney repairs', 'Velux windows', 'Lead work'],
+  Plumber: ['Boiler repair', 'Boiler installation', 'Bathroom fitting', 'Leak detection', 'Drain unblocking', 'Emergency callouts', 'Central heating', 'Water pressure issues', 'Radiator installation', 'Outdoor tap fitting'],
+  Electrician: ['Full rewiring', 'Fuse board upgrade', 'Lighting installation', 'EV charger installation', 'PAT testing', 'Emergency electrical', 'Smart home wiring', 'Garden lighting', 'Socket installation', 'CCTV installation'],
+  'HVAC Engineer': ['AC installation', 'AC servicing', 'Boiler service', 'Heat pump installation', 'Ventilation systems', 'Emergency callouts', 'Annual maintenance', 'Duct cleaning', 'Refrigerant recharge'],
+  Builder: ['Extensions', 'Loft conversions', 'New builds', 'Renovations', 'Brickwork & blockwork', 'Damp proofing', 'Underpinning', 'Garage conversions', 'Structural repairs'],
+  Plasterer: ['Skim coat', 'Full replaster', 'Artex removal', 'Coving installation', 'External render', 'Dry lining', 'Patch repairs'],
+  Tiler: ['Bathroom tiling', 'Kitchen tiling', 'Floor tiling', 'Wall tiling', 'Wet room fitting', 'Grout repair', 'Tile removal'],
+  Roofer: ['Roof repairs', 'Full re-roof', 'Flat roof installation', 'Guttering', 'Fascia & soffits', 'Chimney repairs', 'Velux windows', 'Lead work'],
   'Painter & Decorator': ['Interior painting', 'Exterior painting', 'Wallpaper hanging', 'Feature walls', 'Wood staining', 'Gloss work', 'Commercial decorating'],
-  'Carpenter':           ['Fitted wardrobes', 'Kitchen fitting', 'Skirting boards', 'Door hanging', 'Decking', 'Fencing', 'Staircase work', 'Bespoke joinery'],
-  'Gas Engineer':        ['Boiler service', 'Boiler replacement', 'Gas safety certificates', 'Landlord certificates', 'Cooker installation', 'Emergency gas', 'Central heating'],
-  'Other':               ['Emergency callouts', 'General repairs', 'Maintenance', 'Survey & quote'],
+  Carpenter: ['Fitted wardrobes', 'Kitchen fitting', 'Skirting boards', 'Door hanging', 'Decking', 'Fencing', 'Staircase work', 'Bespoke joinery'],
+  'Gas Engineer': ['Boiler service', 'Boiler replacement', 'Gas safety certificates', 'Landlord certificates', 'Cooker installation', 'Emergency gas', 'Central heating'],
+  Other: ['Emergency callouts', 'General repairs', 'Maintenance', 'Survey & quote'],
 };
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0]; // ISO weekday mapping (0 = Sun)
+const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
 
 const TONE_OPTIONS: { value: ReceptionistTone; label: string; description: string; example: string }[] = [
   {
-    value:       'friendly',
-    label:       'Friendly',
+    value: 'friendly',
+    label: 'Friendly',
     description: 'Warm and personable. Puts customers at ease.',
-    example:     '"Hi there! Brilliant to hear from you — how can I help?"',
+    example: '"Hi there! Brilliant to hear from you — how can I help?"',
   },
   {
-    value:       'professional',
-    label:       'Professional',
-    description: 'Formal and composed. Projects authority.',
-    example:     '"Good morning. How may I assist you today?"',
+    value: 'professional',
+    label: 'Professional',
+    description: 'Calm and composed. Projects authority.',
+    example: '"Good morning. How may I assist you today?"',
   },
   {
-    value:       'efficient',
-    label:       'Efficient',
-    description: 'Direct and brief. Respects the caller\'s time.',
-    example:     '"Thanks for calling. What do you need help with?"',
+    value: 'efficient',
+    label: 'Efficient',
+    description: 'Direct and concise. Respects the caller’s time.',
+    example: '"Thanks for calling. What do you need help with?"',
   },
 ];
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
-
 const FIELD_CLASS =
-  'w-full px-3.5 py-2.5 rounded-field text-[14px] font-body text-offwhite placeholder:text-offwhite/25 outline-none bg-white/[0.06] shadow-ring-default focus:shadow-ring-strong focus:ring-2 focus:ring-orange/40 transition-shadow duration-200';
+  'w-full min-h-[50px] rounded-field bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-all duration-200 focus:ring-2 focus:ring-orange/40 focus:shadow-[0_0_0_1px_rgba(255,107,43,0.26),0_0_24px_rgba(255,107,43,0.12)]';
 
 const LABEL_CLASS =
-  'block text-[12px] font-semibold text-offwhite/40 uppercase tracking-[0.07em] mb-1.5 font-body';
-
-// ── Reduced motion helper ──────────────────────────────────────────────────────
+  'mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/38';
 
 function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-// ── Progress bar ───────────────────────────────────────────────────────────────
+function formatWorkingDays(days: number[]) {
+  return DAY_LABELS.filter((_, index) => days.includes(DAY_VALUES[index])).join(', ');
+}
+
+function formatToneLabel(tone: ReceptionistTone) {
+  return TONE_OPTIONS.find(option => option.value === tone)?.label ?? tone;
+}
 
 function ProgressBar({ current }: { current: Step }) {
-  const activeIdx = STEPS.findIndex(s => s.key === current);
+  const activeIdx = STEPS.findIndex(step => step.key === current);
   const pct = ((activeIdx + 1) / STEPS.length) * 100;
+
   return (
     <div
-      className="absolute top-0 left-0 right-0 rounded-t-card overflow-hidden"
-      style={{ height: '3px', background: 'rgba(255,255,255,0.06)' }}
+      className="overflow-hidden rounded-full"
+      style={{ height: '6px', background: 'rgba(255,255,255,0.06)' }}
       aria-hidden="true"
     >
       <div
         style={{
           width: `${pct}%`,
           height: '100%',
-          background: 'linear-gradient(90deg, #FF6B2B, #FF8C55)',
-          transition: prefersReducedMotion() ? 'none' : 'width 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+          background: 'linear-gradient(90deg, #FF6B2B 0%, #FF8C55 100%)',
+          boxShadow: '0 0 18px rgba(255,107,43,0.30)',
+          transition: prefersReducedMotion() ? 'none' : 'width 420ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       />
     </div>
   );
 }
 
-// ── Step Indicator ─────────────────────────────────────────────────────────────
-
 function StepIndicator({ current }: { current: Step }) {
-  const activeIdx = STEPS.findIndex(s => s.key === current);
+  const activeIdx = STEPS.findIndex(step => step.key === current);
+
   return (
-    <div className="flex items-center gap-0 mb-10" aria-label="Onboarding progress" role="progressbar" aria-valuenow={activeIdx + 1} aria-valuemax={STEPS.length}>
-      {STEPS.map(({ key, label, icon: Icon }, i) => {
-        const done   = i < activeIdx;
-        const active = i === activeIdx;
-        return (
-          <Fragment key={key}>
-            <div className="flex flex-col items-center relative">
-              {/* Pulse ring on active — only shown, never animated if reduced motion */}
-              {active && (
-                <span
-                  className="absolute inset-0 rounded-full motion-safe:animate-step-pulse"
-                  style={{ boxShadow: '0 0 0 4px rgba(255,107,43,0.18)' }}
-                  aria-hidden="true"
-                />
-              )}
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 relative z-10"
-                style={
-                  done
-                    ? { background: 'rgba(134,239,172,0.15)', boxShadow: '0 0 0 1px rgba(134,239,172,0.30)' }
-                    : active
-                    ? { background: 'rgba(255,107,43,0.18)', boxShadow: '0 0 0 1.5px rgba(255,107,43,0.50), 0 0 12px rgba(255,107,43,0.20)' }
-                    : { background: 'rgba(255,255,255,0.06)', boxShadow: '0 0 0 1px rgba(255,255,255,0.09)' }
-                }
-              >
-                {done
-                  ? <CheckCircle size={14} className="text-status-success" aria-hidden="true" />
-                  : <Icon size={13} className={active ? 'text-orange' : 'text-offwhite/30'} aria-hidden="true" />
-                }
+    <div aria-label="Onboarding progress" role="progressbar" aria-valuenow={activeIdx + 1} aria-valuemax={STEPS.length}>
+      <div className="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-offwhite/34">
+        <span>Step {activeIdx + 1} of {STEPS.length}</span>
+        <span>{Math.round(((activeIdx + 1) / STEPS.length) * 100)}% complete</span>
+      </div>
+      <ProgressBar current={current} />
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {STEPS.map(({ key, shortLabel, icon: Icon }, index) => {
+          const done = index < activeIdx;
+          const active = index === activeIdx;
+          return (
+            <div
+              key={key}
+              className="min-w-[94px] flex-1 rounded-[16px] px-3 py-3"
+              style={{
+                background: active
+                  ? 'linear-gradient(180deg, rgba(255,107,43,0.12) 0%, rgba(255,107,43,0.06) 100%)'
+                  : 'rgba(255,255,255,0.035)',
+                boxShadow: active
+                  ? '0 0 0 1px rgba(255,107,43,0.24), 0 12px 26px rgba(2,13,24,0.20)'
+                  : done
+                  ? '0 0 0 1px rgba(134,239,172,0.18)'
+                  : '0 0 0 1px rgba(255,255,255,0.06)',
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-full"
+                  style={{
+                    background: done
+                      ? 'rgba(134,239,172,0.14)'
+                      : active
+                      ? 'rgba(255,107,43,0.16)'
+                      : 'rgba(255,255,255,0.06)',
+                    boxShadow: done
+                      ? '0 0 0 1px rgba(134,239,172,0.22)'
+                      : active
+                      ? '0 0 0 1px rgba(255,107,43,0.26)'
+                      : '0 0 0 1px rgba(255,255,255,0.07)',
+                  }}
+                >
+                  {done ? (
+                    <CheckCircle size={14} className="text-status-success" aria-hidden="true" />
+                  ) : (
+                    <Icon size={14} className={active ? 'text-orange-soft' : 'text-offwhite/28'} aria-hidden="true" />
+                  )}
+                </div>
+                <span className={`text-[11px] font-bold ${active ? 'text-orange-soft' : done ? 'text-status-success' : 'text-offwhite/28'}`}>
+                  0{index + 1}
+                </span>
               </div>
-              <span
-                className={`text-[9px] font-body mt-1 font-semibold tracking-wide hidden sm:block transition-colors duration-300 ${
-                  active ? 'text-orange' : done ? 'text-status-success' : 'text-offwhite/30'
-                }`}
-              >
-                {label}
-              </span>
+              <p className={`mt-3 text-[12px] font-semibold ${active ? 'text-offwhite' : done ? 'text-offwhite/72' : 'text-offwhite/34'}`}>
+                {shortLabel}
+              </p>
             </div>
-            {i < STEPS.length - 1 && (
-              <div
-                className="h-px flex-1 mb-4 mx-1.5 transition-all duration-500"
-                style={{ background: done ? 'rgba(134,239,172,0.30)' : 'rgba(255,255,255,0.08)' }}
-                aria-hidden="true"
-              />
-            )}
-          </Fragment>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Greeting Preview ───────────────────────────────────────────────────────────
-
-function GreetingPreview({ name, businessName, tone }: { name: string; businessName: string; tone: ReceptionistTone }) {
-  const displayName = name || 'Sarah';
-  const displayBiz  = businessName || 'your business';
-  const greeting =
-    tone === 'professional' ? `Good morning. You've reached ${displayBiz}, ${displayName} speaking. How may I assist you today?` :
-    tone === 'efficient'    ? `${displayBiz}, ${displayName} speaking. How can I help?` :
-                              `Hi there! You've reached ${displayBiz}. I'm ${displayName} — how can I help you today?`;
-
-  return (
-    <div className="mt-5 rounded-[12px] p-4" style={{ background: 'rgba(153,203,255,0.06)', boxShadow: '0 0 0 1px rgba(153,203,255,0.12)' }}>
-      <p className="text-[10px] font-bold uppercase tracking-[0.10em] text-accent/70 font-body mb-2">Live preview</p>
-      <div className="flex gap-3 items-start">
-        <div
-          className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-navy font-body"
-          style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)' }}
-        >
-          {displayName[0]?.toUpperCase()}
-        </div>
-        <p className="text-[13px] text-offwhite/80 font-body leading-relaxed italic">"{greeting}"</p>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ── Step content wrapper (fade + slide in) ─────────────────────────────────────
+function GreetingPreview({ name, businessName, tone }: { name: string; businessName: string; tone: ReceptionistTone }) {
+  const displayName = name || 'Sarah';
+  const displayBiz = businessName || 'your business';
+  const greeting =
+    tone === 'professional'
+      ? `Good morning. You've reached ${displayBiz}, ${displayName} speaking. How may I assist you today?`
+      : tone === 'efficient'
+      ? `${displayBiz}, ${displayName} speaking. How can I help?`
+      : `Hi there! You've reached ${displayBiz}. I'm ${displayName} — how can I help you today?`;
 
-function StepPane({ children, stepKey }: { children: React.ReactNode; stepKey: string }) {
+  return (
+    <div
+      className="rounded-[18px] p-4"
+      style={{
+        background: 'linear-gradient(180deg, rgba(19,34,58,0.92) 0%, rgba(11,25,44,0.92) 100%)',
+        boxShadow: '0 0 0 1px rgba(153,203,255,0.10), inset 0 1px 0 rgba(255,255,255,0.03)',
+      }}
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Caller greeting preview</p>
+        <div
+          className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.10em] text-orange-soft"
+          style={{ background: 'rgba(255,107,43,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.14)' }}
+        >
+          {formatToneLabel(tone)}
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <div
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-[#08111f]"
+          style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)' }}
+        >
+          {displayName[0]?.toUpperCase()}
+        </div>
+        <p className="max-w-[44ch] text-[13px] leading-relaxed text-offwhite/76">
+          “{greeting}”
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SavingDots() {
+  return (
+    <span className="inline-flex items-center gap-1" aria-hidden="true">
+      {[0, 1, 2].map(index => (
+        <span
+          key={index}
+          className="h-1.5 w-1.5 rounded-full bg-white/80 animate-pulse"
+          style={{ animationDelay: `${index * 140}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function StepPane({ children, stepKey }: { children: ReactNode; stepKey: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el || prefersReducedMotion()) return;
+
     el.style.opacity = '0';
-    el.style.transform = 'translateY(8px)';
+    el.style.transform = 'translateY(14px)';
+
     const raf = requestAnimationFrame(() => {
-      el.style.transition = 'opacity 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 300ms cubic-bezier(0.16, 1, 0.3, 1)';
+      el.style.transition = 'opacity 360ms cubic-bezier(0.16, 1, 0.3, 1), transform 360ms cubic-bezier(0.16, 1, 0.3, 1)';
       el.style.opacity = '1';
       el.style.transform = 'translateY(0)';
     });
+
     return () => cancelAnimationFrame(raf);
   }, [stepKey]);
 
   return <div ref={ref}>{children}</div>;
 }
 
-// ── Primary CTA button (full design-system recipe) ─────────────────────────────
-
 interface PrimaryBtnProps {
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit';
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function PrimaryBtn({ onClick, disabled, className = '', type = 'button', children }: PrimaryBtnProps) {
@@ -239,76 +378,282 @@ function PrimaryBtn({ onClick, disabled, className = '', type = 'button', childr
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`
-        inline-flex items-center justify-center gap-2.5
-        w-full px-7 py-3.5
-        bg-gradient-to-r from-orange to-orange-glow
-        text-white font-semibold text-[15px] tracking-[-0.01em]
-        rounded-btn
-        shadow-orange-glow
-        hover:shadow-orange-glow-lg hover:-translate-y-0.5
-        active:translate-y-0
-        transition-all duration-300 ease-mechanical
-        font-body
-        focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]
-        disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-orange-glow
-        ${className}
-      `}
+      className={[
+        'inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-btn px-7 py-3.5',
+        'text-[15px] font-semibold tracking-[-0.015em] text-white',
+        'transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]',
+        'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
+        className,
+      ].join(' ')}
+      style={{
+        background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
+        boxShadow: '0 16px 34px rgba(249,115,22,0.28), inset 0 1px 0 rgba(255,255,255,0.14)',
+      }}
     >
       {children}
     </button>
   );
 }
 
-function SecondaryBtn({ onClick, className = '', children }: { onClick?: () => void; className?: string; children: React.ReactNode }) {
+function SecondaryBtn({ onClick, className = '', children }: { onClick?: () => void; className?: string; children: ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`
-        inline-flex items-center justify-center gap-2
-        px-6 py-3.5
-        bg-white/[0.06]
-        text-offwhite/70 font-semibold text-[14px]
-        rounded-btn
-        shadow-[0_0_0_1px_rgba(255,255,255,0.09)]
-        hover:bg-white/[0.10] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.16)] hover:text-offwhite hover:-translate-y-0.5
-        transition-all duration-300 ease-mechanical
-        font-body
-        focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]
-        ${className}
-      `}
+      className={[
+        'inline-flex min-h-[52px] items-center justify-center gap-2 rounded-btn px-6 py-3.5',
+        'bg-white/[0.05] text-[14px] font-semibold text-offwhite/72',
+        'transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
+        'hover:-translate-y-0.5 hover:bg-white/[0.08] hover:text-offwhite',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]',
+        className,
+      ].join(' ')}
+      style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.09), 0 10px 24px rgba(2,13,24,0.18)' }}
     >
       {children}
     </button>
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+function SupportPanel({ step, form }: { step: Step; form: FormData }) {
+  const meta = STEP_META[step];
+  const activeDays = formatWorkingDays(form.working_days);
+  const selectedTone = formatToneLabel(form.receptionist_tone);
+  const displayServices = form.services.length ? form.services.slice(0, 4) : (SERVICES_BY_TRADE[form.trade_type] ?? SERVICES_BY_TRADE.Other).slice(0, 4);
+
+  return (
+    <div
+      className="overflow-hidden rounded-[28px] p-5 sm:p-6"
+      style={{
+        background: 'linear-gradient(180deg, rgba(16,29,50,0.90) 0%, rgba(9,22,38,0.94) 100%)',
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 56px rgba(2,13,24,0.34)',
+      }}
+    >
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">{meta.asideTitle}</p>
+          <p className="mt-2 max-w-[44ch] text-[14px] leading-relaxed text-offwhite/58">{meta.asideCopy}</p>
+        </div>
+        <div
+          className="hidden h-10 w-10 items-center justify-center rounded-full sm:flex"
+          style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+        >
+          <Sparkles size={16} className="text-orange-soft" aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        {meta.checkpoints.map(item => (
+          <div
+            key={item}
+            className="rounded-[16px] px-4 py-3 text-[13px] font-semibold text-offwhite/72"
+            style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+
+      {step === 'receptionist' && (
+        <GreetingPreview name={form.receptionist_name} businessName={form.business_name} tone={form.receptionist_tone} />
+      )}
+
+      {step === 'business' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div
+            className="rounded-[20px] p-4"
+            style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Business introduction</p>
+            <p className="font-display text-[24px] font-bold leading-[1.05] text-offwhite">
+              {form.business_name || 'Your business'}
+            </p>
+            <div className="mt-3 flex items-center gap-2 text-[13px] text-offwhite/56">
+              <Briefcase size={14} className="text-orange-soft" aria-hidden="true" />
+              <span>{form.trade_type || 'Trade type pending'}</span>
+            </div>
+          </div>
+          <div
+            className="rounded-[20px] p-4"
+            style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Service area</p>
+            <div className="flex items-start gap-3">
+              <div
+                className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full"
+                style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+              >
+                <MapPinned size={15} className="text-orange-soft" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[15px] font-semibold text-offwhite/80">{form.city || 'Area not set yet'}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-offwhite/48">
+                  Sarah uses this to explain where you work and whether the caller is in range.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 'services' && (
+        <div
+          className="rounded-[20px] p-4"
+          style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Current service shortlist</p>
+            <div
+              className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.10em] text-orange-soft"
+              style={{ background: 'rgba(255,107,43,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.14)' }}
+            >
+              {form.services.length || displayServices.length} captured
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {displayServices.map(service => (
+              <span
+                key={service}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold text-offwhite/70"
+                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
+              >
+                <CheckCircle2 size={12} className="text-orange-soft" aria-hidden="true" />
+                {service}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 'hours' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div
+            className="rounded-[20px] p-4"
+            style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Working week</p>
+            <p className="text-[16px] font-semibold text-offwhite/78">{activeDays || 'No days selected yet'}</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-offwhite/48">
+              Your caller messaging changes automatically outside these days.
+            </p>
+          </div>
+          <div
+            className="rounded-[20px] p-4"
+            style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Working window</p>
+            <div className="flex items-center gap-2 text-[16px] font-semibold text-offwhite/78">
+              <CalendarDays size={15} className="text-orange-soft" aria-hidden="true" />
+              <span>{form.work_start} - {form.work_end}</span>
+            </div>
+            <p className="mt-2 text-[13px] leading-relaxed text-offwhite/48">
+              Urgent calls can still be handled differently when you are not taking direct calls.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {step === 'contact' && (
+        <div
+          className="rounded-[20px] p-4"
+          style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+        >
+          <div className="mb-3 flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full"
+              style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+            >
+              <MessageSquareText size={16} className="text-orange-soft" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Summary delivery preview</p>
+              <p className="text-[14px] text-offwhite/72">SMS after every answered call</p>
+            </div>
+          </div>
+          <div
+            className="rounded-[16px] p-4 text-[13px] leading-relaxed text-offwhite/72"
+            style={{ background: 'rgba(8,22,39,0.84)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05)' }}
+          >
+            <p><span className="font-semibold text-orange-soft">Sarah:</span> Boiler repair enquiry in {form.city || 'your area'}.</p>
+            <p className="mt-1">Caller wants the next available slot. Summary will go to <span className="font-semibold text-offwhite/86">{form.owner_mobile || 'your mobile'}</span>.</p>
+          </div>
+        </div>
+      )}
+
+      {step === 'ready' && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            { label: 'Receptionist', value: `${form.receptionist_name} · ${selectedTone}` },
+            { label: 'Trade & area', value: `${form.trade_type || 'Trade pending'}${form.city ? ` · ${form.city}` : ''}` },
+            { label: 'Working hours', value: `${form.work_start} - ${form.work_end}` },
+            { label: 'SMS alerts', value: form.owner_mobile || 'Mobile pending' },
+          ].map(item => (
+            <div
+              key={item.label}
+              className="rounded-[18px] p-4"
+              style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">{item.label}</p>
+              <p className="mt-2 text-[15px] leading-snug text-offwhite/78">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function OnboardingPage() {
+  return <OnboardingFlow />;
+}
+
+const PREVIEW_FORM: FormData = {
+  receptionist_name: 'Sarah',
+  receptionist_tone: 'friendly',
+  business_name: 'Hendricks Plumbing & Heating',
+  trade_type: 'Plumber',
+  city: 'South London',
+  services: ['Boiler repair', 'Emergency callouts', 'Bathroom fitting'],
+  work_start: '08:00',
+  work_end: '18:00',
+  working_days: [1, 2, 3, 4, 5],
+  owner_name: 'Dave Hendricks',
+  owner_mobile: '+44 7700 900123',
+};
+
+export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   const navigate = useNavigate();
-  const [step, setStep]     = useState<Step>('receptionist');
+  const [step, setStep] = useState<Step>('receptionist');
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [customService, setCustomService] = useState('');
 
   const [form, setForm] = useState<FormData>({
-    receptionist_name: 'Sarah',
-    receptionist_tone: 'friendly',
-    business_name:     '',
-    trade_type:        '',
-    city:              '',
-    services:          [],
-    work_start:        '08:00',
-    work_end:          '18:00',
-    working_days:      [1, 2, 3, 4, 5],
-    owner_name:        '',
-    owner_mobile:      '',
+    ...(preview
+      ? PREVIEW_FORM
+      : {
+          receptionist_name: 'Sarah',
+          receptionist_tone: 'friendly',
+          business_name: '',
+          trade_type: '',
+          city: '',
+          services: [],
+          work_start: '08:00',
+          work_end: '18:00',
+          working_days: [1, 2, 3, 4, 5],
+          owner_name: '',
+          owner_mobile: '',
+        }),
   });
 
   useEffect(() => {
+    if (preview) {
+      setClientId('preview-client');
+      return;
+    }
+
     async function prefill() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) return;
@@ -320,18 +665,22 @@ export default function OnboardingPage() {
         .maybeSingle();
 
       if (!client) return;
-      if (client.onboarding_complete) { navigate('/dashboard', { replace: true }); return; }
+      if (client.onboarding_complete) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
 
       setClientId(client.id as string);
       setForm(prev => ({
         ...prev,
-        owner_name:    (client.owner_name as string) || prev.owner_name,
-        owner_mobile:  (client.owner_mobile as string) || prev.owner_mobile,
+        owner_name: (client.owner_name as string) || prev.owner_name,
+        owner_mobile: (client.owner_mobile as string) || prev.owner_mobile,
         business_name: (client.business_name as string) || prev.business_name,
       }));
     }
+
     prefill();
-  }, [navigate]);
+  }, [navigate, preview]);
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -341,7 +690,7 @@ export default function OnboardingPage() {
     setForm(prev => ({
       ...prev,
       services: prev.services.includes(service)
-        ? prev.services.filter(s => s !== service)
+        ? prev.services.filter(item => item !== service)
         : [...prev.services, service],
     }));
   }
@@ -350,7 +699,7 @@ export default function OnboardingPage() {
     setForm(prev => ({
       ...prev,
       working_days: prev.working_days.includes(day)
-        ? prev.working_days.filter(d => d !== day)
+        ? prev.working_days.filter(item => item !== day)
         : [...prev.working_days, day],
     }));
   }
@@ -363,7 +712,20 @@ export default function OnboardingPage() {
   }
 
   async function complete() {
-    if (!clientId) { setError('Session error — please refresh the page.'); return; }
+    if (preview) {
+      setSaving(true);
+      setError(null);
+      window.setTimeout(() => {
+        navigate('/welcome', { replace: true });
+      }, 900);
+      return;
+    }
+
+    if (!clientId) {
+      setError('Session error — please refresh the page.');
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -371,11 +733,11 @@ export default function OnboardingPage() {
       const { error: clientErr } = await supabase
         .from('clients')
         .update({
-          business_name:       form.business_name,
-          owner_name:          form.owner_name,
-          owner_mobile:        form.owner_mobile,
+          business_name: form.business_name,
+          owner_name: form.owner_name,
+          owner_mobile: form.owner_mobile,
           onboarding_complete: true,
-          updated_at:          new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', clientId);
 
@@ -384,23 +746,22 @@ export default function OnboardingPage() {
       const { error: configErr } = await supabase
         .from('business_config')
         .update({
-          receptionist_name:    form.receptionist_name,
-          receptionist_tone:    form.receptionist_tone,
-          services:             form.services,
-          service_areas:        form.city ? [form.city] : [],
+          receptionist_name: form.receptionist_name,
+          receptionist_tone: form.receptionist_tone,
+          services: form.services,
+          service_areas: form.city ? [form.city] : [],
           business_hours_start: form.work_start,
-          business_hours_end:   form.work_end,
-          working_days:         form.working_days,
+          business_hours_end: form.work_end,
+          working_days: form.working_days,
         })
         .eq('client_id', clientId);
 
       if (configErr) throw new Error(configErr.message);
 
-      // Rebuild Retell agent prompt with all new personalisation data
       fetch('/api/clients/rebuild-agent', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ clientId }),
+        body: JSON.stringify({ clientId }),
       }).catch(() => {});
 
       navigate('/dashboard', { replace: true });
@@ -410,533 +771,717 @@ export default function OnboardingPage() {
     }
   }
 
-  const suggestedServices = SERVICES_BY_TRADE[form.trade_type] ?? SERVICES_BY_TRADE['Other'];
+  const currentStepIndex = STEPS.findIndex(item => item.key === step);
+  const currentMeta = STEP_META[step];
+  const suggestedServices = SERVICES_BY_TRADE[form.trade_type] ?? SERVICES_BY_TRADE.Other;
 
   return (
     <div
-        className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-10 font-body"
+      className="relative min-h-[100dvh] overflow-hidden px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
+      style={{
+        background:
+          'radial-gradient(circle at 14% 18%, rgba(255,107,43,0.12) 0%, transparent 32%),' +
+          'radial-gradient(circle at 82% 26%, rgba(153,203,255,0.10) 0%, transparent 34%),' +
+          'radial-gradient(circle at 66% 82%, rgba(255,138,72,0.08) 0%, transparent 30%),' +
+          '#051426',
+      }}
+    >
+      <div
+        className="pointer-events-none fixed inset-0 opacity-30"
+        aria-hidden="true"
         style={{
-          background:
-            'radial-gradient(ellipse at 20% 30%, rgba(255,107,43,0.07) 0%, transparent 55%), ' +
-            'radial-gradient(ellipse at 80% 70%, rgba(153,203,255,0.05) 0%, transparent 50%), ' +
-            '#051426',
+          backgroundImage:
+            'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),' +
+            'linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
         }}
-      >
-        {/* Blueprint grid */}
-        <div
-          className="fixed inset-0 pointer-events-none opacity-30"
-          aria-hidden="true"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
+      />
 
-        <div className="relative w-full max-w-lg">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="relative flex items-center justify-center">
-              <div style={{
-                position: 'absolute',
-                width: '220px', height: '120px',
-                background: 'radial-gradient(ellipse, rgba(255,107,43,0.26) 0%, transparent 65%)',
-                filter: 'blur(28px)',
-                pointerEvents: 'none',
-              }} />
-              <Logo className="h-[50px] w-auto relative z-10" />
+      <div
+        className="pointer-events-none absolute left-[-10%] top-[6%] h-[360px] w-[360px] rounded-full opacity-40 blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.22) 0%, transparent 70%)' }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-[-6%] right-[-3%] h-[360px] w-[360px] rounded-full opacity-35 blur-3xl"
+        style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.16) 0%, transparent 72%)' }}
+      />
+
+      <div className="relative mx-auto w-full max-w-[1280px]">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="rounded-[16px] px-3 py-2"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.22)',
+              }}
+            >
+              <Logo height={24} />
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Trade Receptionist setup</p>
+              <p className="mt-1 text-[13px] text-offwhite/44">Built for UK tradespeople who need every call covered.</p>
             </div>
           </div>
-
-          {/* Page header */}
-          <div className="text-center mb-8">
-            <span className="inline-block text-[11px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body mb-2">
-              PERSONALISE YOUR AI RECEPTIONIST
-            </span>
-            <h1 className="font-display text-[26px] font-bold text-offwhite tracking-tight">
-              Let's set up your receptionist
-            </h1>
-            <p className="text-[13px] text-offwhite/40 font-body mt-1.5">
-              Takes about 3 minutes. Every detail makes her better at her job.
-            </p>
-          </div>
-
-          <StepIndicator current={step} />
-
-          {/* Card */}
           <div
-            className="relative rounded-card p-7 overflow-hidden"
+            className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              boxShadow:
-                '0 0 0 1px rgba(255,255,255,0.08), ' +
-                '0 20px 60px rgba(2,13,24,0.5), ' +
-                '0 0 40px rgba(255,107,43,0.04)',
+              background: preview ? 'rgba(255,107,43,0.08)' : 'rgba(255,255,255,0.04)',
+              boxShadow: preview
+                ? '0 0 0 1px rgba(255,107,43,0.18)'
+                : '0 0 0 1px rgba(255,255,255,0.08)',
             }}
           >
-            {/* Animated progress bar at top of card */}
-            <ProgressBar current={step} />
-
-            {/* ── Step 1: Receptionist ─────────────────────────────────────── */}
-            {step === 'receptionist' && (
-              <StepPane stepKey="receptionist">
-                <h2 className="text-[20px] font-bold text-offwhite font-display mb-1">Meet your receptionist</h2>
-                <p className="text-[13px] text-offwhite/50 font-body mb-6">Give her a name and a personality. This is how every caller will experience your business.</p>
-
-                <div className="space-y-5">
-                  <div>
-                    <label htmlFor="onb-rname" className={LABEL_CLASS}>Receptionist name</label>
-                    <input
-                      id="onb-rname"
-                      className={FIELD_CLASS}
-                      value={form.receptionist_name}
-                      onChange={e => set('receptionist_name', e.target.value)}
-                      placeholder="Sarah"
-                      maxLength={24}
-                    />
-                    <p className="text-[11px] text-offwhite/30 font-body mt-1.5">This is what she'll call herself on every call.</p>
-                  </div>
-
-                  <fieldset>
-                    <legend className={LABEL_CLASS}>Personality</legend>
-                    <div className="space-y-2.5">
-                      {TONE_OPTIONS.map(opt => {
-                        const isSelected = form.receptionist_tone === opt.value;
-                        return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => set('receptionist_tone', opt.value)}
-                            aria-pressed={isSelected}
-                            className="w-full text-left rounded-[12px] p-3.5 cursor-pointer transition-all duration-300 ease-mechanical hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
-                            style={isSelected
-                              ? {
-                                  background: 'rgba(255,107,43,0.10)',
-                                  boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40), 0 8px 24px rgba(2,13,24,0.30)',
-                                }
-                              : {
-                                  background: 'rgba(255,255,255,0.04)',
-                                  boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
-                                }
-                            }
-                          >
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className={`text-[14px] font-bold font-body transition-colors duration-200 ${isSelected ? 'text-orange' : 'text-offwhite'}`}>
-                                {opt.label}
-                              </span>
-                              <span
-                                className="transition-all duration-200"
-                                style={{
-                                  opacity: isSelected ? 1 : 0,
-                                  transform: isSelected ? 'scale(1)' : 'scale(0.6)',
-                                }}
-                              >
-                                <CheckCircle size={14} className="text-orange" aria-hidden="true" />
-                              </span>
-                            </div>
-                            <p className="text-[12px] text-offwhite/45 font-body">{opt.description}</p>
-                            <p className="text-[11px] text-offwhite/30 font-body mt-1 italic">{opt.example}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
-                </div>
-
-                <GreetingPreview name={form.receptionist_name} businessName={form.business_name} tone={form.receptionist_tone} />
-
-                <PrimaryBtn
-                  onClick={() => setStep('business')}
-                  disabled={!form.receptionist_name.trim()}
-                  className="mt-6"
-                >
-                  Next <ArrowRight size={15} aria-hidden="true" />
-                </PrimaryBtn>
-              </StepPane>
-            )}
-
-            {/* ── Step 2: Business ──────────────────────────────────────────── */}
-            {step === 'business' && (
-              <StepPane stepKey="business">
-                <h2 className="text-[20px] font-bold text-offwhite font-display mb-1">Your business</h2>
-                <p className="text-[13px] text-offwhite/50 font-body mb-6">
-                  {form.receptionist_name || 'Your receptionist'} will introduce your business by name on every call.
-                </p>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="onb-biz" className={LABEL_CLASS}>Business name</label>
-                    <input
-                      id="onb-biz"
-                      className={FIELD_CLASS}
-                      value={form.business_name}
-                      onChange={e => set('business_name', e.target.value)}
-                      placeholder="Mark Thomas Plumbing Ltd"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="onb-trade" className={LABEL_CLASS}>Trade type</label>
-                    <div className="relative">
-                      <select
-                        id="onb-trade"
-                        className={`${FIELD_CLASS} appearance-none cursor-pointer pr-9`}
-                        value={form.trade_type}
-                        onChange={e => { set('trade_type', e.target.value); set('services', []); }}
-                      >
-                        <option value="">Select your trade…</option>
-                        {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <svg
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-offwhite/30"
-                        width="14" height="14" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="onb-city" className={LABEL_CLASS}>City / area you serve</label>
-                    <input
-                      id="onb-city"
-                      className={FIELD_CLASS}
-                      value={form.city}
-                      onChange={e => set('city', e.target.value)}
-                      placeholder="South London"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <SecondaryBtn onClick={() => setStep('receptionist')} className="flex-1">Back</SecondaryBtn>
-                  <PrimaryBtn
-                    onClick={() => setStep('services')}
-                    disabled={!form.business_name || !form.trade_type}
-                    className="flex-[2]"
-                  >
-                    Next <ArrowRight size={15} aria-hidden="true" />
-                  </PrimaryBtn>
-                </div>
-              </StepPane>
-            )}
-
-            {/* ── Step 3: Services ──────────────────────────────────────────── */}
-            {step === 'services' && (
-              <StepPane stepKey="services">
-                <h2 className="text-[20px] font-bold text-offwhite font-display mb-1">What do you offer?</h2>
-                <p className="text-[13px] text-offwhite/50 font-body mb-5">
-                  {form.receptionist_name || 'Your receptionist'} will tell callers exactly what jobs you take on. Pick everything that applies.
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {suggestedServices.map(service => {
-                    const selected = form.services.includes(service);
-                    return (
-                      <button
-                        key={service}
-                        type="button"
-                        onClick={() => toggleService(service)}
-                        className="px-3 rounded-[8px] text-[12px] font-semibold font-body cursor-pointer transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
-                        style={{
-                          minHeight: '44px',
-                          paddingTop: '10px',
-                          paddingBottom: '10px',
-                          ...(selected
-                          ? {
-                              background: 'rgba(255,107,43,0.15)',
-                              boxShadow: '0 0 0 1.5px rgba(255,107,43,0.45), 0 4px 12px rgba(255,107,43,0.12)',
-                              color: '#FF8C55',
-                              transform: 'scale(1)',
-                            }
-                          : {
-                              background: 'rgba(255,255,255,0.05)',
-                              boxShadow: '0 0 0 1px rgba(255,255,255,0.09)',
-                              color: 'rgba(240,244,248,0.55)',
-                            }),
-                        }}
-                      >
-                        {selected && (
-                          <CheckCircle
-                            size={10}
-                            className="inline mr-1.5 -mt-0.5"
-                            aria-hidden="true"
-                            style={{
-                              transition: prefersReducedMotion() ? 'none' : 'transform 200ms cubic-bezier(0.16,1,0.3,1), opacity 200ms',
-                            }}
-                          />
-                        )}
-                        {service}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom service input */}
-                <div className="flex gap-2 mb-4">
-                  <label htmlFor="onb-custom-service" className="sr-only">Add a custom service</label>
-                  <input
-                    id="onb-custom-service"
-                    className={`${FIELD_CLASS} flex-1`}
-                    value={customService}
-                    onChange={e => setCustomService(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomService())}
-                    placeholder="Add a custom service…"
-                    maxLength={60}
-                  />
-                  <button
-                    type="button"
-                    onClick={addCustomService}
-                    disabled={!customService.trim()}
-                    className="px-3 rounded-field bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.09)] hover:bg-white/[0.10] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.16)] transition-all duration-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
-                    aria-label="Add service"
-                  >
-                    <Plus size={15} className="text-offwhite/60" aria-hidden="true" />
-                  </button>
-                </div>
-
-                {/* Custom (non-preset) services selected */}
-                {form.services.filter(s => !suggestedServices.includes(s)).length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {form.services.filter(s => !suggestedServices.includes(s)).map(s => (
-                      <span
-                        key={s}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[7px] text-[12px] font-semibold font-body text-orange-soft"
-                        style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)' }}
-                      >
-                        {s}
-                        <button
-                          type="button"
-                          onClick={() => toggleService(s)}
-                          aria-label={`Remove ${s}`}
-                          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[2px] rounded-sm"
-                        >
-                          <X size={11} aria-hidden="true" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-[11px] text-offwhite/25 font-body mb-1">
-                  {form.services.length} service{form.services.length !== 1 ? 's' : ''} selected
-                </p>
-
-                <div className="flex gap-3 mt-5">
-                  <SecondaryBtn onClick={() => setStep('business')} className="flex-1">Back</SecondaryBtn>
-                  <PrimaryBtn onClick={() => setStep('hours')} className="flex-[2]">
-                    Next <ArrowRight size={15} aria-hidden="true" />
-                  </PrimaryBtn>
-                </div>
-              </StepPane>
-            )}
-
-            {/* ── Step 4: Hours ─────────────────────────────────────────────── */}
-            {step === 'hours' && (
-              <StepPane stepKey="hours">
-                <h2 className="text-[20px] font-bold text-offwhite font-display mb-1">Working hours</h2>
-                <p className="text-[13px] text-offwhite/50 font-body mb-6">
-                  {form.receptionist_name || 'Your receptionist'} will handle out-of-hours calls differently — taking a message and setting expectations correctly.
-                </p>
-
-                <div className="space-y-5">
-                  <fieldset>
-                    <legend className={LABEL_CLASS}>Working days</legend>
-                    {/* Horizontal scroll on very small viewports, wrap on larger */}
-                    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap">
-                      {DAY_LABELS.map((label, i) => {
-                        const val = DAY_VALUES[i];
-                        const active = form.working_days.includes(val);
-                        return (
-                          <button
-                            key={label}
-                            type="button"
-                            onClick={() => toggleDay(val)}
-                            aria-pressed={active}
-                            className="flex-shrink-0 sm:flex-1 rounded-[8px] text-[12px] font-bold font-body transition-all duration-200 ease-standard focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
-                            style={{
-                              minWidth: '44px',
-                              minHeight: '48px',
-                              padding: '4px 8px',
-                              ...(active
-                                ? {
-                                    background: 'rgba(255,107,43,0.15)',
-                                    boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40), 0 4px 12px rgba(255,107,43,0.12)',
-                                    color: '#FF8C55',
-                                  }
-                                : {
-                                    background: 'rgba(255,255,255,0.05)',
-                                    boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
-                                    color: 'rgba(240,244,248,0.35)',
-                                  }
-                              ),
-                            }}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="onb-start" className={LABEL_CLASS}>Start time</label>
-                      <input
-                        id="onb-start"
-                        type="time"
-                        className={FIELD_CLASS}
-                        value={form.work_start}
-                        onChange={e => set('work_start', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="onb-end" className={LABEL_CLASS}>End time</label>
-                      <input
-                        id="onb-end"
-                        type="time"
-                        className={FIELD_CLASS}
-                        value={form.work_end}
-                        onChange={e => set('work_end', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="rounded-[10px] p-3.5" style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}>
-                    <p className="text-[12px] text-accent/70 font-body leading-relaxed">
-                      <span className="font-semibold text-accent">Outside these hours</span> — {form.receptionist_name || 'your receptionist'} will tell callers you're not available, take a full message, and promise a callback on the next working day.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <SecondaryBtn onClick={() => setStep('services')} className="flex-1">Back</SecondaryBtn>
-                  <PrimaryBtn onClick={() => setStep('contact')} className="flex-[2]">
-                    Next <ArrowRight size={15} aria-hidden="true" />
-                  </PrimaryBtn>
-                </div>
-              </StepPane>
-            )}
-
-            {/* ── Step 5: Contact ───────────────────────────────────────────── */}
-            {step === 'contact' && (
-              <StepPane stepKey="contact">
-                <h2 className="text-[20px] font-bold text-offwhite font-display mb-1">Your details</h2>
-                <p className="text-[13px] text-offwhite/50 font-body mb-6">
-                  {form.receptionist_name || 'Your receptionist'} will mention your name to callers and send you SMS alerts after every call.
-                </p>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="onb-name" className={LABEL_CLASS}>Your name</label>
-                    <input
-                      id="onb-name"
-                      autoComplete="name"
-                      className={FIELD_CLASS}
-                      value={form.owner_name}
-                      onChange={e => set('owner_name', e.target.value)}
-                      placeholder="Mark Thomas"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="onb-mobile" className={LABEL_CLASS}>Mobile (for SMS alerts after calls)</label>
-                    <input
-                      id="onb-mobile"
-                      type="tel"
-                      autoComplete="tel"
-                      className={FIELD_CLASS}
-                      value={form.owner_mobile}
-                      onChange={e => set('owner_mobile', e.target.value)}
-                      placeholder="+44 7700 900000"
-                    />
-                    <p className="text-[11px] text-offwhite/30 font-body mt-1.5">
-                      We'll text you a summary after every call — job type, caller name, urgency.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <SecondaryBtn onClick={() => setStep('hours')} className="flex-1">Back</SecondaryBtn>
-                  <PrimaryBtn
-                    onClick={() => setStep('ready')}
-                    disabled={!form.owner_name || !form.owner_mobile}
-                    className="flex-[2]"
-                  >
-                    Review setup <ArrowRight size={15} aria-hidden="true" />
-                  </PrimaryBtn>
-                </div>
-              </StepPane>
-            )}
-
-            {/* ── Step 6: Ready ─────────────────────────────────────────────── */}
-            {step === 'ready' && (
-              <StepPane stepKey="ready">
-                <div
-                  className="flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-5"
-                  style={{
-                    background: 'rgba(255,107,43,0.12)',
-                    boxShadow: '0 0 0 1px rgba(255,107,43,0.20), 0 0 32px rgba(255,107,43,0.18)',
-                  }}
-                >
-                  <CheckCircle2 size={26} className="text-orange" aria-hidden="true" />
-                </div>
-
-                <h2 className="text-[20px] font-bold text-offwhite font-display text-center mb-1">
-                  {form.receptionist_name} is ready to go
-                </h2>
-                <p className="text-[13px] text-offwhite/50 font-body text-center mb-6">
-                  Here's everything we've set up. You can change any of this from Settings later.
-                </p>
-
-                <div className="space-y-1.5 mb-6">
-                  {[
-                    { label: 'Receptionist', value: `${form.receptionist_name} · ${TONE_OPTIONS.find(t => t.value === form.receptionist_tone)?.label}` },
-                    { label: 'Business',     value: form.business_name },
-                    { label: 'Trade',        value: `${form.trade_type}${form.city ? ` · ${form.city}` : ''}` },
-                    { label: 'Services',     value: form.services.length ? `${form.services.slice(0,3).join(', ')}${form.services.length > 3 ? ` +${form.services.length - 3} more` : ''}` : 'Not specified' },
-                    { label: 'Hours',        value: `${form.work_start}–${form.work_end} · ${DAY_LABELS.filter((_, i) => form.working_days.includes(DAY_VALUES[i])).join(', ')}` },
-                    { label: 'SMS alerts to', value: form.owner_mobile },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="flex justify-between items-start gap-4 py-2.5 px-3.5 rounded-[8px] transition-all duration-200 hover:bg-white/[0.055]"
-                      style={{ background: 'rgba(255,255,255,0.03)' }}
-                    >
-                      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-offwhite/35 font-body flex-shrink-0">{label}</span>
-                      <span className="text-[13px] text-offwhite/80 font-body text-right">{value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <GreetingPreview name={form.receptionist_name} businessName={form.business_name} tone={form.receptionist_tone} />
-
-                {error && (
-                  <div
-                    className="flex items-start gap-2 mt-4 rounded-[10px] px-3.5 py-3"
-                    style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.20)' }}
-                    role="alert"
-                  >
-                    <AlertCircle size={15} className="text-orange-soft flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <p className="text-[13px] text-orange-soft font-body">{error}</p>
-                  </div>
-                )}
-
-                <PrimaryBtn onClick={complete} disabled={saving} className="mt-6">
-                  {saving
-                    ? <><Loader2 size={15} className="animate-spin" aria-hidden="true" /> Activating {form.receptionist_name}…</>
-                    : <>Activate {form.receptionist_name} <ArrowRight size={15} aria-hidden="true" /></>
-                  }
-                </PrimaryBtn>
-
-                <button
-                  type="button"
-                  onClick={() => setStep('contact')}
-                  className="mt-3 w-full text-center text-[12px] text-offwhite/30 hover:text-offwhite/50 font-body transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px] rounded"
-                >
-                  Go back and edit
-                </button>
-              </StepPane>
-            )}
+            {preview ? 'Preview mode' : 'About 3 minutes'}
           </div>
         </div>
+
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] xl:gap-10">
+          <section className="order-2 lg:order-1">
+            <div className="lg:sticky lg:top-8">
+              <div className="mb-6 max-w-[42rem]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">{currentMeta.eyebrow}</p>
+                <h1
+                  className="mt-3 max-w-[12ch] font-display text-[clamp(2.5rem,4vw,4.8rem)] font-bold leading-[0.94] tracking-[-0.05em] text-offwhite"
+                >
+                  {currentMeta.title}
+                </h1>
+                <p className="mt-5 max-w-[48ch] text-[16px] leading-relaxed text-offwhite/58 sm:text-[17px]">
+                  {currentMeta.description}
+                </p>
+              </div>
+
+                <div className="mb-5 flex flex-wrap gap-3">
+                  {[
+                    'Natural UK voice',
+                    'Books jobs faster',
+                    'Summaries after every call',
+                ].map(item => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              {preview ? (
+                <div
+                  className="mb-5 rounded-[18px] px-4 py-3"
+                  style={{
+                    background: 'rgba(255,107,43,0.08)',
+                    boxShadow: '0 0 0 1px rgba(255,107,43,0.18)',
+                  }}
+                >
+                  <p className="text-[13px] leading-relaxed text-orange-soft">
+                    This is a safe dummy walkthrough. You can click through every onboarding screen without signing in or saving anything.
+                  </p>
+                </div>
+              ) : null}
+
+              <SupportPanel step={step} form={form} />
+            </div>
+          </section>
+
+          <section className="order-1 lg:order-2">
+            <div
+              className="relative overflow-hidden rounded-[30px] p-5 sm:p-6 lg:p-7"
+              style={{
+                background: 'linear-gradient(180deg, rgba(17,31,53,0.92) 0%, rgba(10,23,39,0.96) 100%)',
+                boxShadow:
+                  '0 0 0 1px rgba(255,255,255,0.08),' +
+                  '0 28px 70px rgba(2,13,24,0.46),' +
+                  'inset 0 1px 0 rgba(255,255,255,0.05)',
+              }}
+            >
+              <div
+                className="pointer-events-none absolute inset-x-[16%] top-[-12%] h-40 rounded-full blur-3xl"
+                style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.14) 0%, transparent 72%)' }}
+              />
+
+              <div className="relative z-10">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Step {currentStepIndex + 1}</p>
+                    <p className="mt-2 text-[15px] leading-relaxed text-offwhite/52">
+                      {currentMeta.asideCopy}
+                    </p>
+                  </div>
+                  <div
+                    className="hidden rounded-[18px] px-4 py-3 text-right sm:block"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)',
+                    }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-offwhite/30">Current stage</p>
+                    <p className="mt-2 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">
+                      0{currentStepIndex + 1}
+                    </p>
+                  </div>
+                </div>
+
+                <StepIndicator current={step} />
+
+                <div className="mt-8">
+                  {step === 'receptionist' && (
+                    <StepPane stepKey="receptionist">
+                      <div className="space-y-6">
+                        <div>
+                          <label htmlFor="onb-rname" className={LABEL_CLASS}>Receptionist name</label>
+                          <input
+                            id="onb-rname"
+                            className={FIELD_CLASS}
+                            value={form.receptionist_name}
+                            onChange={event => set('receptionist_name', event.target.value)}
+                            placeholder="Sarah"
+                            maxLength={24}
+                          />
+                          <p className="mt-2 text-[12px] leading-relaxed text-offwhite/34">
+                            This is the name she uses every time she answers a call for your business.
+                          </p>
+                        </div>
+
+                        <fieldset>
+                          <legend className={LABEL_CLASS}>Personality</legend>
+                          <div className="grid gap-3">
+                            {TONE_OPTIONS.map(option => {
+                              const selected = form.receptionist_tone === option.value;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => set('receptionist_tone', option.value)}
+                                  aria-pressed={selected}
+                                  className="w-full rounded-[18px] p-4 text-left transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                                  style={{
+                                    background: selected
+                                      ? 'linear-gradient(180deg, rgba(255,107,43,0.11) 0%, rgba(255,107,43,0.05) 100%)'
+                                      : 'rgba(255,255,255,0.035)',
+                                    boxShadow: selected
+                                      ? '0 0 0 1px rgba(255,107,43,0.28), 0 18px 34px rgba(2,13,24,0.20)'
+                                      : '0 0 0 1px rgba(255,255,255,0.07)',
+                                  }}
+                                >
+                                  <div className="mb-1 flex items-center justify-between gap-3">
+                                    <span className={`font-display text-[18px] font-bold ${selected ? 'text-offwhite' : 'text-offwhite/82'}`}>
+                                      {option.label}
+                                    </span>
+                                    {selected ? (
+                                      <div
+                                        className="flex h-8 w-8 items-center justify-center rounded-full"
+                                        style={{ background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1px rgba(255,107,43,0.20)' }}
+                                      >
+                                        <CheckCircle size={14} className="text-orange-soft" aria-hidden="true" />
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                  <p className="text-[13px] text-offwhite/48">{option.description}</p>
+                                  <p className="mt-2 text-[12px] italic leading-relaxed text-offwhite/34">{option.example}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </fieldset>
+
+                        <div className="flex gap-3 pt-2">
+                          <div className="hidden flex-1 sm:block" />
+                          <PrimaryBtn
+                            onClick={() => setStep('business')}
+                            disabled={!form.receptionist_name.trim()}
+                            className="sm:max-w-[240px]"
+                          >
+                            Continue
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'business' && (
+                    <StepPane stepKey="business">
+                      <div className="space-y-5">
+                        <div>
+                          <label htmlFor="onb-biz" className={LABEL_CLASS}>Business name</label>
+                          <input
+                            id="onb-biz"
+                            className={FIELD_CLASS}
+                            value={form.business_name}
+                            onChange={event => set('business_name', event.target.value)}
+                            placeholder="Mark Thomas Plumbing Ltd"
+                          />
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-[1.15fr_0.85fr]">
+                          <div>
+                            <label htmlFor="onb-trade" className={LABEL_CLASS}>Trade type</label>
+                            <div className="relative">
+                              <select
+                                id="onb-trade"
+                                className={`${FIELD_CLASS} cursor-pointer appearance-none pr-10`}
+                                value={form.trade_type}
+                                onChange={event => {
+                                  set('trade_type', event.target.value);
+                                  set('services', []);
+                                }}
+                              >
+                                <option value="">Select your trade…</option>
+                                {TRADES.map(trade => <option key={trade} value={trade}>{trade}</option>)}
+                              </select>
+                              <svg
+                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-offwhite/30"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label htmlFor="onb-city" className={LABEL_CLASS}>City / area</label>
+                            <input
+                              id="onb-city"
+                              className={FIELD_CLASS}
+                              value={form.city}
+                              onChange={event => set('city', event.target.value)}
+                              placeholder="South London"
+                            />
+                          </div>
+                        </div>
+
+                        <div
+                          className="rounded-[18px] p-4"
+                          style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}
+                        >
+                          <p className="text-[13px] leading-relaxed text-accent/74">
+                            Sarah will use this to answer with the right trade language and tell callers whether they are in your service area.
+                          </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <SecondaryBtn onClick={() => setStep('receptionist')} className="flex-1">
+                            Back
+                          </SecondaryBtn>
+                          <PrimaryBtn
+                            onClick={() => setStep('services')}
+                            disabled={!form.business_name.trim() || !form.trade_type}
+                            className="flex-[1.3]"
+                          >
+                            Continue
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'services' && (
+                    <StepPane stepKey="services">
+                      <div className="space-y-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/32">
+                              Suggested for {form.trade_type || 'your trade'}
+                            </p>
+                            <p className="mt-1 text-[14px] text-offwhite/50">
+                              Pick everything Sarah should confidently discuss on a live call.
+                            </p>
+                          </div>
+                          <div
+                            className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-soft"
+                            style={{ background: 'rgba(255,107,43,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.16)' }}
+                          >
+                            {form.services.length} selected
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2.5">
+                          {suggestedServices.map(service => {
+                            const selected = form.services.includes(service);
+                            return (
+                              <button
+                                key={service}
+                                type="button"
+                                onClick={() => toggleService(service)}
+                                className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                                style={{
+                                  background: selected
+                                    ? 'rgba(255,107,43,0.13)'
+                                    : 'rgba(255,255,255,0.045)',
+                                  boxShadow: selected
+                                    ? '0 0 0 1px rgba(255,107,43,0.32), 0 10px 22px rgba(255,107,43,0.10)'
+                                    : '0 0 0 1px rgba(255,255,255,0.08)',
+                                  color: selected ? '#ffb59a' : 'rgba(240,244,248,0.68)',
+                                }}
+                              >
+                                {selected ? <CheckCircle2 size={13} aria-hidden="true" /> : null}
+                                {service}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div
+                          className="rounded-[20px] p-4"
+                          style={{ background: 'rgba(255,255,255,0.03)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}
+                        >
+                          <label htmlFor="onb-custom-service" className={LABEL_CLASS}>Add a custom service</label>
+                          <div className="flex gap-2">
+                            <input
+                              id="onb-custom-service"
+                              className={`${FIELD_CLASS} flex-1`}
+                              value={customService}
+                              onChange={event => setCustomService(event.target.value)}
+                              onKeyDown={event => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault();
+                                  addCustomService();
+                                }
+                              }}
+                              placeholder="Add a custom service…"
+                              maxLength={60}
+                            />
+                            <button
+                              type="button"
+                              onClick={addCustomService}
+                              disabled={!customService.trim()}
+                              className="inline-flex min-h-[50px] min-w-[50px] items-center justify-center rounded-field bg-white/[0.06] text-offwhite/65 transition-all duration-200 hover:bg-white/[0.10] disabled:opacity-35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.09)' }}
+                              aria-label="Add service"
+                            >
+                              <Plus size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {form.services.filter(service => !suggestedServices.includes(service)).length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {form.services.filter(service => !suggestedServices.includes(service)).map(service => (
+                              <span
+                                key={service}
+                                className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold text-orange-soft"
+                                style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.24)' }}
+                              >
+                                {service}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleService(service)}
+                                  aria-label={`Remove ${service}`}
+                                  className="rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[2px]"
+                                >
+                                  <X size={11} aria-hidden="true" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                          <SecondaryBtn onClick={() => setStep('business')} className="flex-1">
+                            Back
+                          </SecondaryBtn>
+                          <PrimaryBtn onClick={() => setStep('hours')} className="flex-[1.3]">
+                            Continue
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'hours' && (
+                    <StepPane stepKey="hours">
+                      <div className="space-y-6">
+                        <fieldset>
+                          <legend className={LABEL_CLASS}>Working days</legend>
+                          <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-7 sm:overflow-visible no-scrollbar">
+                            {DAY_LABELS.map((label, index) => {
+                              const value = DAY_VALUES[index];
+                              const active = form.working_days.includes(value);
+                              return (
+                                <button
+                                  key={label}
+                                  type="button"
+                                  onClick={() => toggleDay(value)}
+                                  aria-pressed={active}
+                                  className="min-h-[50px] min-w-[56px] rounded-[16px] px-3 py-3 text-[13px] font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                                  style={{
+                                    background: active
+                                      ? 'rgba(255,107,43,0.13)'
+                                      : 'rgba(255,255,255,0.04)',
+                                    boxShadow: active
+                                      ? '0 0 0 1px rgba(255,107,43,0.32), 0 10px 22px rgba(255,107,43,0.10)'
+                                      : '0 0 0 1px rgba(255,255,255,0.08)',
+                                    color: active ? '#ffb59a' : 'rgba(240,244,248,0.45)',
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </fieldset>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <label htmlFor="onb-start" className={LABEL_CLASS}>Start time</label>
+                            <input
+                              id="onb-start"
+                              type="time"
+                              className={FIELD_CLASS}
+                              value={form.work_start}
+                              onChange={event => set('work_start', event.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="onb-end" className={LABEL_CLASS}>End time</label>
+                            <input
+                              id="onb-end"
+                              type="time"
+                              className={FIELD_CLASS}
+                              value={form.work_end}
+                              onChange={event => set('work_end', event.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div
+                          className="rounded-[18px] p-4"
+                          style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}
+                        >
+                          <p className="text-[13px] leading-relaxed text-accent/74">
+                            Outside these hours, Sarah can still capture the full enquiry, explain your availability properly, and set the right callback expectation for the next working day.
+                          </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <SecondaryBtn onClick={() => setStep('services')} className="flex-1">
+                            Back
+                          </SecondaryBtn>
+                          <PrimaryBtn onClick={() => setStep('contact')} className="flex-[1.3]">
+                            Continue
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'contact' && (
+                    <StepPane stepKey="contact">
+                      <div className="space-y-5">
+                        <div>
+                          <label htmlFor="onb-name" className={LABEL_CLASS}>Your name</label>
+                          <input
+                            id="onb-name"
+                            autoComplete="name"
+                            className={FIELD_CLASS}
+                            value={form.owner_name}
+                            onChange={event => set('owner_name', event.target.value)}
+                            placeholder="Mark Thomas"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="onb-mobile" className={LABEL_CLASS}>Mobile for summaries</label>
+                          <input
+                            id="onb-mobile"
+                            type="tel"
+                            autoComplete="tel"
+                            className={FIELD_CLASS}
+                            value={form.owner_mobile}
+                            onChange={event => set('owner_mobile', event.target.value)}
+                            placeholder="+44 7700 900000"
+                          />
+                          <p className="mt-2 text-[12px] leading-relaxed text-offwhite/34">
+                            You’ll get the caller name, job type, urgency, and next action after every answered call.
+                          </p>
+                        </div>
+
+                        <div
+                          className="rounded-[18px] p-4"
+                          style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="flex h-10 w-10 items-center justify-center rounded-full"
+                              style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+                            >
+                              <Phone size={15} className="text-orange-soft" aria-hidden="true" />
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-semibold text-offwhite/76">Critical for urgent call-outs</p>
+                              <p className="mt-1 text-[13px] leading-relaxed text-offwhite/46">
+                                This number is where urgent follow-up and post-call summaries will land, so it should be the phone you actually check between jobs.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                          <SecondaryBtn onClick={() => setStep('hours')} className="flex-1">
+                            Back
+                          </SecondaryBtn>
+                          <PrimaryBtn
+                            onClick={() => setStep('ready')}
+                            disabled={!form.owner_name.trim() || !form.owner_mobile.trim()}
+                            className="flex-[1.3]"
+                          >
+                            Review setup
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'ready' && (
+                    <StepPane stepKey="ready">
+                      <div className="space-y-5">
+                        <div
+                          className="rounded-[22px] p-5"
+                          style={{
+                            background: 'linear-gradient(180deg, rgba(255,107,43,0.08) 0%, rgba(255,107,43,0.04) 100%)',
+                            boxShadow: '0 0 0 1px rgba(255,107,43,0.18)',
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="flex h-11 w-11 items-center justify-center rounded-full"
+                              style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.20)' }}
+                            >
+                              <CheckCircle2 size={18} className="text-orange-soft" aria-hidden="true" />
+                            </div>
+                            <div>
+                              <p className="text-[18px] font-display font-bold text-offwhite">
+                                {form.receptionist_name} is ready to go live
+                              </p>
+                              <p className="mt-2 text-[14px] leading-relaxed text-offwhite/56">
+                                Review the configuration below. You can still update any of this later in Settings, but this is what activates now.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3">
+                          {[
+                            {
+                              label: 'Receptionist',
+                              value: `${form.receptionist_name} · ${formatToneLabel(form.receptionist_tone)}`,
+                            },
+                            {
+                              label: 'Business',
+                              value: form.business_name || 'Not set',
+                            },
+                            {
+                              label: 'Trade & area',
+                              value: `${form.trade_type || 'Not set'}${form.city ? ` · ${form.city}` : ''}`,
+                            },
+                            {
+                              label: 'Services',
+                              value: form.services.length
+                                ? `${form.services.slice(0, 3).join(', ')}${form.services.length > 3 ? ` +${form.services.length - 3} more` : ''}`
+                                : 'Not specified',
+                            },
+                            {
+                              label: 'Hours',
+                              value: `${form.work_start} - ${form.work_end} · ${formatWorkingDays(form.working_days)}`,
+                            },
+                            {
+                              label: 'SMS alerts',
+                              value: form.owner_mobile || 'Not set',
+                            },
+                          ].map(row => (
+                            <div
+                              key={row.label}
+                              className="grid gap-2 rounded-[18px] px-4 py-4 sm:grid-cols-[132px_minmax(0,1fr)] sm:items-center"
+                              style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+                            >
+                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                                {row.label}
+                              </span>
+                              <span className="text-[14px] leading-relaxed text-offwhite/76 sm:text-right">
+                                {row.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {error ? (
+                          <div
+                            className="flex items-start gap-2 rounded-[16px] px-4 py-3.5"
+                            style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.20)' }}
+                            role="alert"
+                          >
+                            <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-orange-soft" aria-hidden="true" />
+                            <p className="text-[13px] leading-relaxed text-orange-soft">{error}</p>
+                          </div>
+                        ) : null}
+
+                        <PrimaryBtn onClick={complete} disabled={saving} className="mt-2">
+                          {saving ? (
+                            <>
+                              <SavingDots />
+                              Activating {form.receptionist_name}…
+                            </>
+                          ) : (
+                            <>
+                              Activate {form.receptionist_name}
+                              <ArrowRight size={15} aria-hidden="true" />
+                            </>
+                          )}
+                        </PrimaryBtn>
+
+                        <button
+                          type="button"
+                          onClick={() => setStep('contact')}
+                          className="w-full rounded text-center text-[13px] text-offwhite/32 transition-colors duration-200 hover:text-offwhite/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                        >
+                          Go back and edit details
+                        </button>
+                      </div>
+                    </StepPane>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-offwhite/28 lg:justify-between">
+          <div className="flex flex-wrap items-center gap-4">
+            {[
+              'No passwords to manage',
+              'You can edit everything later',
+              'Built for sole traders and small teams',
+            ].map(item => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <CheckCircle2 size={12} className="text-orange-soft/70" aria-hidden="true" />
+                {item}
+              </span>
+            ))}
+          </div>
+          <span className="inline-flex items-center gap-2">
+            <ChevronRight size={12} className="text-offwhite/20" aria-hidden="true" />
+            Step {currentStepIndex + 1} of {STEPS.length}
+          </span>
+        </div>
       </div>
+    </div>
   );
 }
