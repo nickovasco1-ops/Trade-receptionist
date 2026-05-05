@@ -11,6 +11,43 @@ import authRouter     from './routes/auth';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
+const TRUST_PROXY_HOPS = parseInt(
+  process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? '1' : '0'),
+  10
+);
+
+function getForwardedIp(forwardedHeader: string): string | null {
+  const match = forwardedHeader.match(/for=(?:"?\[?([^;\]",]+)\]?)/i);
+  return match?.[1]?.trim() || null;
+}
+
+function getClientIdentifier(request: express.Request): string {
+  const forwardedFor = request.headers['x-forwarded-for'];
+
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  if (Array.isArray(forwardedFor) && forwardedFor[0]?.trim()) {
+    return forwardedFor[0].split(',')[0].trim();
+  }
+
+  const forwarded = request.headers.forwarded;
+
+  if (typeof forwarded === 'string') {
+    const forwardedIp = getForwardedIp(forwarded);
+
+    if (forwardedIp) {
+      return forwardedIp;
+    }
+  }
+
+  return request.ip || request.socket.remoteAddress || 'unknown';
+}
+
+const rateLimitKeyGenerator = (request: express.Request) => getClientIdentifier(request);
+
+app.set('trust proxy', Number.isNaN(TRUST_PROXY_HOPS) ? 0 : Math.max(TRUST_PROXY_HOPS, 0));
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',');
@@ -36,6 +73,7 @@ const defaultLimiter = rateLimit({
   max:              120,
   standardHeaders:  true,
   legacyHeaders:    false,
+  keyGenerator:     rateLimitKeyGenerator,
   message:          { success: false, error: 'Too many requests — please slow down.' },
 });
 
@@ -45,6 +83,7 @@ const writeLimiter = rateLimit({
   max:              20,
   standardHeaders:  true,
   legacyHeaders:    false,
+  keyGenerator:     rateLimitKeyGenerator,
   message:          { success: false, error: 'Too many requests — please slow down.' },
 });
 
@@ -54,6 +93,7 @@ const webhookLimiter = rateLimit({
   max:              300,
   standardHeaders:  true,
   legacyHeaders:    false,
+  keyGenerator:     rateLimitKeyGenerator,
   message:          { success: false, error: 'Rate limit exceeded.' },
 });
 
