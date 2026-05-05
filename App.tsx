@@ -304,69 +304,48 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
-  const { primary: parallax, secondary: cardParallax } = useParallax();
+  const { primary: parallax } = useParallax();
 
   return (
     <section
       id="hero"
-      className="relative overflow-hidden pt-24 pb-20 md:pt-36 md:pb-28 xl:pt-40 xl:pb-36"
+      aria-labelledby="hero-heading"
+      className="relative overflow-hidden pt-24 pb-16 md:pt-36 md:pb-24 xl:pt-44 xl:pb-32"
       style={{
         background:
-          'radial-gradient(circle at 18% 42%, rgba(255,166,82,0.08) 0%, transparent 34%),' +
-          'radial-gradient(circle at 83% 22%, rgba(255,166,82,0.07) 0%, transparent 28%),' +
-          'radial-gradient(circle at 70% 55%, rgba(76,117,182,0.10) 0%, transparent 35%)',
+          'radial-gradient(ellipse at 15% 55%, rgba(255,107,43,0.07) 0%, transparent 50%),' +
+          'radial-gradient(ellipse at 78% 20%, rgba(153,203,255,0.05) 0%, transparent 48%)',
       }}
     >
       <BlueprintGrid />
 
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.18]"
-        style={{
-          background:
-            'linear-gradient(90deg, transparent 0%, transparent 63%, rgba(100,130,175,0.18) 63%, transparent 64%, transparent 100%),' +
-            'linear-gradient(0deg, transparent 0%, transparent 71%, rgba(100,130,175,0.10) 71%, transparent 72%, transparent 100%)',
-          maskImage: 'radial-gradient(circle at 70% 38%, black 0%, black 38%, transparent 72%)',
-          WebkitMaskImage: 'radial-gradient(circle at 70% 38%, black 0%, black 38%, transparent 72%)',
-        }}
-      />
-
-      <div className="absolute right-[14%] top-[18%] h-[360px] w-[360px] rounded-full opacity-45 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(255,155,72,0.22) 0%, transparent 70%)', filter: 'blur(50px)' }} />
-      <div className="absolute left-[8%] bottom-[12%] h-[320px] w-[320px] rounded-full opacity-30 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(44,86,148,0.16) 0%, transparent 72%)', filter: 'blur(60px)' }} />
-
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-6 xl:gap-4">
+
+          {/* ── Left: Copy ── */}
           <div className="max-w-[42rem]">
-            <div className="mb-10 flex items-center gap-3">
-              <div
-                className="rounded-[14px] px-3 py-2"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.28)',
-                }}
-              >
-                <Logo height={24} />
-              </div>
-              <div>
-                <div className="font-display text-[22px] font-bold leading-tight text-offwhite">Trade Receptionist</div>
-                <div className="text-[13px] text-offwhite/45 font-body">The UK&apos;s #1 AI Trade Receptionist</div>
-              </div>
-            </div>
+            <span className="inline-block mb-6 text-[12px] font-bold tracking-[0.14em] uppercase text-orange-soft font-body">
+              AI Receptionist for UK Tradespeople
+            </span>
 
             <h1
+              id="hero-heading"
               className="font-display font-bold text-offwhite"
-              style={{ fontSize: 'clamp(3.4rem, 6.8vw, 5.65rem)', lineHeight: 0.92, letterSpacing: '-0.055em' }}
+              style={{ fontSize: 'clamp(3.2rem, 6.4vw, 5.4rem)', lineHeight: 0.93, letterSpacing: '-0.05em' }}
             >
-              <span className="block whitespace-nowrap">Never miss a call.</span>
-              <span className="block whitespace-nowrap">Never lose a job.</span>
+              <span className="block">Never miss a <em
+                className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent"
+              >call</em>.</span>
+              <span className="block">Never lose a <em
+                className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent"
+              >job</em>.</span>
             </h1>
 
-            <p className="mt-6 max-w-[34rem] text-[clamp(1.15rem,2vw,1.75rem)] leading-[1.38] text-offwhite/78 font-body">
-              Meet Sarah, the AI receptionist that answers every call, books every job, and sends you a WhatsApp summary 24/7. Never miss a lead again.
+            <p className="mt-6 max-w-[33rem] text-[clamp(1.05rem,1.8vw,1.25rem)] leading-[1.6] text-offwhite/72 font-body">
+              Your AI receptionist answers every call, books jobs into your diary, and sends you a WhatsApp summary — whether you&apos;re on a roof, under a sink, or in a customer&apos;s home.
             </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center">
               <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
                 Start Free Trial
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -376,179 +355,59 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 size="lg"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Hear Sarah in Action
+                Hear a Live Demo
                 <Play className="w-4 h-4 ml-2" />
               </Button>
             </div>
 
-            <div className="mt-5 flex items-center gap-2 text-[14px] text-offwhite/48 font-body">
-              <ShieldCheck className="h-4 w-4 text-offwhite/40" />
+            <div className="mt-4 flex items-center gap-2 text-[13px] text-offwhite/40 font-body">
+              <ShieldCheck className="h-3.5 w-3.5 text-offwhite/35 shrink-0" />
               <span>14-day free trial. No card required. Setup in 14 minutes.</span>
             </div>
 
-            <div className="mt-10 max-w-[31rem]">
-              <div className="mb-3 text-[62px] leading-none text-[#A46C42] font-display">&ldquo;</div>
-              <p className="mt-[-10px] text-[clamp(1.1rem,1.55vw,1.45rem)] leading-[1.45] text-offwhite/85 font-body">
-                “Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal.”
+            <div
+              className="mt-10 rounded-[18px] px-6 py-5 max-w-[30rem]"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
+              }}
+            >
+              <p className="text-[clamp(0.95rem,1.4vw,1.1rem)] leading-[1.6] text-offwhite/80 font-body">
+                &ldquo;Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal.&rdquo;
               </p>
-              <p className="mt-4 text-[15px] text-offwhite/45 font-body">- Mark T., Plumber, South London</p>
+              <p className="mt-3 text-[13px] text-offwhite/40 font-body">Mark T. &mdash; Plumber, South London</p>
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[650px]">
-            <div className="absolute right-[10%] top-[12%] h-[320px] w-[320px] rounded-full opacity-55 pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(255,166,82,0.26) 0%, transparent 70%)', filter: 'blur(54px)' }} />
+          {/* ── Right: Phone Asset ── */}
+          <div
+            className="relative mx-auto w-full max-w-[640px] lg:max-w-none"
+            style={{
+              transform: `translate(${parallax.x * 0.5}px, ${parallax.y * 0.5}px)`,
+              transition: 'transform 120ms ease-out',
+            }}
+          >
+            {/* Ambient glow behind the image */}
+            <div
+              className="absolute inset-[10%] rounded-full pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at 55% 45%, rgba(153,203,255,0.12) 0%, rgba(255,107,43,0.06) 50%, transparent 70%)',
+                filter: 'blur(40px)',
+              }}
+            />
 
-            <div className="relative mx-auto h-[640px] w-full max-w-[540px] md:h-[720px]">
-              <div
-                className="absolute right-[8%] top-[8%] z-20"
-                style={{
-                  transform: `translate(${parallax.x}px, ${parallax.y}px) rotate(9deg)`,
-                  transition: 'transform 100ms ease-out',
-                }}
-              >
-                <div
-                  className="relative overflow-hidden rounded-[42px]"
-                  style={{
-                    width: 'min(100vw - 5rem, 350px)',
-                    background: '#0B1629',
-                    border: '7px solid rgba(19,26,40,0.96)',
-                    boxShadow: '0 34px 80px rgba(2,13,24,0.72), 0 0 0 1px rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <div className="absolute inset-x-0 top-0 z-20 mx-auto h-8 w-36 rounded-b-[20px] bg-[#05080f]" />
-                  <div className="min-h-[560px] bg-[linear-gradient(180deg,#0f1727_0%,#1d2738_100%)] px-7 pb-7 pt-12">
-                    <div className="flex items-center justify-between text-[12px] text-offwhite/72">
-                      <span>9:41</span>
-                      <div className="flex gap-1 text-offwhite/50">
-                        <span>◦</span>
-                        <span>◦</span>
-                        <span>◦</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-11 text-center">
-                      <h3 className="font-display text-[31px] font-medium leading-[1.15] text-offwhite">
-                        Emergency Boiler Repair
-                        <br />
-                        - Dave Hendricks
-                      </h3>
-                    </div>
-
-                    <div
-                      className="mx-auto mt-10 rounded-[24px] px-6 py-7 text-center"
-                      style={{
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.08) 100%)',
-                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
-                      }}
-                    >
-                      <div className="relative mx-auto mb-5 h-24 w-24">
-                        <img
-                          src="/assets/generated/testimonials/avatar-3.png"
-                          alt="Caller avatar"
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                        <div className="absolute bottom-1 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#1d2738] bg-[#31c95d]">
-                          <Phone className="h-3 w-3 text-white" />
-                        </div>
-                      </div>
-                      <div className="text-[33px] leading-none text-offwhite">Incoming Call...</div>
-                      <div className="mt-5 flex items-center justify-center gap-3">
-                        <div className="rounded-full bg-white/12 px-4 py-2 text-[14px] text-offwhite/88">View Notes</div>
-                        <div className="rounded-full bg-white/12 px-4 py-2 text-[14px] text-offwhite/88">Call Back</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-9 space-y-3">
-                      <button
-                        className="w-full rounded-full px-5 py-4 text-[18px] font-semibold text-[#1b1b1b]"
-                        style={{ background: 'linear-gradient(135deg, #F97316 0%, #F4A261 100%)' }}
-                        onClick={onWaitlist}
-                      >
-                        Start Free Trial
-                      </button>
-                      <div className="w-full rounded-full bg-white/10 px-5 py-4 text-center text-[18px] text-offwhite/86">
-                        Call Back
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="absolute left-[4%] top-[13%] z-30 hidden md:block"
-                style={{
-                  transform: `translate(${cardParallax.x}px, ${cardParallax.y}px) rotate(-6deg)`,
-                  transition: 'transform 100ms ease-out',
-                }}
-              >
-                <div
-                  className="rounded-[22px] px-4 py-4 backdrop-blur-xl"
-                  style={{
-                    width: '208px',
-                    background: 'rgba(130,143,165,0.28)',
-                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 14px 30px rgba(2,13,24,0.38)',
-                  }}
-                >
-                  <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-white">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-[#32d05f]">
-                      <MessageSquare className="h-4 w-4 text-white" />
-                    </div>
-                    WhatsApp
-                  </div>
-                  <p className="text-[13px] leading-[1.45] text-offwhite/88 font-body">
-                    Sarah answered!
-                    <br />
-                    Dave Hendricks: Emergency Boiler Repair.
-                    <br />
-                    He&apos;s available Tuesday 9am.
-                    <br />
-                    Confirmed via calendar.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="absolute left-[0%] top-[47%] z-30 hidden md:block"
-                style={{
-                  transform: `translate(${cardParallax.x}px, ${cardParallax.y}px) rotate(-8deg)`,
-                  transition: 'transform 100ms ease-out',
-                }}
-              >
-                <div
-                  className="rounded-[22px] px-4 py-4 backdrop-blur-xl"
-                  style={{
-                    width: '214px',
-                    background: 'rgba(130,143,165,0.24)',
-                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 14px 30px rgba(2,13,24,0.38)',
-                  }}
-                >
-                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/10 text-offwhite/80">
-                    <Calendar className="h-4 w-4" />
-                  </div>
-                  <div className="text-[18px] leading-tight text-offwhite">Emergency Boiler Repair</div>
-                  <div className="mt-3 text-[13px] leading-[1.45] text-offwhite/60 font-body">
-                    Wednesday, Jowguler St, 2021
-                    <br />
-                    3:00 - 3:30 pm
-                  </div>
-                  <div className="mt-3 h-1 w-12 rounded-full bg-[#F4A261]" />
-                </div>
-              </div>
-
-              <div className="absolute bottom-[17%] right-[2%] z-30 hidden md:block">
-                <div
-                  className="flex h-24 w-24 items-center justify-center rounded-[26px]"
-                  style={{
-                    background: 'linear-gradient(135deg, #42e96a 0%, #20c14e 100%)',
-                    boxShadow: '0 18px 48px rgba(66,233,106,0.36), 0 0 26px rgba(66,233,106,0.28)',
-                  }}
-                >
-                  <MessageSquare className="h-11 w-11 text-white" />
-                </div>
-              </div>
-            </div>
+            <img
+              src="/assets/phone-hero.png"
+              alt="Trade Receptionist app showing answered calls, booked jobs, and AI receptionist status"
+              width={1456}
+              height={816}
+              fetchPriority="high"
+              decoding="async"
+              className="relative z-10 w-full h-auto select-none animate-float-primary"
+              style={{ filter: 'drop-shadow(0 40px 80px rgba(2,13,24,0.6))' }}
+            />
           </div>
+
         </div>
       </div>
     </section>
