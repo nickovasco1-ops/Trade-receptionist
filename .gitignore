@@ -33,3 +33,6 @@ playwright-report/
 test-results/
 e2e/.auth/
 .gitnexus
+.claude/worktrees/
+.stitch/
+DESIGN.md
