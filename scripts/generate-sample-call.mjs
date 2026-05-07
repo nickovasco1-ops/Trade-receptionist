@@ -23,32 +23,35 @@ const OUT_PATH  = join(OUT_DIR, 'sample-call.wav');
 // ── Script ────────────────────────────────────────────────────────────────────
 
 const CALL_SCRIPT = `
-Receptionist: Good afternoon, you've reached Hendricks Plumbing. This is Trade Receptionist, how can I help?
-Caller (Mike): Hi yeah — my bathroom radiator's just started leaking, it's dripping onto the floorboards. I'm worried it's gonna go through to the ceiling below.
-Receptionist: Oh right, okay — so it's actively leaking at the moment. Is the water coming from the valve at the side, or from where the pipe meets the wall?
-Caller (Mike): Erm — the pipe at the bottom, I think. Near where it connects in.
-Receptionist: Got you. Right — first thing, can you turn the radiator valves off on both sides? There's one at each end. Just turn them both clockwise as far as they'll go — that'll slow it right down while we get someone out to you.
-Caller (Mike): Yeah — yeah, I can do that. Hang on — right, done it. That's already helped actually, it's just dripping now.
-Receptionist: Brilliant, good work. Right — let me get this booked in for you. What area are you in? Postcode if you've got it?
-Caller (Mike): SE24 — SE24 0EB.
-Receptionist: Perfect — that's Herne Hill. Dave covers that area and he's got a gap this afternoon, around half three. Does that work for you?
-Caller (Mike): Oh — that'd be great, yeah.
-Receptionist: Lovely. And the name for the booking?
-Caller (Mike): Mike — Mike Patterson.
-Receptionist: Great, Mike. And a mobile number so Dave can ring when he's about twenty minutes away?
-Caller (Mike): Yeah — it's 07831 440 295.
-Receptionist: Perfect, so that's 07831 — 440 295. Right, I've got you booked in for today, half three, SE24 0EB. You'll get a text confirmation shortly, and Dave will give you a ring when he's on his way. Is there anything else I can help with?
-Caller (Mike): No, that's brilliant — thank you so much.
-Receptionist: Absolute pleasure, Mike. We'll get that sorted for you. Bye for now.
+Caller (Jess): Hi—sorry, I'm hoping you can help. Our boiler's just gone off and the house is freezing.
+Receptionist (Sam): Oh no—right, okay. You've done the right thing calling. Is it showing an error code, or is it completely dead?
+Caller (Jess): It's got, um… "EA" something? And there's no heating at all.
+Receptionist (Sam): Mm, got you. And just to check—have you also got no hot water, or is it only the heating?
+Caller (Jess): No hot water either.
+Receptionist (Sam): Okay, thanks. I'll log this as urgent. Whereabouts are you—what's the postcode?
+Caller (Jess): It's SE19 2—uh—SE19 2DP.
+Receptionist (Sam): Perfect, SE19 2DP. And what's the best name for the booking?
+Caller (Jess): Jess Carter.
+Receptionist (Sam): Lovely—Jess. And a mobile number, in case the engineer needs to ring you on the way?
+Caller (Jess): Yeah, it's 07—
+Receptionist (Sam): —Yep, go on.
+Caller (Jess): 7702 118 64.
+Receptionist (Sam): Brilliant—so that's 07702 118 64. Right. I'm going to message the on-call engineer now. If we can't get someone there today, we'll aim for first slot tomorrow morning—sorry, Wednesday morning. Is anyone at the property all day?
+Caller (Jess): I can be, yeah.
+Receptionist (Sam): Spot on. One last thing—any smell of gas at all?
+Caller (Jess): No, nothing like that.
+Receptionist (Sam): Okay, good. Leave it with me—I'll come straight back to you within the next twenty minutes with a time window. And if anything changes—like you do smell gas—get outside and call the emergency line immediately, yeah?
+Caller (Jess): Yeah, understood. Thank you.
+Receptionist (Sam): No worries at all, Jess. We'll get you sorted. Speak in a bit—bye for now.
 `.trim();
 
 const DIRECTOR_NOTES = `[DIRECTOR NOTES — READ CAREFULLY BEFORE SPEAKING:
 - Language: English (United Kingdom). Locale: en-GB. Do NOT use American English pronunciation, vocabulary, or intonation under any circumstances.
 - Both speakers have natural South-East England / Greater London accents. Non-rhotic. Glottal stops on "t" mid-word are natural.
-- Character Receptionist: Female, 30s, warm and professionally efficient. Genuine South London warmth — like a brilliant GP receptionist. Never robotic. Uses natural British verbal acknowledgements: "right", "got you", "brilliant", "lovely", "spot on". Speaks at a natural conversational pace, not rushed.
-- Character Mike: Male, 40s, stressed homeowner, working-class South London. Natural hesitations ("erm", "yeah"), slightly relieved as the call progresses and things get sorted.
-- Prosody: The receptionist should sound like she's genuinely listening and caring, not reading from a script. Natural rising intonation on questions. Slight warmth/smile in the voice throughout.
-- Pace: The receptionist speaks clearly but not slowly — confident and in control. Mike is slightly rushed at the start, then relaxes.]`;
+- Character Sam (Receptionist): Female, 30s, warm and professionally efficient. Genuine South London warmth — like a brilliant GP receptionist. Never robotic. Uses natural British verbal acknowledgements: "right", "got you", "brilliant", "lovely", "spot on". Speaks at a natural conversational pace, not rushed.
+- Character Jess (Caller): Female, 30s, stressed homeowner, South London. Natural hesitations ("um", "uh"), slightly relieved and grateful as the call progresses.
+- Prosody: Sam should sound like she's genuinely listening and caring, not reading from a script. Natural rising intonation on questions. Slight warmth/smile in the voice throughout.
+- Pace: Sam speaks clearly but not slowly — confident and in control. Jess is slightly anxious at the start, then relaxes as things get sorted.]`;
 
 // ── WAV encoder ───────────────────────────────────────────────────────────────
 
@@ -98,8 +101,8 @@ async function main() {
       speechConfig: {
         multiSpeakerVoiceConfig: {
           speakerVoiceConfigs: [
-            { speaker: 'Receptionist', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
-            { speaker: 'Mike',  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } } },
+            { speaker: 'Sam',  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+            { speaker: 'Jess', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
           ],
         },
       },
