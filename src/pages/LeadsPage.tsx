@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Briefcase, Calendar, Mail, MapPin, Phone, Users } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import EmptyState from '../components/dashboard/ui/EmptyState';
 import Button from '../components/dashboard/ui/Button';
@@ -82,6 +83,8 @@ export default function LeadsPage() {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [composer, setComposer] = useState<BookingComposerState>(INITIAL_COMPOSER);
+  const [visible, setVisible] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -132,6 +135,7 @@ export default function LeadsPage() {
       }
 
       setLoading(false);
+      setVisible(true);
     }
 
     load();
@@ -139,7 +143,9 @@ export default function LeadsPage() {
 
   async function updateStatus(id: string, status: LeadStatus) {
     await supabase.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-    setLeads((prev) => prev.map((lead) => (lead.id === id ? { ...lead, status } : lead)));
+    setLeads(prev => prev.map(lead => (lead.id === id ? { ...lead, status } : lead)));
+    setSavedId(id);
+    setTimeout(() => setSavedId(null), 1800);
   }
 
   function updateComposerIfCurrent(
@@ -307,6 +313,10 @@ export default function LeadsPage() {
     upcoming: bookings.filter((booking) => booking.status === 'scheduled').length,
   }), [bookings, leads]);
 
+  const newLeadsDisplay = useCounter({ target: summary.newLeads, shouldStart: visible });
+  const bookedDisplay = useCounter({ target: summary.booked, shouldStart: visible });
+  const emergenciesDisplay = useCounter({ target: summary.emergencies, shouldStart: visible });
+
   return (
     <DashboardShell>
       <div ref={animRef} data-animate>
@@ -369,8 +379,18 @@ export default function LeadsPage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">New</p>
-                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{summary.newLeads}</p>
+                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{newLeadsDisplay}</p>
                 <p className="mt-2 text-[12px] text-offwhite/42">Fresh follow-up waiting for a response.</p>
+              </div>
+              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Booked</p>
+                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{bookedDisplay}</p>
+                <p className="mt-2 text-[12px] text-offwhite/42">Jobs already turned into confirmed work.</p>
+              </div>
+              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Emergency</p>
+                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{emergenciesDisplay}</p>
+                <p className="mt-2 text-[12px] text-offwhite/42">High-priority work that deserves fast action.</p>
               </div>
               <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Upcoming bookings</p>
@@ -421,7 +441,7 @@ export default function LeadsPage() {
               return (
                 <article
                   key={lead.id}
-                  className="rounded-[28px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
+                  className="relative rounded-[28px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
                   style={{
                     background: isEmergency
                       ? 'linear-gradient(180deg, rgba(255,107,43,0.08) 0%, rgba(10,23,39,0.96) 100%)'
@@ -431,6 +451,12 @@ export default function LeadsPage() {
                       : '0 0 0 1px rgba(255,255,255,0.08), 0 22px 50px rgba(2,13,24,0.24)',
                   }}
                 >
+                  {savedId === lead.id && (
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-[28px] transition-opacity duration-300"
+                      style={{ boxShadow: 'inset 0 0 0 1px rgba(134,239,172,0.35), 0 0 24px rgba(134,239,172,0.08)' }}
+                    />
+                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2.5">

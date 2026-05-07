@@ -31,6 +31,12 @@ export default function DashboardShell({
 }: DashboardShellProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  const PAGE_TITLES: Record<string, string> = {
+    '': 'Overview', '/calls': 'Calls', '/leads': 'Leads', '/settings': 'Settings',
+  };
+  const activeSuffix = NAV.find(n => n.suffix && (pathname === `${navBase}${n.suffix}` || pathname.startsWith(`${navBase}${n.suffix}/`)))?.suffix ?? '';
+  const pageTitle = PAGE_TITLES[activeSuffix] ?? 'Overview';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -131,7 +137,10 @@ export default function DashboardShell({
       <div className="mb-5 rounded-[22px] p-4" style={{ background: 'rgba(255,255,255,0.03)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Receptionist status</p>
         <div className="mt-3 flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-orange shadow-[0_0_14px_rgba(255,107,43,0.5)]" aria-hidden="true" />
+          <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-status-success opacity-75 animate-ping" />
+            <span className="relative h-2.5 w-2.5 rounded-full bg-status-success shadow-[0_0_14px_rgba(134,239,172,0.6)]" />
+          </span>
           <span className="text-[13px] font-semibold text-offwhite/76">Live and answering calls</span>
         </div>
         <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">
@@ -299,6 +308,7 @@ export default function DashboardShell({
                 <Menu size={20} aria-hidden="true" />
               </button>
               <Logo className="h-6 w-auto" />
+              <span className="text-[13px] font-semibold text-offwhite/60">{pageTitle}</span>
             </div>
           </header>
 

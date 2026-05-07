@@ -110,7 +110,7 @@ export default function WelcomePage() {
                       What happens next
                     </p>
                     <p className="mt-2 max-w-[44ch] text-[14px] leading-relaxed text-offwhite/56">
-                      You’ll receive the access details shortly, then you can go straight into the product and finish personalising how calls are handled.
+                      You'll receive the access details shortly, then you can go straight into the product and finish personalising how calls are handled.
                     </p>
                   </div>
                   <div
@@ -161,7 +161,7 @@ export default function WelcomePage() {
                   className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full"
                   style={{
                     background: 'rgba(255,107,43,0.12)',
-                    boxShadow: '0 0 0 1px rgba(255,107,43,0.20), 0 0 36px rgba(255,107,43,0.18)',
+                    boxShadow: '0 0 0 1px rgba(255,107,43,0.28), 0 0 60px rgba(255,107,43,0.40), 0 0 120px rgba(255,107,43,0.15)',
                   }}
                 >
                   <CheckCircle2 className="h-8 w-8 text-orange" strokeWidth={1.8} />
@@ -172,10 +172,10 @@ export default function WelcomePage() {
                     Payment confirmed
                   </p>
                   <h2 className="mt-3 font-display text-[clamp(2.2rem,3vw,3.8rem)] font-bold leading-[0.98] tracking-[-0.04em] text-offwhite">
-                    You’re in.
+                    You're <em className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent">in.</em>
                   </h2>
                   <p className="mx-auto mt-4 max-w-[34ch] text-[15px] leading-relaxed text-offwhite/56">
-                    Your receptionist is being set up right now. We’ll send the number and login link to your inbox within about two minutes.
+                    Your receptionist is being set up right now. We'll send the number and login link to your inbox within about two minutes.
                   </p>
                 </div>
 
@@ -203,6 +203,7 @@ export default function WelcomePage() {
                       style={{
                         background: 'rgba(255,255,255,0.04)',
                         boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
+                        animation: `fadeUp 500ms cubic-bezier(0.16,1,0.3,1) ${index * 120}ms both`,
                       }}
                     >
                       <div
@@ -249,7 +250,7 @@ export default function WelcomePage() {
               </div>
             </div>
 
-            <p className="mt-6 text-center text-[13px] text-offwhite/28">
+            <p className="mt-6 text-center text-[13px] text-offwhite/42">
               Questions? Email us at{' '}
               <a
                 href="mailto:hello@tradereceptionist.co.uk"

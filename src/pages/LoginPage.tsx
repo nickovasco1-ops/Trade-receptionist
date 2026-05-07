@@ -7,7 +7,6 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../../components/Logo';
@@ -133,7 +132,7 @@ export default function LoginPage() {
                 Sign in and get back to the work that matters.
               </h1>
               <p className="mt-5 max-w-[48ch] text-[16px] leading-relaxed text-offwhite/58 sm:text-[17px]">
-                Trade Receptionist keeps answering while you’re on the tools. Your dashboard shows what your receptionist captured, who called, and what needs your attention next.
+                Trade Receptionist keeps answering while you're on the tools. Your dashboard shows what your receptionist captured, who called, and what needs your attention next.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -153,42 +152,62 @@ export default function LoginPage() {
                 ))}
               </div>
 
+              {/* Mini dashboard preview */}
               <div
-                className="mt-6 overflow-hidden rounded-[28px] p-5 sm:p-6"
+                className="mt-6 overflow-hidden rounded-[28px]"
                 style={{
                   background: 'linear-gradient(180deg, rgba(16,29,50,0.90) 0%, rgba(9,22,38,0.94) 100%)',
                   boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 56px rgba(2,13,24,0.34)',
                 }}
               >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent/72">
-                      Live operating mode
-                    </p>
-                    <p className="mt-2 max-w-[44ch] text-[14px] leading-relaxed text-offwhite/56">
-                      Once signed in, you’ll see the enquiries your AI receptionist handled, the jobs that were booked, and the follow-up that still needs your call back.
-                    </p>
-                  </div>
-                  <div
-                    className="hidden h-10 w-10 items-center justify-center rounded-full sm:flex"
-                    style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
-                  >
-                    <Sparkles size={16} className="text-orange-soft" aria-hidden="true" />
-                  </div>
+                {/* Mini header */}
+                <div className="px-5 pt-5 pb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent/72">Live dashboard preview</p>
+                  <p className="mt-2 text-[13px] font-semibold text-offwhite/72">What you'll see when you sign in</p>
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                  {[
-                    'See new leads immediately',
-                    'Review call summaries between jobs',
-                    'Pick up where the AI left off',
-                  ].map(item => (
+                {/* Fake call activity rows */}
+                {[
+                  { number: '+44 7700 900 142', time: '2 min ago', outcome: 'booked', emergency: false },
+                  { number: '+44 7911 123 456', time: '18 min ago', outcome: 'lead captured', emergency: true },
+                  { number: '+44 7500 654 321', time: '1 hr ago', outcome: 'message left', emergency: false },
+                ].map((call, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-white/[0.022]"
+                  >
                     <div
-                      key={item}
-                      className="rounded-[16px] px-4 py-3 text-[13px] font-semibold text-offwhite/72"
-                      style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        background: call.emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
+                        boxShadow: call.emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                      }}
                     >
-                      {item}
+                      <Phone size={13} className={call.emergency ? 'text-orange-soft' : 'text-offwhite/48'} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-offwhite/78">{call.number}</p>
+                      <p className="text-[11px] text-offwhite/36">{call.time}</p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                        call.outcome === 'booked' ? 'bg-status-success/15 text-status-success' :
+                        call.emergency ? 'bg-orange/15 text-orange-soft' : 'bg-accent/15 text-accent'
+                      }`}
+                    >
+                      {call.outcome}
+                    </span>
+                  </div>
+                ))}
+                {/* Mini stats bar */}
+                <div className="mt-1 grid grid-cols-3 gap-px" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  {[
+                    { label: 'Calls', value: '147' },
+                    { label: 'Leads', value: '38' },
+                    { label: 'Booked', value: '12' },
+                  ].map(stat => (
+                    <div key={stat.label} className="px-4 py-3 text-center" style={{ background: 'rgba(9,22,38,0.94)' }}>
+                      <p className="font-display text-[20px] font-bold tracking-[-0.04em] text-offwhite">{stat.value}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-offwhite/36">{stat.label}</p>
                     </div>
                   ))}
                 </div>

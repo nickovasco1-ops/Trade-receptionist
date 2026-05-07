@@ -313,69 +313,41 @@ export default function SettingsPage() {
   return (
     <DashboardShell>
       <div ref={animRef} data-animate>
+        <article
+          className="mb-5 overflow-hidden rounded-[32px] px-6 py-6 sm:px-7 sm:py-7"
+          style={{
+            background:
+              'radial-gradient(circle at 88% 18%, rgba(255,107,43,0.12) 0%, transparent 30%),' +
+              'linear-gradient(180deg, rgba(17,31,53,0.94) 0%, rgba(9,22,38,0.98) 100%)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 30px 70px rgba(2,13,24,0.36), inset 0 1px 0 rgba(255,255,255,0.04)',
+          }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-[58ch]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings</p>
+              <h1 className="mt-3 font-display text-[clamp(2.25rem,4vw,4rem)] font-bold leading-[0.94] tracking-[-0.05em] text-offwhite">
+                Keep your receptionist aligned with how your business runs.
+              </h1>
+              <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-offwhite/52 sm:text-[16px]">
+                These controls shape how your receptionist introduces your business, routes follow-up, and connects to your diary — without changing the core logic behind the product.
+              </p>
+            </div>
+            <div className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}>
+              Product controls
+            </div>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {['Business identity', 'Phone & SMS routing', 'Diary connection'].map(item => (
+              <span key={item} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
+                <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </article>
+
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <div className="space-y-5">
-            <article
-              className="rounded-[30px] px-6 py-6 sm:px-7 sm:py-7"
-              style={{
-                background:
-                  'radial-gradient(circle at 86% 18%, rgba(255,107,43,0.12) 0%, transparent 30%),' +
-                  'linear-gradient(180deg, rgba(17,31,53,0.92) 0%, rgba(10,23,39,0.96) 100%)',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 28px 64px rgba(2,13,24,0.30)',
-              }}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="max-w-[58ch]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings</p>
-                  <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                    Keep your AI receptionist aligned with how your business runs.
-                  </h1>
-                  <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                    These controls shape your receptionist’s contact details, messaging, call diversion setup, and diary connection without changing the core flow behind the product.
-                  </p>
-                </div>
-                <div
-                  className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                  style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
-                >
-                  Product controls
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                {[
-                  'Update business details',
-                  'Manage SMS follow-up',
-                  'Keep calendar booking ready',
-                ].map(item => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                    style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
-                  >
-                    <ShieldCheck size={12} className="text-orange-soft" aria-hidden="true" />
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </article>
-
-            {loadError ? (
-              <div
-                className="rounded-[22px] px-4 py-4"
-                role="alert"
-                style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
-              >
-                <div className="flex items-start gap-3">
-                  <AlertCircle size={16} className="mt-0.5 text-orange-soft" aria-hidden="true" />
-                  <div>
-                    <p className="text-[13px] font-semibold text-offwhite">Settings unavailable</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/86">{loadError}</p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
             <form onSubmit={handleSave} className="space-y-5">
               <SettingsSection
                 title="Business details"
@@ -468,8 +440,8 @@ export default function SettingsPage() {
                   onChange={event => set('after_hours_message', event.target.value)}
                   disabled={!configLoaded}
                   rows={4}
-                  placeholder="We're closed right now, but your AI receptionist has taken full details of your enquiry and we’ll follow up as soon as we’re back on the tools."
-                  className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                  placeholder="We're closed right now, but your AI receptionist has taken full details of your enquiry and we'll follow up as soon as we're back on the tools."
+                  className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
                   style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                 />
                 {!configLoaded ? (
@@ -555,7 +527,7 @@ export default function SettingsPage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Live setup status</p>
               <h2 className="mt-3 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">What this controls</h2>
               <p className="mt-4 text-[14px] leading-relaxed text-offwhite/48">
-                These settings don’t change your backend workflows. They refine how the receptionist presents your business, routes follow-up, and plugs into the tools you already use.
+                These settings don't change your backend workflows. They refine how the receptionist presents your business, routes follow-up, and plugs into the tools you already use.
               </p>
 
               <div className="mt-6 space-y-3">

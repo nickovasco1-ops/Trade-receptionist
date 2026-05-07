@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, AlertTriangle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
 import type { ElementType } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import StatusBadge from '../components/dashboard/ui/StatusBadge';
 import EmptyState from '../components/dashboard/ui/EmptyState';
@@ -86,6 +87,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsVisible, setStatsVisible] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -128,6 +130,7 @@ export default function DashboardPage() {
 
       setRecentCalls(calls.slice(0, 5));
       setLoading(false);
+      setStatsVisible(true);
     }
 
     load();
@@ -140,6 +143,14 @@ export default function DashboardPage() {
   const leadRate = totalCalls > 0 ? (totalLeads / totalCalls) * 100 : 0;
   const bookingRate = totalLeads > 0 ? (bookedJobs / totalLeads) * 100 : 0;
   const emergencyRate = totalCalls > 0 ? (emergencies / totalCalls) * 100 : 0;
+
+  const totalCallsDisplay = useCounter({ target: totalCalls, shouldStart: statsVisible });
+  const totalLeadsDisplay = useCounter({ target: totalLeads, shouldStart: statsVisible });
+  const bookedJobsDisplay = useCounter({ target: bookedJobs, shouldStart: statsVisible });
+  const emergenciesDisplay = useCounter({ target: emergencies, shouldStart: statsVisible });
+  const leadRateDisplay = useCounter({ target: Math.round(leadRate), shouldStart: statsVisible, suffix: '%' });
+  const bookingRateDisplay = useCounter({ target: Math.round(bookingRate), shouldStart: statsVisible, suffix: '%' });
+  const emergencyRateDisplay = useCounter({ target: Math.round(emergencyRate), shouldStart: statsVisible, suffix: '%' });
 
   return (
     <DashboardShell>
@@ -202,17 +213,17 @@ export default function DashboardPage() {
               <div className="mt-7 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead capture rate</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(leadRate)}</p>
+                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{leadRateDisplay}</p>
                   <p className="mt-2 text-[12px] text-offwhite/44">Based on the calls currently loaded into your dashboard.</p>
                 </div>
                 <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead to booking</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(bookingRate)}</p>
+                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{bookingRateDisplay}</p>
                   <p className="mt-2 text-[12px] text-offwhite/44">A quick view of how much captured demand is already turning into jobs.</p>
                 </div>
                 <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Emergency share</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(emergencyRate)}</p>
+                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{emergencyRateDisplay}</p>
                   <p className="mt-2 text-[12px] text-offwhite/44">Keep an eye on urgent inbound work so callbacks stay fast and controlled.</p>
                 </div>
               </div>
@@ -300,10 +311,10 @@ export default function DashboardPage() {
         ) : stats ? (
           <>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
-              <StatCard label="Leads captured" value={String(totalLeads)} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
-              <StatCard label="Jobs booked" value={String(bookedJobs)} icon={TrendingUp} accent helper="Calls already converted into booked work." />
-              <StatCard label="Emergencies" value={String(emergencies)} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
+              <StatCard label="Total calls" value={totalCallsDisplay} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
+              <StatCard label="Leads captured" value={totalLeadsDisplay} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
+              <StatCard label="Jobs booked" value={bookedJobsDisplay} icon={TrendingUp} accent helper="Calls already converted into booked work." />
+              <StatCard label="Emergencies" value={emergenciesDisplay} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
             </section>
 
             <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
@@ -314,7 +325,7 @@ export default function DashboardPage() {
                   boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
                 }}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/6 px-6 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5" style={{background:'linear-gradient(180deg,rgba(255,255,255,0.012) 0%,transparent 100%)'}}>
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Latest activity</p>
                     <h2 className="mt-2 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">Recent calls</h2>
@@ -339,7 +350,7 @@ export default function DashboardPage() {
                     />
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/6">
+                  <div className="space-y-px">
                     {recentCalls.map(call => {
                       const when = call.started_at
                         ? new Date(call.started_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })

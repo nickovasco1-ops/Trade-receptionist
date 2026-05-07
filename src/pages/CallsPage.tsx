@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Filter, Phone, Play, Siren, Timer } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import EmptyState from '../components/dashboard/ui/EmptyState';
 import StatusBadge from '../components/dashboard/ui/StatusBadge';
@@ -39,6 +40,7 @@ export default function CallsPage() {
   const [filtered, setFiltered] = useState<CallWithSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -70,6 +72,7 @@ export default function CallsPage() {
       setCalls((data ?? []) as CallWithSummary[]);
       setFiltered((data ?? []) as CallWithSummary[]);
       setLoading(false);
+      setVisible(true);
     }
 
     load();
@@ -92,6 +95,10 @@ export default function CallsPage() {
 
     return { emergencyCount, recordedCount, averageSecs };
   }, [filtered]);
+
+  const totalCallsDisplay = useCounter({ target: calls.length, shouldStart: visible });
+  const emergencyDisplay = useCounter({ target: summary.emergencyCount, shouldStart: visible });
+  const recordedDisplay = useCounter({ target: summary.recordedCount, shouldStart: visible });
 
   return (
     <DashboardShell>
@@ -126,17 +133,17 @@ export default function CallsPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               {[
-                `${calls.length} total loaded`,
-                `${summary.emergencyCount} urgent`,
-                `${summary.recordedCount} with recordings`,
-              ].map(item => (
+                { label: 'total loaded', value: totalCallsDisplay },
+                { label: 'urgent', value: emergencyDisplay },
+                { label: 'with recordings', value: recordedDisplay },
+              ].map(({ label, value }) => (
                 <span
-                  key={item}
+                  key={label}
                   className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
                   style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
                 >
                   <Phone size={12} className="text-orange-soft" aria-hidden="true" />
-                  {item}
+                  {value} {label}
                 </span>
               ))}
             </div>
@@ -281,7 +288,7 @@ export default function CallsPage() {
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
               }}
             >
-              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 border-b border-white/6 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30">
+              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30" style={{background:'rgba(255,255,255,0.025)'}}>
                 <span>Caller</span>
                 <span>Date</span>
                 <span>Duration</span>
@@ -289,7 +296,7 @@ export default function CallsPage() {
                 <span>Recording</span>
               </div>
 
-              <div className="divide-y divide-white/6">
+              <div className="space-y-px">
                 {filtered.map(call => (
                   <div key={call.id} className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/[0.025]">
                     <div className="flex min-w-0 items-center gap-3">
