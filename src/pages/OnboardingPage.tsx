@@ -41,6 +41,8 @@ interface FormData {
   owner_mobile: string;
 }
 
+const DEFAULT_RECEPTIONIST_NAME = 'Trade Receptionist';
+
 const STEPS: { key: Step; label: string; shortLabel: string; icon: ElementType }[] = [
   { key: 'receptionist', label: 'Receptionist', shortLabel: 'Voice', icon: Bot },
   { key: 'business', label: 'Business', shortLabel: 'Business', icon: Briefcase },
@@ -64,7 +66,7 @@ const STEP_META: Record<
   receptionist: {
     eyebrow: 'Voice & first impression',
     title: 'Shape how every caller meets your business.',
-    description: 'Pick the name and tone Sarah will use every time the phone rings, so the experience feels human, calm, and professional from the first sentence.',
+    description: 'Choose the tone your AI receptionist uses every time the phone rings, so the experience feels calm, clear, and professional from the first sentence.',
     asideTitle: 'What callers hear first',
     asideCopy: 'This is the moment that decides whether your business feels trustworthy, rushed, or forgettable.',
     checkpoints: [
@@ -75,8 +77,8 @@ const STEP_META: Record<
   },
   business: {
     eyebrow: 'Business identity',
-    title: 'Give Sarah the business context she needs.',
-    description: 'Your trade, business name, and service area help her sound specific, credible, and useful instead of generic.',
+    title: 'Give Trade Receptionist the business context it needs.',
+    description: 'Your trade, business name, and service area help your receptionist sound specific, credible, and useful instead of generic.',
     asideTitle: 'How she introduces the business',
     asideCopy: 'A precise intro tells callers they reached the right trade business before they explain the job.',
     checkpoints: [
@@ -87,8 +89,8 @@ const STEP_META: Record<
   },
   services: {
     eyebrow: 'Job qualification',
-    title: 'Tell Sarah what work you actually take on.',
-    description: 'Choose the jobs you want more of so she can qualify calls properly and stop wasting your time on poor-fit enquiries.',
+    title: 'Tell your receptionist what work you actually take on.',
+    description: 'Choose the jobs you want more of so your AI receptionist can qualify calls properly and stop wasting your time on poor-fit enquiries.',
     asideTitle: 'What she can qualify instantly',
     asideCopy: 'The more accurate this list is, the faster callers get routed and the fewer dead-end calls you see.',
     checkpoints: [
@@ -100,7 +102,7 @@ const STEP_META: Record<
   hours: {
     eyebrow: 'Availability & coverage',
     title: 'Set when you work and how after-hours calls are handled.',
-    description: 'Sarah uses this to set expectations, protect your evenings, and still capture work when you are off the tools.',
+    description: 'Trade Receptionist uses this to set expectations, protect your evenings, and still capture work when you are off the tools.',
     asideTitle: 'How availability is communicated',
     asideCopy: 'Callers still feel looked after, even when you are on-site, out of hours, or not taking calls directly.',
     checkpoints: [
@@ -114,7 +116,7 @@ const STEP_META: Record<
     title: 'Choose where the important follow-up lands.',
     description: 'These details control who gets the summaries after each call, so you see the next job at the right moment.',
     asideTitle: 'Where the summaries go',
-    asideCopy: 'Your phone becomes the hand-off point between Sarah answering the call and you deciding what to do next.',
+    asideCopy: 'Your phone becomes the hand-off point between your AI receptionist answering the call and you deciding what to do next.',
     checkpoints: [
       'SMS summaries after every call',
       'Urgent jobs routed clearly',
@@ -123,10 +125,10 @@ const STEP_META: Record<
   },
   ready: {
     eyebrow: 'Launch review',
-    title: 'Review the setup before Sarah goes live.',
+    title: 'Review the setup before your receptionist goes live.',
     description: 'One final pass, then your receptionist is activated with the exact business context, service rules, and contact flow you chose.',
     asideTitle: 'What goes live next',
-    asideCopy: 'As soon as you confirm, this setup becomes the live logic behind how Sarah answers, qualifies, and reports every call.',
+    asideCopy: 'As soon as you confirm, this setup becomes the live logic behind how Trade Receptionist answers, qualifies, and reports every call.',
     checkpoints: [
       'Call handling rules locked in',
       'Summaries routed to you',
@@ -287,14 +289,14 @@ function StepIndicator({ current }: { current: Step }) {
 }
 
 function GreetingPreview({ name, businessName, tone }: { name: string; businessName: string; tone: ReceptionistTone }) {
-  const displayName = name || 'Sarah';
+  const displayName = name || DEFAULT_RECEPTIONIST_NAME;
   const displayBiz = businessName || 'your business';
   const greeting =
     tone === 'professional'
-      ? `Good morning. You've reached ${displayBiz}, ${displayName} speaking. How may I assist you today?`
+      ? `Good morning. You've reached ${displayBiz}. ${displayName} speaking. How may I assist you today?`
       : tone === 'efficient'
-      ? `${displayBiz}, ${displayName} speaking. How can I help?`
-      : `Hi there! You've reached ${displayBiz}. I'm ${displayName} — how can I help you today?`;
+      ? `${displayBiz}. ${displayName} speaking. How can I help?`
+      : `Hi there. You've reached ${displayBiz}. This is ${displayName} — how can I help you today?`;
 
   return (
     <div
@@ -318,7 +320,7 @@ function GreetingPreview({ name, businessName, tone }: { name: string; businessN
           className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-[#08111f]"
           style={{ background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)' }}
         >
-          {displayName[0]?.toUpperCase()}
+          TR
         </div>
         <p className="max-w-[44ch] text-[13px] leading-relaxed text-offwhite/76">
           “{greeting}”
@@ -489,7 +491,7 @@ function SupportPanel({ step, form }: { step: Step; form: FormData }) {
               <div>
                 <p className="text-[15px] font-semibold text-offwhite/80">{form.city || 'Area not set yet'}</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-offwhite/48">
-                  Sarah uses this to explain where you work and whether the caller is in range.
+                  Trade Receptionist uses this to explain where you work and whether the caller is in range.
                 </p>
               </div>
             </div>
@@ -575,7 +577,7 @@ function SupportPanel({ step, form }: { step: Step; form: FormData }) {
             className="rounded-[16px] p-4 text-[13px] leading-relaxed text-offwhite/72"
             style={{ background: 'rgba(8,22,39,0.84)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05)' }}
           >
-            <p><span className="font-semibold text-orange-soft">Sarah:</span> Boiler repair enquiry in {form.city || 'your area'}.</p>
+            <p><span className="font-semibold text-orange-soft">Trade Receptionist:</span> Boiler repair enquiry in {form.city || 'your area'}.</p>
             <p className="mt-1">Caller wants the next available slot. Summary will go to <span className="font-semibold text-offwhite/86">{form.owner_mobile || 'your mobile'}</span>.</p>
           </div>
         </div>
@@ -584,7 +586,7 @@ function SupportPanel({ step, form }: { step: Step; form: FormData }) {
       {step === 'ready' && (
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            { label: 'Receptionist', value: `${form.receptionist_name} · ${selectedTone}` },
+            { label: 'Call handling', value: selectedTone },
             { label: 'Trade & area', value: `${form.trade_type || 'Trade pending'}${form.city ? ` · ${form.city}` : ''}` },
             { label: 'Working hours', value: `${form.work_start} - ${form.work_end}` },
             { label: 'SMS alerts', value: form.owner_mobile || 'Mobile pending' },
@@ -609,7 +611,7 @@ export default function OnboardingPage() {
 }
 
 const PREVIEW_FORM: FormData = {
-  receptionist_name: 'Sarah',
+  receptionist_name: DEFAULT_RECEPTIONIST_NAME,
   receptionist_tone: 'friendly',
   business_name: 'Hendricks Plumbing & Heating',
   trade_type: 'Plumber',
@@ -634,7 +636,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
     ...(preview
       ? PREVIEW_FORM
       : {
-          receptionist_name: 'Sarah',
+          receptionist_name: DEFAULT_RECEPTIONIST_NAME,
           receptionist_tone: 'friendly',
           business_name: '',
           trade_type: '',
@@ -746,7 +748,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
       const { error: configErr } = await supabase
         .from('business_config')
         .update({
-          receptionist_name: form.receptionist_name,
+          receptionist_name: DEFAULT_RECEPTIONIST_NAME,
           receptionist_tone: form.receptionist_tone,
           services: form.services,
           service_areas: form.city ? [form.city] : [],
@@ -777,34 +779,12 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
   return (
     <div
-      className="relative min-h-[100dvh] overflow-hidden px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
-      style={{
-        background:
-          'radial-gradient(circle at 14% 18%, rgba(255,107,43,0.12) 0%, transparent 32%),' +
-          'radial-gradient(circle at 82% 26%, rgba(153,203,255,0.10) 0%, transparent 34%),' +
-          'radial-gradient(circle at 66% 82%, rgba(255,138,72,0.08) 0%, transparent 30%),' +
-          '#051426',
-      }}
+      className="public-page-shell px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
     >
-      <div
-        className="pointer-events-none fixed inset-0 opacity-30"
-        aria-hidden="true"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),' +
-            'linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute left-[-10%] top-[6%] h-[360px] w-[360px] rounded-full opacity-40 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.22) 0%, transparent 70%)' }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-[-6%] right-[-3%] h-[360px] w-[360px] rounded-full opacity-35 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.16) 0%, transparent 72%)' }}
-      />
+      <div className="public-page-grid" aria-hidden="true" />
+      <div className="public-page-vignette" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--orange" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--blue" aria-hidden="true" />
 
       <div className="relative mx-auto w-full max-w-[1280px]">
         <div className="mb-8 flex items-center justify-between gap-4">
@@ -933,23 +913,8 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                   {step === 'receptionist' && (
                     <StepPane stepKey="receptionist">
                       <div className="space-y-6">
-                        <div>
-                          <label htmlFor="onb-rname" className={LABEL_CLASS}>Receptionist name</label>
-                          <input
-                            id="onb-rname"
-                            className={FIELD_CLASS}
-                            value={form.receptionist_name}
-                            onChange={event => set('receptionist_name', event.target.value)}
-                            placeholder="Sarah"
-                            maxLength={24}
-                          />
-                          <p className="mt-2 text-[12px] leading-relaxed text-offwhite/34">
-                            This is the name she uses every time she answers a call for your business.
-                          </p>
-                        </div>
-
                         <fieldset>
-                          <legend className={LABEL_CLASS}>Personality</legend>
+                          <legend className={LABEL_CLASS}>Call handling tone</legend>
                           <div className="grid gap-3">
                             {TONE_OPTIONS.map(option => {
                               const selected = form.receptionist_tone === option.value;
@@ -994,7 +959,6 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           <div className="hidden flex-1 sm:block" />
                           <PrimaryBtn
                             onClick={() => setStep('business')}
-                            disabled={!form.receptionist_name.trim()}
                             className="sm:max-w-[240px]"
                           >
                             Continue
@@ -1069,7 +1033,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}
                         >
                           <p className="text-[13px] leading-relaxed text-accent/74">
-                            Sarah will use this to answer with the right trade language and tell callers whether they are in your service area.
+                            Trade Receptionist will use this to answer with the right trade language and tell callers whether they are in your service area.
                           </p>
                         </div>
 
@@ -1099,7 +1063,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                               Suggested for {form.trade_type || 'your trade'}
                             </p>
                             <p className="mt-1 text-[14px] text-offwhite/50">
-                              Pick everything Sarah should confidently discuss on a live call.
+                              Pick everything your receptionist should confidently discuss on a live call.
                             </p>
                           </div>
                           <div
@@ -1265,7 +1229,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}
                         >
                           <p className="text-[13px] leading-relaxed text-accent/74">
-                            Outside these hours, Sarah can still capture the full enquiry, explain your availability properly, and set the right callback expectation for the next working day.
+                            Outside these hours, your AI receptionist can still capture the full enquiry, explain your availability properly, and set the right callback expectation for the next working day.
                           </p>
                         </div>
 
@@ -1369,7 +1333,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                             </div>
                             <div>
                               <p className="text-[18px] font-display font-bold text-offwhite">
-                                {form.receptionist_name} is ready to go live
+                                Trade Receptionist is ready to go live
                               </p>
                               <p className="mt-2 text-[14px] leading-relaxed text-offwhite/56">
                                 Review the configuration below. You can still update any of this later in Settings, but this is what activates now.
@@ -1381,8 +1345,8 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                         <div className="grid gap-3">
                           {[
                             {
-                              label: 'Receptionist',
-                              value: `${form.receptionist_name} · ${formatToneLabel(form.receptionist_tone)}`,
+                              label: 'Call handling',
+                              value: formatToneLabel(form.receptionist_tone),
                             },
                             {
                               label: 'Business',
@@ -1437,11 +1401,11 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           {saving ? (
                             <>
                               <SavingDots />
-                              Activating {form.receptionist_name}…
+                              Activating Trade Receptionist…
                             </>
                           ) : (
                             <>
-                              Activate {form.receptionist_name}
+                              Activate Trade Receptionist
                               <ArrowRight size={15} aria-hidden="true" />
                             </>
                           )}

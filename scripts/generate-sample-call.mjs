@@ -23,32 +23,32 @@ const OUT_PATH  = join(OUT_DIR, 'sample-call.wav');
 // ── Script ────────────────────────────────────────────────────────────────────
 
 const CALL_SCRIPT = `
-Receptionist (Sarah): Good afternoon, you've reached Hendricks Plumbing — I'm Sarah, how can I help?
+Receptionist: Good afternoon, you've reached Hendricks Plumbing. This is Trade Receptionist, how can I help?
 Caller (Mike): Hi yeah — my bathroom radiator's just started leaking, it's dripping onto the floorboards. I'm worried it's gonna go through to the ceiling below.
-Receptionist (Sarah): Oh right, okay — so it's actively leaking at the moment. Is the water coming from the valve at the side, or from where the pipe meets the wall?
+Receptionist: Oh right, okay — so it's actively leaking at the moment. Is the water coming from the valve at the side, or from where the pipe meets the wall?
 Caller (Mike): Erm — the pipe at the bottom, I think. Near where it connects in.
-Receptionist (Sarah): Got you. Right — first thing, can you turn the radiator valves off on both sides? There's one at each end. Just turn them both clockwise as far as they'll go — that'll slow it right down while we get someone out to you.
+Receptionist: Got you. Right — first thing, can you turn the radiator valves off on both sides? There's one at each end. Just turn them both clockwise as far as they'll go — that'll slow it right down while we get someone out to you.
 Caller (Mike): Yeah — yeah, I can do that. Hang on — right, done it. That's already helped actually, it's just dripping now.
-Receptionist (Sarah): Brilliant, good work. Right, let me get this booked in for you. What area are you in? Postcode if you've got it?
+Receptionist: Brilliant, good work. Right — let me get this booked in for you. What area are you in? Postcode if you've got it?
 Caller (Mike): SE24 — SE24 0EB.
-Receptionist (Sarah): Perfect — that's Herne Hill. Dave covers that area and he's got a gap this afternoon, around half three. Does that work for you?
+Receptionist: Perfect — that's Herne Hill. Dave covers that area and he's got a gap this afternoon, around half three. Does that work for you?
 Caller (Mike): Oh — that'd be great, yeah.
-Receptionist (Sarah): Lovely. And the name for the booking?
+Receptionist: Lovely. And the name for the booking?
 Caller (Mike): Mike — Mike Patterson.
-Receptionist (Sarah): Great, Mike. And a mobile number so Dave can ring when he's about twenty minutes away?
+Receptionist: Great, Mike. And a mobile number so Dave can ring when he's about twenty minutes away?
 Caller (Mike): Yeah — it's 07831 440 295.
-Receptionist (Sarah): Perfect, so that's 07831 — 440 295. Right, I've got you booked in for today, half three, SE24 0EB. You'll get a text confirmation shortly, and Dave will give you a ring when he's on his way. Is there anything else I can help with?
+Receptionist: Perfect, so that's 07831 — 440 295. Right, I've got you booked in for today, half three, SE24 0EB. You'll get a text confirmation shortly, and Dave will give you a ring when he's on his way. Is there anything else I can help with?
 Caller (Mike): No, that's brilliant — thank you so much.
-Receptionist (Sarah): Absolute pleasure, Mike. We'll get that sorted for you. Bye for now.
+Receptionist: Absolute pleasure, Mike. We'll get that sorted for you. Bye for now.
 `.trim();
 
 const DIRECTOR_NOTES = `[DIRECTOR NOTES — READ CAREFULLY BEFORE SPEAKING:
 - Language: English (United Kingdom). Locale: en-GB. Do NOT use American English pronunciation, vocabulary, or intonation under any circumstances.
 - Both speakers have natural South-East England / Greater London accents. Non-rhotic. Glottal stops on "t" mid-word are natural.
-- Character Sarah: Female, 30s, warm and professionally efficient. Genuine South London warmth — like a brilliant GP receptionist. Never robotic. Uses natural British verbal acknowledgements: "right", "got you", "brilliant", "lovely", "spot on". Speaks at a natural conversational pace, not rushed.
+- Character Receptionist: Female, 30s, warm and professionally efficient. Genuine South London warmth — like a brilliant GP receptionist. Never robotic. Uses natural British verbal acknowledgements: "right", "got you", "brilliant", "lovely", "spot on". Speaks at a natural conversational pace, not rushed.
 - Character Mike: Male, 40s, stressed homeowner, working-class South London. Natural hesitations ("erm", "yeah"), slightly relieved as the call progresses and things get sorted.
-- Prosody: Sarah should sound like she's genuinely listening and caring, not reading from a script. Natural rising intonation on questions. Slight warmth/smile in the voice throughout.
-- Pace: Sarah speaks clearly but not slowly — confident and in control. Mike is slightly rushed at the start, then relaxes.]`;
+- Prosody: The receptionist should sound like she's genuinely listening and caring, not reading from a script. Natural rising intonation on questions. Slight warmth/smile in the voice throughout.
+- Pace: The receptionist speaks clearly but not slowly — confident and in control. Mike is slightly rushed at the start, then relaxes.]`;
 
 // ── WAV encoder ───────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ async function main() {
       speechConfig: {
         multiSpeakerVoiceConfig: {
           speakerVoiceConfigs: [
-            { speaker: 'Sarah', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+            { speaker: 'Receptionist', voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
             { speaker: 'Mike',  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Fenrir' } } },
           ],
         },

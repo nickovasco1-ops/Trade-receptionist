@@ -20,7 +20,7 @@ function headers() {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface RetellAgentConfig {
-  /** Friendly name — e.g. "Sarah — Mark Thomas Plumbing" */
+  /** Friendly name — e.g. "Trade Receptionist — Mark Thomas Plumbing" */
   agentName:    string;
   /** Full system prompt built by buildSystemPrompt() */
   prompt:       string;

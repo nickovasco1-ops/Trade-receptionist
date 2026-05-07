@@ -1,0 +1,11 @@
+trade-receptionist-visual-skill dry-run
+timestamp=2026-05-07T10-03-59Z
+framework=Vite + React + React Router + TypeScript
+routes=/, /login, /dashboard, /dashboard/calls, /dashboard/leads, /settings, /onboarding, /onboarding-preview, /dashboard-preview, /dashboard-preview/calls, /dashboard-preview/leads, /dashboard-preview/settings, /welcome, /terms, /privacy, *
+findings=5
+- hero-call-answering-stage | severity=4 | section=hero | apply=replace-string-literal
+- workflow-proof-panel | severity=4 | section=workflow | apply=manual-component-redesign
+- sample-call-summary-proof | severity=4 | section=call-answering | apply=manual-component-redesign
+- pricing-trust-support | severity=3 | section=trust-security | apply=manual-component-redesign
+- final-cta-proof-cue | severity=4 | section=cta | apply=manual-component-redesign
+manifest=5 assets planned

@@ -135,7 +135,7 @@ export default function DashboardShell({
           <span className="text-[13px] font-semibold text-offwhite/76">Live and answering calls</span>
         </div>
         <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">
-          Review what Sarah captured, act on new jobs quickly, and keep your trade calendar full.
+          Review what your receptionist captured, act on new jobs quickly, and keep your trade calendar full.
         </p>
       </div>
 

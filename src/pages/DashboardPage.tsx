@@ -164,7 +164,7 @@ export default function DashboardPage() {
                   Your receptionist is covering the phones.
                 </h1>
                 <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-offwhite/52 sm:text-[16px]">
-                  Track what Sarah handled, how much opportunity is being captured, and where you should focus next between jobs.
+                  Track what your receptionist handled, how much opportunity is being captured, and where you should focus next between jobs.
                 </p>
               </div>
               <div
@@ -300,7 +300,7 @@ export default function DashboardPage() {
         ) : stats ? (
           <>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by Sarah." />
+              <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
               <StatCard label="Leads captured" value={String(totalLeads)} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
               <StatCard label="Jobs booked" value={String(bookedJobs)} icon={TrendingUp} accent helper="Calls already converted into booked work." />
               <StatCard label="Emergencies" value={String(emergencies)} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
@@ -359,7 +359,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
-                              <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by Sarah'}</p>
+                              <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by your receptionist'}</p>
                             </div>
                           </div>
                           <span className="text-[12px] text-offwhite/38 tabular-nums">{when}</span>
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                     {
                       label: 'Lead capture',
                       value: formatPercent(leadRate),
-                      copy: 'A higher figure means Sarah is converting more calls into actionable enquiries.',
+                      copy: 'A higher figure means your AI receptionist is converting more calls into actionable enquiries.',
                     },
                     {
                       label: 'Booking efficiency',

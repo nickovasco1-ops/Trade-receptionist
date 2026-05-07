@@ -1,158 +1,136 @@
 import React, { useMemo, useState } from 'react';
 
-function SliderField({
+function NumberField({
   label,
   value,
+  onChange,
   min,
   max,
-  step,
-  onChange,
   prefix = '',
   suffix = '',
-  leftLabel,
-  middleLabel,
-  rightLabel,
+  help,
 }: {
   label: string;
   value: number;
+  onChange: (value: number) => void;
   min: number;
   max: number;
-  step: number;
-  onChange: (value: number) => void;
   prefix?: string;
   suffix?: string;
-  leftLabel: string;
-  middleLabel: string;
-  rightLabel: string;
+  help: string;
 }) {
-  const progress = ((value - min) / (max - min)) * 100;
-
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-3">
-        <label className="text-[15px] text-offwhite/88 font-body">{label}</label>
-        <span
-          className="inline-flex items-center rounded-[10px] px-3 py-1 text-[15px] font-semibold text-offwhite"
-          style={{
-            background: 'rgba(12, 24, 44, 0.92)',
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
-          }}
-        >
-          {prefix}
-          {value.toLocaleString('en-GB')}
-          {suffix}
-        </span>
-      </div>
-
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        aria-label={label}
-        className="w-full"
+    <label className="block">
+      <span className="mb-2 block text-[13px] font-semibold text-offwhite/84">{label}</span>
+      <div
+        className="flex items-center rounded-[16px] px-4 py-3"
         style={{
-          background: `linear-gradient(90deg, #F4A261 0%, #F4A261 ${progress}%, rgba(255,255,255,0.12) ${progress}%, rgba(255,255,255,0.12) 100%)`,
+          background: 'rgba(7, 17, 31, 0.84)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
         }}
-      />
+      >
+        {prefix && <span className="mr-2 text-[16px] font-semibold text-orange-soft">{prefix}</span>}
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(event) => {
+            const raw = event.target.value.trim();
+            const next = Number(raw);
 
-      <div className="mt-2 grid grid-cols-3 text-[12px] text-offwhite/45 font-body">
-        <span>{leftLabel}</span>
-        <span className="text-center">{middleLabel}</span>
-        <span className="text-right">{rightLabel}</span>
+            if (raw === '' || !Number.isFinite(next)) {
+              return;
+            }
+
+            onChange(Math.min(max, Math.max(min, next)));
+          }}
+          className="w-full bg-transparent text-[18px] font-semibold text-offwhite outline-none"
+        />
+        {suffix && <span className="ml-2 text-[14px] font-semibold text-offwhite/45">{suffix}</span>}
       </div>
-    </div>
+      <span className="mt-2 block text-[12px] leading-relaxed text-offwhite/40">{help}</span>
+    </label>
   );
 }
 
 export const Calculator: React.FC = () => {
-  const [avgJobValue, setAvgJobValue] = useState(750);
-  const [missedCalls, setMissedCalls] = useState(5);
+  const [missedCallsPerWeek, setMissedCallsPerWeek] = useState(6);
+  const [averageJobValue, setAverageJobValue] = useState(280);
+  const [conversionRate, setConversionRate] = useState(35);
 
-  const yearlyLoss = useMemo(() => {
-    const estimated = avgJobValue * missedCalls * 0.05 * 50;
-    return Math.round(estimated / 100) * 100;
-  }, [avgJobValue, missedCalls]);
+  const potentialLostMonthly = useMemo(() => {
+    const estimated = missedCallsPerWeek * averageJobValue * (conversionRate / 100) * 4.33;
+    return Math.round(estimated / 10) * 10;
+  }, [averageJobValue, conversionRate, missedCallsPerWeek]);
+
+  const yearlyView = potentialLostMonthly * 12;
 
   return (
     <div
-      className="rounded-[22px] p-5 md:p-6"
+      className="rounded-[24px] p-5 md:p-6"
       style={{
-        background: 'linear-gradient(180deg, rgba(36,49,72,0.92) 0%, rgba(16,32,56,0.96) 100%)',
+        background: 'linear-gradient(180deg, rgba(20,29,43,0.96) 0%, rgba(10,18,30,0.98) 100%)',
         boxShadow:
-          '0 0 0 1px rgba(244,162,97,0.42), 0 0 0 3px rgba(244,162,97,0.06), 0 28px 70px rgba(2,13,24,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
+          '0 0 0 1px rgba(255,255,255,0.08), 0 28px 60px rgba(2,13,24,0.40), inset 0 1px 0 rgba(255,255,255,0.04)',
       }}
     >
-      <div className="rounded-[18px] px-5 py-6 md:px-7 md:py-7" style={{ background: 'rgba(10, 25, 47, 0.55)' }}>
-        <h3
-          className="font-display font-bold text-offwhite text-center mb-6"
-          style={{ fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 0.95, letterSpacing: '-0.03em' }}
-        >
-          Lost Revenue
-          <br />
-          Calculator
-        </h3>
+      <div className="grid gap-4">
+        <NumberField
+          label="Missed calls per week"
+          value={missedCallsPerWeek}
+          onChange={setMissedCallsPerWeek}
+          min={1}
+          max={50}
+          help="How many genuine callers usually hit voicemail or no answer?"
+        />
 
-        <div className="h-px mb-6" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        <NumberField
+          label="Average job value"
+          value={averageJobValue}
+          onChange={setAverageJobValue}
+          min={50}
+          max={5000}
+          prefix="£"
+          help="Use your typical job, quote, or call-out value."
+        />
 
-        <div className="space-y-8">
-          <SliderField
-            label="Average Job Value"
-            value={avgJobValue}
-            min={50}
-            max={1500}
-            step={50}
-            onChange={setAvgJobValue}
-            prefix="£"
-            leftLabel="£50"
-            middleLabel="£750"
-            rightLabel="£1,500+"
-          />
+        <NumberField
+          label="Estimated conversion rate"
+          value={conversionRate}
+          onChange={setConversionRate}
+          min={5}
+          max={100}
+          suffix="%"
+          help="Roughly how many of those callers would turn into paid work?"
+        />
+      </div>
 
-          <SliderField
-            label="Missed Calls / Week"
-            value={missedCalls}
-            min={1}
-            max={50}
-            step={1}
-            onChange={setMissedCalls}
-            leftLabel="1"
-            middleLabel="5"
-            rightLabel="50+"
-          />
-        </div>
-
+      <div
+        className="mt-5 rounded-[20px] px-5 py-5"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,107,43,0.10) 0%, rgba(255,107,43,0.05) 100%)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.16)',
+        }}
+      >
+        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-offwhite/48">
+          Potential work lost each month
+        </p>
         <div
-          className="mt-8 rounded-[18px] px-5 py-6 text-center"
-          style={{
-            background: 'linear-gradient(180deg, rgba(7,18,36,0.94) 0%, rgba(11,24,44,0.98) 100%)',
-            boxShadow: 'inset 0 0 0 1px rgba(244,162,97,0.50), 0 14px 40px rgba(2,13,24,0.45)',
-          }}
+          className="mt-2 font-display font-bold leading-none text-orange-soft"
+          style={{ fontSize: 'clamp(2.8rem, 4vw, 4.5rem)', letterSpacing: '-0.05em' }}
         >
-          <p className="text-[14px] font-semibold tracking-[0.08em] uppercase text-offwhite/90 mb-3">
-            You could be losing
-          </p>
-          <div
-            className="font-display font-bold mb-2"
-            style={{
-              fontSize: 'clamp(3rem, 5vw, 4.75rem)',
-              lineHeight: 0.92,
-              letterSpacing: '-0.05em',
-              color: '#F4A261',
-              textShadow: '0 0 28px rgba(244,162,97,0.28)',
-            }}
-          >
-            £{yearlyLoss.toLocaleString('en-GB')}
-          </div>
-          <p className="text-[18px] text-[#F4A261] font-body">per year to voicemail</p>
+          £{potentialLostMonthly.toLocaleString('en-GB')}
         </div>
-
-        <p className="mt-5 text-center text-[13px] text-offwhite/55 font-body">
-          Based on a conservative 25% conversion rate
+        <p className="mt-2 text-[14px] leading-relaxed text-offwhite/58">
+          That’s around £{yearlyView.toLocaleString('en-GB')} a year in work that could have been booked.
         </p>
       </div>
+
+      <p className="mt-4 text-[13px] leading-relaxed text-offwhite/48">
+        One recovered job could pay for Trade Receptionist.
+      </p>
     </div>
   );
 };

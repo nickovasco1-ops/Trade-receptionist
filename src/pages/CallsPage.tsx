@@ -113,7 +113,7 @@ export default function CallsPage() {
                   Every conversation, clearly organised.
                 </h1>
                 <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                  Review what Sarah answered, filter by outcome, and scan urgent or recorded calls without the dashboard feeling like a bloated admin panel.
+                  Review what your AI receptionist answered, filter by outcome, and scan urgent or recorded calls without the dashboard feeling like a bloated admin panel.
                 </p>
               </div>
               <div
@@ -304,7 +304,7 @@ export default function CallsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
-                        <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by Sarah'}</p>
+                        <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
                       </div>
                     </div>
                     <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>

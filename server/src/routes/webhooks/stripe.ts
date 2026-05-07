@@ -83,7 +83,7 @@ function welcomeHtml(opts: {
     ? `<div style="background:#FFF7F0;border-radius:10px;padding:16px 20px;margin-bottom:20px">
         <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#FF6B2B;letter-spacing:0.08em;text-transform:uppercase;font-family:sans-serif">Your new number</p>
         <p style="margin:0;font-size:26px;font-weight:700;color:#111827;font-family:sans-serif;letter-spacing:-0.02em">${opts.phoneNumber}</p>
-        <p style="margin:6px 0 0;font-size:13px;color:#6B7280;font-family:sans-serif">Forward your mobile's unanswered calls to this number and Sarah will handle the rest.</p>
+        <p style="margin:6px 0 0;font-size:13px;color:#6B7280;font-family:sans-serif">Forward your mobile's unanswered calls to this number and your AI receptionist will handle the rest.</p>
       </div>`
     : `<div style="background:#F9FAFB;border-radius:10px;padding:16px 20px;margin-bottom:20px">
         <p style="margin:0;font-size:13px;color:#6B7280;font-family:sans-serif">Your dedicated number is being provisioned — you'll receive a follow-up email within a few minutes.</p>
@@ -104,7 +104,7 @@ function welcomeHtml(opts: {
     <td style="background:#fff;padding:32px 28px">
       <h1 style="margin:0 0 6px;font-size:26px;font-weight:700;color:#111827;font-family:sans-serif;letter-spacing:-0.02em">Welcome, ${opts.firstName}!</h1>
       <p style="margin:0 0 28px;font-size:15px;color:#6B7280;line-height:1.6;font-family:sans-serif">
-        Your 14-day free trial has started. Sarah is ready to answer calls 24/7 — no more missed jobs.
+        Your 14-day free trial has started. Trade Receptionist is ready to answer calls 24/7 — no more missed jobs.
       </p>
 
       ${numberBlock}
@@ -127,7 +127,7 @@ function welcomeHtml(opts: {
           <tr>
             <td style="padding:8px 0;font-family:sans-serif">
               <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#FF6B2B;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:22px;margin-right:10px;vertical-align:middle">3</span>
-              <span style="font-size:14px;color:#374151;vertical-align:middle">Call your new number and hear Sarah in action</span>
+              <span style="font-size:14px;color:#374151;vertical-align:middle">Call your new number and hear Trade Receptionist in action</span>
             </td>
           </tr>
         </table>
@@ -213,7 +213,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     .from('business_config')
     .insert({
       client_id:            client.id,
-      receptionist_name:    'Sarah',
+      receptionist_name:    'Trade Receptionist',
       services:             [],
       service_areas:        [],
       emergency_keywords:   ['gas leak', 'flood', 'no power', 'no heating', 'burst pipe'],
@@ -237,7 +237,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   try {
     const prompt = buildSystemPrompt(client, configRow as BusinessConfig);
     const ids    = await createRetellAgent({
-      agentName:    `Sarah — ${ownerName}`,
+      agentName:    `Trade Receptionist — ${ownerName}`,
       prompt,
       ownerNumber:  ownerMobile,
       beginMessage: undefined,

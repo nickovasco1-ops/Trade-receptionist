@@ -191,10 +191,10 @@ export const AudioPlayer: React.FC = () => {
             </div>
             <div>
               <p className="font-display font-bold text-[16px] text-offwhite leading-none tracking-tight mb-1">
-                Radiator Leak — Booked Same Day
+                No Hot Water — Customer Call Sample
               </p>
               <p className="text-[12px] text-offwhite/40 font-body leading-none">
-                Sarah (AI) · South London · en-GB
+                Trade Receptionist · British voice demo
               </p>
             </div>
           </div>
@@ -251,7 +251,7 @@ export const AudioPlayer: React.FC = () => {
 
         {/* Caption */}
         <p className="mt-4 text-center text-[11px] text-offwhite/20 font-body">
-          Real conversation · AI voice · No actors
+          Example enquiry · sample voice demo
         </p>
       </div>
     </div>

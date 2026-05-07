@@ -187,7 +187,7 @@ export const GlassCard: React.FC<{ children: React.ReactNode; className?: string
   className = '',
 }) => (
   <div
-    className={`glass glass-ring glass-ring-hover rounded-card ${className}`}
+    className={`public-surface public-hover-lift rounded-card ${className}`}
     style={{ transition: 'transform 300ms cubic-bezier(0.34,1.2,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.2,0.64,1)' }}
   >
     {children}
@@ -199,7 +199,7 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string }> =
   children,
   className = '',
 }) => (
-  <div className={`bg-navy-mid rounded-card shadow-[0_2px_8px_rgba(2,13,24,0.30)] ${className}`}>
+  <div className={`public-surface rounded-card ${className}`}>
     {children}
   </div>
 );
@@ -211,22 +211,20 @@ export const Section: React.FC<{
   id?: string;
   bg?: 'white' | 'gray' | 'gradient' | 'void';
 }> = ({ children, className = '', id, bg = 'white' }) => {
-  // Semi-transparent surfaces — the fixed cinematic scene breathes through them.
-  // "gray" is slightly more elevated (darker overlay) to differentiate from "white".
   const bgMap: Record<string, string> = {
-    white:    'rgba(5, 20, 38, 0.50)',
-    gray:     'rgba(9, 29, 54, 0.64)',
-    gradient: 'rgba(2, 13, 24, 0.82)',
-    void:     'rgba(2, 13, 24, 0.82)',
+    white: 'public-section-shell',
+    gray: 'public-section-shell public-section-shell-muted',
+    gradient: 'public-section-shell public-section-shell-strong',
+    void: 'public-section-shell public-section-shell-void',
   };
 
   return (
     <section
       id={id}
-      className={`py-20 md:py-32 ${className}`}
-      style={{ backgroundColor: bgMap[bg] }}
+      className={`public-section ${bgMap[bg]} py-16 md:py-24 ${className}`}
     >
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+      <div className="public-section-divider" aria-hidden="true" />
+      <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
         {children}
       </div>
     </section>
@@ -242,9 +240,9 @@ interface PanelProps {
 
 export const Panel: React.FC<PanelProps> = ({ children, className = '', variant = 'default' }) => {
   const variantClasses: Record<string, string> = {
-    default: 'bg-white/[0.04] shadow-ring-subtle',
-    accent:  'bg-orange/[0.08] shadow-card-accent',
-    hover:   'bg-white/[0.04] shadow-ring-subtle hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300 ease-mechanical',
+    default: 'public-surface-soft',
+    accent: 'public-surface shadow-card-accent',
+    hover: 'public-surface-soft public-hover-lift',
   };
   return (
     <div className={`rounded-card p-5 ${variantClasses[variant]} ${className}`}>
@@ -260,7 +258,7 @@ export const Badge: React.FC<{
 }> = ({ children, color = 'orange' }) => (
   <span
     className={`
-      inline-block font-body text-[13px] font-bold tracking-[0.12em] uppercase mb-4
+      inline-flex items-center rounded-full px-3.5 py-1.5 font-body text-[11px] font-bold tracking-[0.16em] uppercase mb-4 public-chip
       ${color === 'orange' ? 'text-orange-soft' : 'text-accent'}
     `}
   >

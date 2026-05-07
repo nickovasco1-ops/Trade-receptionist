@@ -34,33 +34,12 @@ export default function WelcomePage() {
 
   return (
     <div
-      className="relative min-h-[100dvh] overflow-hidden px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
-      style={{
-        background:
-          'radial-gradient(circle at 16% 18%, rgba(255,107,43,0.12) 0%, transparent 32%),' +
-          'radial-gradient(circle at 84% 24%, rgba(153,203,255,0.10) 0%, transparent 34%),' +
-          '#051426',
-      }}
+      className="public-page-shell px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
     >
-      <div
-        className="pointer-events-none fixed inset-0 opacity-32"
-        aria-hidden="true"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),' +
-            'linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute left-[-10%] top-[8%] h-[320px] w-[320px] rounded-full opacity-40 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.22) 0%, transparent 72%)' }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-[-8%] right-[-4%] h-[320px] w-[320px] rounded-full opacity-35 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.16) 0%, transparent 72%)' }}
-      />
+      <div className="public-page-grid" aria-hidden="true" />
+      <div className="public-page-vignette" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--orange" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--blue" aria-hidden="true" />
 
       <div
         className="relative mx-auto w-full max-w-[1180px]"
@@ -215,7 +194,7 @@ export default function WelcomePage() {
                     {
                       icon: MessageSquareText,
                       title: 'Personalisation next',
-                      text: 'Log in and tailor how Sarah answers your calls.',
+                      text: 'Log in and tailor how your AI receptionist answers your calls.',
                     },
                   ].map(({ icon: Icon, title, text }, index) => (
                     <div

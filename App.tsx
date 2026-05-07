@@ -122,6 +122,9 @@ const LazyFallback = ({ height = 200 }: { height?: number }) => (
   </div>
 );
 
+const GENERATED_HERO_IMAGE_SRC = '/assets/generated/landing-hero-generated.png';
+const FALLBACK_HERO_IMAGE_SRC = '/assets/hero-phone-upscaled-transparent.png';
+
 type View = 'home' | 'book-demo';
 
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -183,7 +186,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
   const navLinks = [
     { label: 'Calculator',  target: 'roi' },
     { label: 'Features',    target: 'features' },
-    { label: 'Proof',       target: 'comparison' },
+    { label: 'Reviews',     target: 'testimonials' },
     { label: 'Pricing',     target: 'pricing' },
     { label: 'Book a Demo', target: 'book-demo' },
   ];
@@ -286,7 +289,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                 setIsOpen(false);
                 setTimeout(() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' }), 100);
               }}>
-                Hear Live Demo
+                Hear how it answers a customer
               </Button>
               <Button variant="primary" fullWidth onClick={() => { onWaitlist(); setIsOpen(false); }}>
                 Start Free Trial
@@ -305,27 +308,66 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const { primary: parallax } = useParallax();
+  const [allowMotion, setAllowMotion] = useState(false);
+  const [heroImageSrc, setHeroImageSrc] = useState(GENERATED_HERO_IMAGE_SRC);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setAllowMotion(!media.matches);
+
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   return (
     <section
       id="hero"
       aria-labelledby="hero-heading"
-      className="relative overflow-hidden pt-24 pb-16 md:pt-36 md:pb-24 xl:pt-44 xl:pb-32"
-      style={{
-        background:
-          'radial-gradient(ellipse at 15% 55%, rgba(255,107,43,0.07) 0%, transparent 50%),' +
-          'radial-gradient(ellipse at 78% 20%, rgba(153,203,255,0.05) 0%, transparent 48%)',
-      }}
+      className="relative isolate overflow-hidden pt-24 pb-12 md:pt-32 md:pb-18 xl:pt-38 xl:pb-22"
     >
-      <BlueprintGrid />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18]">
+        <BlueprintGrid />
+      </div>
+
+      <div className="hero-scene" aria-hidden="true">
+        <div
+          className="hero-scene-media"
+          style={{
+            transform: allowMotion
+              ? `translate(${parallax.x * 0.32}px, calc(-50% + ${parallax.y * 0.18}px))`
+              : 'translateY(-50%)',
+            transition: 'transform 180ms cubic-bezier(0.23, 1, 0.32, 1)',
+          }}
+        >
+          <div className="hero-scene-stage">
+            <img
+              className={`hero-scene-image select-none ${allowMotion ? 'animate-float-primary' : ''}`}
+              src={heroImageSrc}
+              alt=""
+              loading="eager"
+              decoding="async"
+              onError={() => {
+                if (heroImageSrc !== FALLBACK_HERO_IMAGE_SRC) {
+                  setHeroImageSrc(FALLBACK_HERO_IMAGE_SRC);
+                }
+              }}
+            />
+            <div className="hero-scene-stage-sheen" />
+            <div className="hero-scene-stage-fade" />
+          </div>
+        </div>
+        <div className="hero-scene-vignette" />
+        <div className="hero-scene-left-scrim" />
+        <div className="hero-scene-bottom-fade" />
+        <div className="hero-scene-ambient" />
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-6 xl:gap-4">
-
-          {/* ── Left: Copy ── */}
-          <div className="max-w-[42rem]">
-            <span className="inline-block mb-6 text-[12px] font-bold tracking-[0.14em] uppercase text-orange-soft font-body">
-              AI Receptionist for UK Tradespeople
+        <div className="flex min-h-[32rem] items-center md:min-h-[37rem] xl:min-h-[40rem]">
+          <div className="max-w-[40rem] xl:max-w-[42rem]">
+            <span className="hero-fade inline-flex mb-6 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-[0.16em] uppercase text-orange-soft public-chip">
+              Built for UK trades who miss calls on the job
             </span>
 
             <h1
@@ -333,21 +375,25 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               className="font-display font-bold text-offwhite"
               style={{ fontSize: 'clamp(3.2rem, 6.4vw, 5.4rem)', lineHeight: 0.93, letterSpacing: '-0.05em' }}
             >
-              <span className="block">Never miss a <em
-                className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent"
-              >call</em>.</span>
-              <span className="block">Never lose a <em
-                className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent"
-              >job</em>.</span>
+              <span className="line-reveal-wrapper">
+                <span className="line-reveal block">Missed calls are</span>
+              </span>
+              <span className="line-reveal-wrapper">
+                <span className="line-reveal block" style={{ animationDelay: '80ms' }}><em className="not-italic text-orange">costing</em> you jobs.</span>
+              </span>
             </h1>
 
-            <p className="mt-6 max-w-[33rem] text-[clamp(1.05rem,1.8vw,1.25rem)] leading-[1.6] text-offwhite/72 font-body">
-              Your AI receptionist answers every call, books jobs into your diary, and sends you a WhatsApp summary — whether you&apos;re on a roof, under a sink, or in a customer&apos;s home.
+            <p className="hero-fade mt-6 max-w-[33rem] text-[clamp(1.05rem,1.8vw,1.25rem)] leading-[1.6] text-offwhite/72 font-body" style={{ animationDelay: '140ms' }}>
+              Trade Receptionist answers when you can&apos;t, captures the customer&apos;s details, filters time-wasters, and sends the job straight to WhatsApp or your diary.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center">
+            <p className="hero-fade mt-4 max-w-[34rem] text-[15px] leading-relaxed text-offwhite/48 font-body" style={{ animationDelay: '180ms' }}>
+              Built for UK plumbers, electricians, builders, roofers and heating engineers.
+            </p>
+
+            <div className="hero-fade mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center" style={{ animationDelay: '220ms' }}>
               <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
-                Start Free Trial
+                Start free trial
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
               <Button
@@ -355,59 +401,32 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 size="lg"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Hear a Live Demo
+                Hear how it answers a customer
                 <Play className="w-4 h-4 ml-2" />
               </Button>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-[13px] text-offwhite/40 font-body">
-              <ShieldCheck className="h-3.5 w-3.5 text-offwhite/35 shrink-0" />
-              <span>14-day free trial. No card required. Setup in 14 minutes.</span>
-            </div>
-
-            <div
-              className="mt-10 rounded-[18px] px-6 py-5 max-w-[30rem]"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
-              }}
-            >
-              <p className="text-[clamp(0.95rem,1.4vw,1.1rem)] leading-[1.6] text-offwhite/80 font-body">
-                &ldquo;Sarah answered 4 calls while I was under a sink last Tuesday. Got 3 jobs booked. Unreal.&rdquo;
-              </p>
-              <p className="mt-3 text-[13px] text-offwhite/40 font-body">Mark T. &mdash; Plumber, South London</p>
+            <div className="hero-fade mt-5 flex flex-wrap gap-2.5 text-[12px] text-offwhite/52 font-body" style={{ animationDelay: '280ms' }}>
+              {[
+                'No new number needed',
+                'Natural British voice',
+                'Setup in minutes',
+                'Cancel anytime',
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-2 rounded-full px-3.5 py-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 text-orange-soft shrink-0" />
+                  {item}
+                </span>
+              ))}
             </div>
           </div>
-
-          {/* ── Right: Phone Asset ── */}
-          <div
-            className="relative mx-auto w-full max-w-[640px] lg:max-w-none"
-            style={{
-              transform: `translate(${parallax.x * 0.5}px, ${parallax.y * 0.5}px)`,
-              transition: 'transform 120ms ease-out',
-            }}
-          >
-            {/* Ambient glow behind the image */}
-            <div
-              className="absolute inset-[10%] rounded-full pointer-events-none"
-              style={{
-                background: 'radial-gradient(ellipse at 55% 45%, rgba(153,203,255,0.12) 0%, rgba(255,107,43,0.06) 50%, transparent 70%)',
-                filter: 'blur(40px)',
-              }}
-            />
-
-            <img
-              src="/assets/phone-hero.png"
-              alt="Trade Receptionist app showing answered calls, booked jobs, and AI receptionist status"
-              width={1456}
-              height={816}
-              fetchPriority="high"
-              decoding="async"
-              className="relative z-10 w-full h-auto select-none animate-float-primary"
-              style={{ filter: 'drop-shadow(0 40px 80px rgba(2,13,24,0.6))' }}
-            />
-          </div>
-
         </div>
       </div>
     </section>
@@ -523,25 +542,25 @@ const USE_CASES = [
   {
     trade: 'Plumbers',
     headline: 'Never lose a call from under the sink.',
-    desc: "You can't answer mid-job. Sarah does. Every enquiry captured, every booking confirmed — while your hands stay clean.",
+    desc: "You can't answer mid-job. Your AI receptionist can. Every enquiry captured, every booking confirmed — while your hands stay clean.",
     image: '/assets/generated/use-cases/plumber.webp',
   },
   {
     trade: 'Electricians',
     headline: 'Answer every call from the fuseboard.',
-    desc: "Working in a live panel? Sarah picks up. She qualifies the job, books the slot, sends you the details when you're clear.",
+    desc: "Working in a live panel? Your receptionist picks up, qualifies the work, books the slot, and sends you the detail once you're clear.",
     image: '/assets/generated/use-cases/electrician.webp',
   },
   {
     trade: 'Builders',
     headline: 'Jobs fill your diary while you fill the skip.',
-    desc: "On-site noise means missed calls. Sarah handles every enquiry professionally — you get a full diary without the phone tag.",
+    desc: "On-site noise means missed calls. Trade Receptionist handles every enquiry professionally, so your diary fills without the phone tag.",
     image: '/assets/generated/use-cases/builder.webp',
   },
   {
     trade: 'HVAC',
     headline: 'Emergency call-outs answered instantly.',
-    desc: "Boiler breakdowns don't wait for you to finish the current job. Sarah routes urgent calls to you and books the rest in.",
+    desc: "Boiler breakdowns don't wait for you to finish the current job. Your call handler routes urgent jobs to you and books the rest in.",
     image: '/assets/generated/use-cases/hvac.webp',
   },
 ];
@@ -704,7 +723,7 @@ const HOW_STEPS = [
     label: 'Build',
     icon: Phone,
     title: 'Build Your Profile',
-    desc: 'Give Sarah your business name, services, pricing, and availability. 14 minutes. No technical knowledge needed.',
+    desc: 'Add your business name, services, pricing, and availability. 14 minutes. No technical knowledge needed.',
     image: '/assets/generated/how-it-works/step-1.webp',
   },
   {
@@ -712,7 +731,7 @@ const HOW_STEPS = [
     label: 'Divert',
     icon: Mic,
     title: 'Divert Your Calls',
-    desc: 'Forward your business number to Sarah — or get a dedicated number. She answers every call instantly, 24/7.',
+    desc: 'Forward your business number to Trade Receptionist — or get a dedicated number. Your AI receptionist answers instantly, 24/7.',
     image: '/assets/generated/how-it-works/step-2.webp',
   },
   {
@@ -720,7 +739,7 @@ const HOW_STEPS = [
     label: 'Focus',
     icon: MessageSquare,
     title: 'Focus on the Job',
-    desc: 'Get on with the work. Sarah handles every call, books every appointment, and sends you a WhatsApp summary.',
+    desc: 'Get on with the work. Your AI receptionist handles every call, books every appointment, and sends you a WhatsApp summary.',
     image: '/assets/generated/how-it-works/step-3.webp',
   },
 ];
@@ -853,7 +872,7 @@ const ROI_STATS = [
   { value: '3 in 5', label: 'jobs go to whoever', sublabel: 'answers first' },
 ];
 
-const ROISection = () => (
+const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
   <Section id="roi" bg="gray" className="relative overflow-hidden">
     <div
       className="absolute inset-0 pointer-events-none opacity-[0.10]"
@@ -863,289 +882,71 @@ const ROISection = () => (
       }}
     />
 
-    <FadeUp className="mb-14 mx-auto max-w-4xl text-center">
-      <h2
-        className="font-display font-bold text-offwhite"
-        style={{ fontSize: 'clamp(2.8rem, 5.8vw, 5.4rem)', letterSpacing: '-0.055em', lineHeight: 0.95 }}
-      >
-        Every missed call is money
-        <br />
-        walking out the door.
-      </h2>
-    </FadeUp>
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,0.8fr)] lg:gap-10">
+      <FadeUp className="max-w-xl">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-orange-soft">
+          What are missed calls costing you?
+        </p>
+        <h2
+          className="font-display font-bold text-offwhite"
+          style={{ fontSize: 'clamp(2.35rem, 5vw, 4.4rem)', letterSpacing: '-0.05em', lineHeight: 0.95 }}
+        >
+          One missed enquiry can be a lost quote, call-out, or full day’s work.
+        </h2>
+        <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/56">
+          Use the calculator to get a rough feel for what unanswered calls might be costing each month. One recovered job could pay for Trade Receptionist.
+        </p>
 
-    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,280px)] lg:justify-center lg:gap-14">
-      <FadeUp className="lg:justify-self-end">
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {ROI_STATS.map(({ value, label, sublabel }) => (
+            <div
+              key={value}
+              className="public-surface-soft rounded-[18px] px-4 py-4"
+              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 28px rgba(2,13,24,0.16)' }}
+            >
+              <div className="font-display text-[2rem] font-bold leading-none text-orange-soft">{value}</div>
+              <p className="mt-2 text-[13px] leading-snug text-offwhite/68">{label}</p>
+              <p className="text-[13px] leading-snug text-offwhite/40">{sublabel}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          <Button variant="primary" size="lg" onClick={onWaitlist}>
+            Start free trial
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={80}>
         <React.Suspense fallback={<LazyFallback height={480} />}>
           <Calculator />
         </React.Suspense>
-      </FadeUp>
-
-      <FadeUp delay={80} className="flex flex-col gap-5">
-        {ROI_STATS.map(({ value, label, sublabel }, i) => (
-          <div
-            key={i}
-            className="rounded-[22px] p-7 text-center lg:p-8"
-            style={{
-              background: 'linear-gradient(180deg, rgba(255,250,244,0.98) 0%, rgba(255,255,255,0.98) 100%)',
-              boxShadow: '0 0 0 1px rgba(244,162,97,0.60), 0 16px 36px rgba(2,13,24,0.18)',
-            }}
-          >
-            <div
-              className="font-display font-bold leading-none mb-3"
-              style={{
-                fontSize: 'clamp(3.2rem, 5vw, 4.5rem)',
-                color: '#F08F45',
-                letterSpacing: '-0.05em',
-              }}
-            >
-              {value}
-            </div>
-            <p className="text-[16px] leading-tight text-[#111827] font-body">{label}</p>
-            <p className="text-[16px] leading-tight text-[#111827] font-body">{sublabel}</p>
-            {i > 0 && (
-              <p className="mt-4 text-[11px] tracking-[0.12em] uppercase text-[#111827]/70 font-body">
-                {i === 1 ? 'Speed is the key' : 'Speed wins the work'}
-              </p>
-            )}
-          </div>
-        ))}
       </FadeUp>
     </div>
   </Section>
 );
 
-// ─── Comparison ───────────────────────────────────────────────────────────────
-const PROOF_QUOTES = [
-  {
-    quote: "Running a busy plumbing firm means I can't answer every call. Since we started using Trade Receptionist, our diary's fuller than ever. No more chasing. No more lost time.",
-    name: 'John Davies',
-    company: 'JD Plumbing & Heating',
-    photo: '/assets/generated/testimonials/avatar-5.png',
-    badge: 'Safe',
-    badgeStyle: {
-      background: '#F3DA34',
-      color: '#1f2937',
-    },
-  },
-  {
-    quote: "The best decision I made for my electrical business. Sounds professional, and actually books jobs. My evenings back. My bookings up.",
-    name: 'David Miller',
-    company: 'Miller Electrical',
-    photo: '/assets/generated/testimonials/avatar-3.png',
-    badge: 'Miller Electrical Services',
-    badgeStyle: {
-      background: '#ffffff',
-      color: '#b91c1c',
-    },
-  },
-  {
-    quote: "My diary used to be chaotic. Now Trade Receptionist filters and books jobs for me. No more evenings working.",
-    name: 'Sarah Lee',
-    company: 'SL Carpentry',
-    photo: '/assets/generated/testimonials/avatar-4.png',
-    badge: 'TradeVoice',
-    badgeStyle: {
-      background: '#eef2ff',
-      color: '#1d4ed8',
-    },
-  },
-];
-
-const ComparisonSection = () => {
-  const ref = useScrollAnimation();
-  const comparisonRows = [
-    { feature: 'Cost', tradeReceptionist: 'Affordable, flat fee', missedCalls: 'Lost Revenue', voicemail: 'Free, but ineffective', traditional: 'High hourly rates' },
-    { feature: 'Availability', tradeReceptionist: '24/7, 365 days', missedCalls: 'Zero', voicemail: 'Limited to message', traditional: 'Business Hours Only' },
-    { feature: 'Booking Speed', tradeReceptionist: 'Instant', missedCalls: 'Never', voicemail: 'Delayed', traditional: 'Slow, manual' },
-    { feature: 'Job Capture', tradeReceptionist: 'Guaranteed', missedCalls: 'None', voicemail: 'Low', traditional: 'Variable' },
-    { feature: 'Setup Time', tradeReceptionist: '<15 Minutes', missedCalls: 'N/A', voicemail: 'Instant', traditional: 'Days/Weeks' },
-  ];
-
-  return (
-    <Section bg="white" id="comparison" className="relative overflow-hidden">
-      <div ref={ref} data-animate>
-        <div className="mb-24">
-          <div className="mb-3 flex items-start justify-between gap-6">
-            <p className="pt-2 text-[11px] font-semibold tracking-[0.18em] uppercase text-offwhite/35 font-body">
-              Why UK tradespeople stay
-            </p>
-            <p className="hidden max-w-[15rem] text-right text-[12px] leading-relaxed text-offwhite/30 font-body md:block">
-              100+ professionals who stopped tracking calls and started booking more.
-            </p>
-          </div>
-
-          <h2
-            className="font-display font-bold text-offwhite"
-            style={{ fontSize: 'clamp(3rem, 5.5vw, 5.25rem)', letterSpacing: '-0.055em', lineHeight: 0.92 }}
-          >
-            Trusted by trades across
-            <br />
-            the UK.
-          </h2>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {PROOF_QUOTES.map(({ quote, name, company, photo, badge, badgeStyle }, index) => (
-              <div
-                key={name}
-                data-delay={index}
-                className="overflow-hidden rounded-[18px]"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(18,31,56,0.96) 0%, rgba(33,44,67,0.96) 100%)',
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 42px rgba(2,13,24,0.34)',
-                }}
-              >
-                <img src={photo} alt={name} className="h-[290px] w-full object-cover object-top" loading="lazy" />
-                <div className="p-5">
-                  <div className="mb-3 text-[42px] leading-none text-[#F29C5C]">&ldquo;</div>
-                  <p className="mt-[-10px] min-h-[140px] text-[15px] leading-[1.45] text-offwhite/86 font-body">
-                    "{quote}"
-                  </p>
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div>
-                      <div className="font-display text-[24px] font-bold leading-none text-offwhite">{name}</div>
-                      <div className="mt-1 text-[15px] text-offwhite/45 font-body">{company}</div>
-                    </div>
-                    <div
-                      className="rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.05em]"
-                      style={badgeStyle}
-                    >
-                      {badge}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-12">
-          <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] uppercase text-offwhite/35 font-body">
-            High-contrast comparison
-          </p>
-          <h2
-            className="font-display font-bold text-offwhite"
-            style={{ fontSize: 'clamp(3rem, 5.5vw, 5.15rem)', letterSpacing: '-0.055em', lineHeight: 0.92 }}
-          >
-            Trade Receptionist vs.
-            <br />
-            The Alternatives
-          </h2>
-
-          <div className="mt-10 overflow-x-auto pb-3">
-            <div
-              className="min-w-[920px] overflow-hidden rounded-[20px]"
-              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px rgba(2,13,24,0.36)' }}
-            >
-              <div className="grid grid-cols-[1.15fr_1.3fr_1fr_1fr_1.2fr]">
-                <div className="px-5 py-6 text-[17px] font-semibold text-offwhite" style={{ background: 'rgba(255,255,255,0.05)' }}>Feature</div>
-                <div
-                  className="relative px-5 py-6 text-center"
-                  style={{
-                    background: 'linear-gradient(180deg, rgba(249,115,22,0.86) 0%, rgba(242,159,87,0.92) 100%)',
-                    boxShadow: '0 0 28px rgba(249,115,22,0.34)',
-                  }}
-                >
-                  <div className="font-display text-[28px] font-bold leading-none text-white">Trade</div>
-                  <div className="font-display text-[28px] font-bold leading-none text-white">Receptionist</div>
-                </div>
-                {['Missed Calls', 'Voicemail', 'Traditional Services'].map((label) => (
-                  <div key={label} className="px-5 py-6 text-center text-[17px] font-semibold text-offwhite" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    {label}
-                  </div>
-                ))}
-              </div>
-
-              {comparisonRows.map((row, rowIndex) => {
-                const baseBg = rowIndex % 2 === 0 ? 'rgba(8,18,34,0.82)' : 'rgba(10,22,40,0.88)';
-                return (
-                  <div key={row.feature} className="grid grid-cols-[1.15fr_1.3fr_1fr_1fr_1.2fr]">
-                    <div className="border-t border-white/8 px-5 py-5 text-[16px] text-offwhite/88 font-body" style={{ background: baseBg }}>
-                      {row.feature}
-                    </div>
-                    <div className="border-t border-white/8 px-5 py-5" style={{ background: 'rgba(249,115,22,0.12)' }}>
-                      <div className="flex items-center gap-3 text-[16px] text-offwhite font-body">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F29C5C] text-white">
-                          <CheckCircle2 className="h-4 w-4" />
-                        </span>
-                        {row.tradeReceptionist}
-                      </div>
-                    </div>
-                    {[
-                      row.missedCalls,
-                      row.voicemail,
-                      row.traditional,
-                    ].map((cell, index) => {
-                      const showCheck = row.feature === 'Setup Time' && index === 1;
-                      return (
-                        <div key={`${row.feature}-${index}`} className="border-t border-white/8 px-5 py-5" style={{ background: baseBg }}>
-                          <div className="flex items-center gap-3 text-[16px] text-offwhite/78 font-body">
-                            <span className={`flex h-7 w-7 items-center justify-center rounded-full ${showCheck ? 'bg-[#F29C5C] text-white' : 'text-[#d25967]'}`}>
-                              {showCheck ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                            </span>
-                            {cell}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div
-            className="mt-14 flex flex-col items-start justify-between gap-6 rounded-[24px] px-8 py-8 md:flex-row md:items-center md:px-10 md:py-10"
-            style={{
-              background: 'linear-gradient(135deg, rgba(38,28,36,0.55) 0%, rgba(22,36,63,0.88) 100%)',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 18px 44px rgba(2,13,24,0.30)',
-            }}
-          >
-            <h3
-              className="font-display font-bold text-offwhite"
-              style={{ fontSize: 'clamp(2.4rem, 4.2vw, 4.5rem)', lineHeight: 0.95, letterSpacing: '-0.05em' }}
-            >
-              Stop losing jobs today
-            </h3>
-            <button
-              className="inline-flex items-center gap-2 rounded-[16px] px-8 py-4 text-[18px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5"
-              style={{
-                background: 'linear-gradient(135deg, #F97316 0%, #F4A261 100%)',
-                boxShadow: '0 18px 36px rgba(249,115,22,0.28)',
-              }}
-              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Start Free Trial
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-};
-
 // ─── Demo Section ─────────────────────────────────────────────────────────────
-const DemoSection = () => {
-  const ref = useScrollAnimation();
+const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
   return (
-  <Section id="demo" bg="gray">
-    <div ref={ref} data-animate className="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-14 lg:gap-18 items-center">
+  <Section id="demo" bg="gray" className="relative overflow-hidden">
+    <div className="grid lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] gap-8 lg:gap-10 items-center">
       <div className="max-w-xl">
-        <Badge>Hear It in Action</Badge>
+        <Badge>Hear how it answers a customer</Badge>
         <h2
           className="font-display font-bold text-offwhite mb-5 leading-[1.1]"
           style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', letterSpacing: '-0.02em' }}
         >
-          A real call, handled{' '}
-          <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>perfectly.</span>
+          Hear how it answers a customer.
         </h2>
         <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
-          Listen to Trade Receptionist handle a real boiler repair enquiry — from greeting to job booked, in under 90 seconds.
+          Listen to a short example of Trade Receptionist handling a real-style customer enquiry, capturing the job details, and sending the summary back to the trade business.
         </p>
 
         <div className="mb-8 flex flex-wrap gap-3">
-          {['Books the slot', 'Calendar-aware', 'Urgency routing'].map((item) => (
+          {['Natural British voice', 'Captures the job', 'WhatsApp summary back'].map((item) => (
             <span
               key={item}
               className="rounded-full px-4 py-2 text-[12px] font-semibold tracking-[0.02em] text-offwhite/72"
@@ -1159,15 +960,15 @@ const DemoSection = () => {
           ))}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {[
-            { title: 'Handles Qualification', text: 'Asks for postcode, job type, and urgency before booking.' },
-            { title: 'Checks Your Calendar', text: 'Only books slots you\'re actually free — syncs with Google and Outlook.' },
-            { title: 'Emergency Routing',     text: 'Patches urgent calls straight through to your mobile, instantly.' },
+            { title: 'Asks the right questions', text: 'It captures the caller, job, urgency, and when they need you.' },
+            { title: 'Protects your time', text: 'Spam, sales calls, and weak enquiries don’t eat into the day.' },
+            { title: 'Hands back a clean summary', text: 'You get the detail fast, without needing to listen back to voicemails.' },
           ].map((feat, i) => (
             <div
               key={i}
-              className="flex gap-4 rounded-[20px] p-5"
+              className="flex gap-4 rounded-[18px] p-4"
               style={{
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%)',
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 30px rgba(2,13,24,0.20)',
@@ -1186,6 +987,13 @@ const DemoSection = () => {
             </div>
           ))}
         </div>
+
+        <div className="mt-6">
+          <Button variant="primary" onClick={onWaitlist}>
+            Start free trial
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
@@ -1193,18 +1001,6 @@ const DemoSection = () => {
           className="absolute inset-x-6 -top-10 h-44 rounded-full blur-3xl pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(255,138,72,0.18) 0%, transparent 72%)' }}
         />
-        {/* Floating transcript card */}
-        <div
-          className="absolute -left-8 top-8 max-w-[260px] rounded-card p-6 z-20 hidden xl:block glass-elevated animate-float"
-          style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.5)' }}
-        >
-          <p className="text-[10px] font-bold text-offwhite/30 mb-3 uppercase tracking-[0.12em]">Live Transcript</p>
-          <div className="space-y-3 text-[13px] leading-relaxed">
-            <p><span className="font-bold text-orange-soft">AI:</span> <span className="text-offwhite/60">"Trade Receptionist for Dave's Plumbing. How can I help?"</span></p>
-            <p><span className="font-bold text-accent">Caller:</span> <span className="text-offwhite/60">"My boiler's making a banging noise."</span></p>
-            <p><span className="font-bold text-orange-soft">AI:</span> <span className="text-offwhite/60">"Is it urgent or just looking for a quote?"</span></p>
-          </div>
-        </div>
 
         <div
           className="rounded-[28px] p-4 md:p-5"
@@ -1216,19 +1012,49 @@ const DemoSection = () => {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-2">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Sample Call</p>
-              <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Boiler repair enquiry, handled end to end</p>
+              <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Real-style repair enquiry, handled end to end</p>
             </div>
             <div
               className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-soft"
               style={{ background: 'rgba(255,107,43,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.16)' }}
             >
-              90 sec booking flow
+              Play sample call
             </div>
           </div>
 
           <React.Suspense fallback={<LazyFallback height={200} />}>
             <AudioPlayer />
           </React.Suspense>
+        </div>
+
+        {/* Call summary proof */}
+        <div
+          className="mt-4 rounded-[22px] p-5"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 30px rgba(2,13,24,0.20)',
+          }}
+        >
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">
+            What your AI captured from this call
+          </p>
+          <div className="space-y-3">
+            {[
+              { label: 'Caller', value: 'Mike — 07700 900342' },
+              { label: 'Job', value: 'Boiler leak, kitchen — urgent, needs someone this week' },
+              { label: 'Action', value: 'Summary sent to WhatsApp · Follow-up scheduled' },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-start gap-3">
+                <span
+                  className="mt-0.5 flex-shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-orange-soft"
+                  style={{ background: 'rgba(255,107,43,0.09)', boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.12)' }}
+                >
+                  {label}
+                </span>
+                <p className="text-[13px] leading-[1.55] text-offwhite/65">{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
@@ -1241,7 +1067,6 @@ const DemoSection = () => {
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
-  const pricingRef = useScrollAnimation();
 
   const plans: PricingTier[] = [
     {
@@ -1249,7 +1074,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       price: billing === 'monthly' ? '£29' : '£24',
       period: 'per month (+VAT)',
       description: 'Solo traders',
-      features: ['Up to 100 Calls/Month', '24/7 Answering', 'SMS Summaries', 'Google Calendar Sync'],
+      features: ['Up to 100 calls/month', '24/7 answering', 'WhatsApp job summaries', 'Google Calendar sync'],
       buttonText: 'Start Free Trial',
     },
     {
@@ -1258,7 +1083,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       period: 'per month (+VAT)',
       description: 'Busy professionals',
       isPopular: true,
-      features: ['Up to 300 Calls/Month', 'Everything in Starter', 'Call Transfer Logic', 'CRM Integration', 'Priority Support'],
+      features: ['Up to 300 calls/month', 'Everything in Starter', 'Call transfer logic', 'Calendar booking', 'Priority support'],
       buttonText: 'Start Free Trial',
     },
     {
@@ -1266,7 +1091,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       price: billing === 'monthly' ? '£119' : '£99',
       period: 'per month (+VAT)',
       description: 'Growing teams',
-      features: ['Unlimited Calls', 'Everything in Pro', 'Multiple Departments', 'White-Label Dashboard', 'Dedicated Account Mgr'],
+      features: ['Unlimited calls', 'Everything in Pro', 'Multiple departments', 'Shared team access', 'Dedicated account manager'],
       buttonText: 'Start Free Trial',
     },
   ];
@@ -1279,15 +1104,15 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       />
 
       <div className="mb-14 max-w-3xl">
-        <Badge>Simple, Honest Pricing</Badge>
+        <Badge>Simple pricing for missed-call cover</Badge>
         <h2
           className="font-display font-bold text-offwhite mb-4"
           style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
         >
-          No contracts. Cancel anytime.
+          No contracts. Keep your number. Cancel anytime.
         </h2>
         <p className="text-[17px] text-offwhite/52 mb-8 leading-relaxed">
-          Early access available now. Prices locked for life when you join.
+          Start with the calls you’re currently missing, then scale up when the diary gets busier.
         </p>
 
         {/* Toggle */}
@@ -1312,12 +1137,27 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </div>
       </div>
 
-      <div ref={pricingRef} className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-10 md:pt-12">
+      {/* Pricing trust bar */}
+      <div
+        className="mb-8 flex flex-wrap items-center justify-center gap-3 rounded-[14px] px-5 py-3.5"
+        style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
+      >
+        {[
+          { icon: CheckCircle2, text: '98.7% of calls answered' },
+          { icon: CheckCircle2, text: '14-day free trial, no card required' },
+          { icon: CheckCircle2, text: 'Set up in under 14 minutes' },
+        ].map(({ icon: Icon, text }) => (
+          <span key={text} className="flex items-center gap-2 text-[13px] text-offwhite/52">
+            <Icon className="h-3.5 w-3.5 flex-shrink-0 text-orange" aria-hidden="true" />
+            {text}
+          </span>
+        ))}
+      </div>
+
+      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-10 md:pt-12">
         {plans.map((plan, i) => (
           <div
             key={i}
-            data-animate
-            data-delay={i}
             className={`snap-center flex-shrink-0 w-[82vw] md:w-auto relative flex flex-col rounded-[24px] p-8 ${
               plan.isPopular
                 ? 'popular-ring md:scale-[1.04] order-first md:order-none'
@@ -1406,42 +1246,37 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
 };
 
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
-const FAQ = () => {
+const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const faqRef = useScrollAnimation();
 
   const faqs: FAQItem[] = [
     {
       question: 'Do I need to change my phone number?',
-      answer: "No. You set up call forwarding on your existing mobile or landline — it takes about 2 minutes. Calls go to your Trade Receptionist number when you're busy, then straight back to you the rest of the time.",
+      answer: "No. You keep your current mobile or landline. Trade Receptionist works with call forwarding, so customers still ring the number they already know.",
     },
     {
-      question: 'How does call diverting work?',
-      answer: "You dial a short code on your phone (e.g. **21* then your Trade Receptionist number) to activate divert when you're on-site. You can also set it to auto-divert on busy or no-answer. Your network does the rest.",
+      question: 'Will customers know it’s AI?',
+      answer: 'Most callers just notice that the phone was answered quickly and professionally. The voice is natural, British, and focused on taking the details properly.',
     },
     {
-      question: "What if I'm on a job and can\'t check messages?",
-      answer: "You'll get a WhatsApp message immediately after every call with the key details: caller name, job type, postcode, urgency. Check it between jobs in 10 seconds. No voicemail back-log.",
+      question: 'Can it book into my Google Calendar?',
+      answer: 'Yes. If you connect your calendar, it can work around your availability and help place qualified enquiries into the right slot.',
     },
     {
-      question: 'What accent and voice does the AI use?',
-      answer: 'Natural, neutral British English — like a professional office receptionist based in the UK. Not robotic, not American. You can hear an example in the Live Demo section above.',
+      question: 'What happens if the call is urgent?',
+      answer: 'Urgent enquiries can be flagged and handled differently, including sending them straight through or marking them clearly so you can act fast.',
     },
     {
-      question: 'Can I customise what it says about my business?',
-      answer: 'Yes. During onboarding you build a simple knowledge base: your service areas (postcodes), pricing ranges, common job types, and out-of-hours rules. The AI uses this to answer caller questions accurately.',
+      question: 'Can I stop it from quoting prices?',
+      answer: 'Yes. You decide what it can and cannot say. If you don’t want prices discussed on calls, it can simply capture the enquiry and pass it back to you.',
     },
     {
-      question: 'Does it work with my trade management software?',
-      answer: 'We integrate with Google Calendar, Outlook, and ServiceM8. Jobs booked via Trade Receptionist appear directly in your diary. More integrations are rolling out continuously.',
+      question: 'What if it gets something wrong?',
+      answer: 'You still see the enquiry summary, call record, and transcript, so you can correct anything quickly. The goal is to stop missed work, not take control away from you.',
     },
     {
-      question: 'What happens in an emergency?',
-      answer: 'You set keywords (e.g. "no heating", "flooding") that trigger immediate call transfer to your mobile. Emergency calls are patched straight through — they never hit voicemail.',
-    },
-    {
-      question: 'Is there a contract or lock-in?',
-      answer: 'No contract. Cancel any time from your account — no notice period, no cancellation fee. We earn your business every month.',
+      question: 'Can I cancel anytime?',
+      answer: 'Yes. There’s no long contract tying you in. If it’s not right for your business, you can stop.',
     },
   ];
 
@@ -1454,17 +1289,17 @@ const FAQ = () => {
             className="font-display font-bold text-offwhite"
             style={{ fontSize: 'clamp(2.25rem, 5vw, 4.25rem)', letterSpacing: '-0.025em', lineHeight: 0.97 }}
           >
-            Frequently asked questions
+            Straight answers before you switch on call handling.
           </h2>
           <p className="mt-5 max-w-md text-[16px] leading-relaxed text-offwhite/52">
-            Everything trades businesses usually ask before switching from missed calls, voicemail, or manual answering.
+            Plain-English answers to the practical questions most trades businesses ask before they stop relying on missed calls and voicemail.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
             {[
-              'Setup takes around 14 minutes',
-              'No contract or lock-in',
-              'Works with your existing number',
+              'No new number needed',
+              'Setup in minutes',
+              'Cancel anytime',
             ].map((item) => (
               <div
                 key={item}
@@ -1478,13 +1313,25 @@ const FAQ = () => {
               </div>
             ))}
           </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button variant="primary" onClick={onWaitlist}>
+              Start free trial
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Hear how it answers a customer
+            </Button>
+          </div>
         </div>
 
-        <div ref={faqRef} data-animate className="space-y-3">
+        <div className="space-y-3">
           {faqs.map((faq, i) => (
             <div
               key={i}
-              data-delay={i}
               className="overflow-hidden rounded-[20px]"
               style={{
                 background: openIndex === i
@@ -1528,7 +1375,6 @@ const FAQ = () => {
 
 // ─── Final CTA ────────────────────────────────────────────────────────────────
 const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
-  const ref = useScrollAnimation();
   return (
   <section className="py-16 md:py-24 relative overflow-hidden" style={{ background: 'rgba(2,13,24,0.88)' }}>
     {/* Top fade separator */}
@@ -1541,7 +1387,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
     <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none opacity-20"
       style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.1) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
-    <div ref={ref} data-animate className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
+    <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
       <div
         className="rounded-[30px] px-6 py-10 text-center sm:px-8 md:px-12 md:py-14"
         style={{
@@ -1549,34 +1395,47 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
           boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 56px rgba(2,13,24,0.36)',
         }}
       >
-        <Badge color="blue">Your Competition Is Already Using This</Badge>
+        <Badge color="blue">Ready to stop losing work?</Badge>
 
         <h2
           className="font-display font-bold text-offwhite mb-6 leading-[1.0] mt-4"
           style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
         >
-          Stop losing{' '}
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              fontStyle: 'italic',
-            }}
-          >
-            jobs
-          </span>{' '}
-          to missed calls.
+          Stop losing jobs to missed calls.
         </h2>
 
-        <p className="text-[17px] text-offwhite/44 max-w-2xl mx-auto mb-10 font-body leading-relaxed">
-          While you read this, a competitor is answering their calls. Every unanswered ring is a job that goes to someone else.
+        <p className="text-[17px] text-offwhite/44 max-w-2xl mx-auto mb-8 font-body leading-relaxed">
+          If the phone rings while you’re busy, Trade Receptionist can still answer it properly, take the details, and help you book the work.
         </p>
+
+        {/* End-state proof cue */}
+        <div className="mb-10 flex flex-wrap items-center justify-center gap-2 text-[13px] text-offwhite/38">
+          {[
+            { label: "Call answered" },
+            { label: "Lead captured" },
+            { label: "Job booked" },
+          ].map(({ label }, idx, arr) => (
+            <React.Fragment key={label}>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-orange/60"
+                  style={{ background: "rgba(255,107,43,0.1)" }}
+                  aria-hidden="true"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                </span>
+                {label}
+              </span>
+              {idx < arr.length - 1 && (
+                <ArrowRight className="h-3 w-3 text-offwhite/18" aria-hidden="true" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <Button variant="primary" size="lg" onClick={onWaitlist} className="animate-pulse-glow">
-            Start Free Trial — No Card Required
+            Start free trial
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
           <Button
@@ -1584,16 +1443,16 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
             onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
           >
             <Play className="w-4 h-4 mr-2 text-accent" />
-            Hear a Live Demo
+            Hear how it answers a customer
           </Button>
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 text-[13px] text-offwhite/28 font-body">
           {[
-            { icon: Star, label: '4.9/5 rating' },
-            { icon: CheckCircle2, label: 'Setup in 14 minutes' },
+            { icon: CheckCircle2, label: 'No new number needed' },
+            { icon: CheckCircle2, label: 'Setup in minutes' },
             { icon: CheckCircle2, label: 'Cancel anytime' },
-            { icon: CheckCircle2, label: 'No card required' },
+            { icon: CheckCircle2, label: 'Natural British voice' },
           ].map(({ icon: Icon, label }) => (
             <span
               key={label}
@@ -1678,7 +1537,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
                 className="hover:text-offwhite transition-colors"
               >
-                Live Demo
+                Hear how it answers a customer
               </button>
             </li>
           </ul>
@@ -1689,10 +1548,10 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
           <ul className="space-y-3 text-[14px] text-offwhite/45">
             <li>
               <button
-                onClick={() => document.getElementById('comparison')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                 className="hover:text-offwhite transition-colors"
               >
-                Why Trade Receptionist
+                How it works
               </button>
             </li>
             <li>
@@ -1815,7 +1674,7 @@ const CookieNotice: React.FC = () => {
   if (!visible) return null;
   return (
     <div
-      className="fixed bottom-36 md:bottom-5 left-4 right-4 md:left-auto md:right-5 md:max-w-[360px] z-[60] rounded-[20px] p-4 font-body"
+      className="fixed bottom-24 left-4 right-4 z-[60] rounded-[20px] p-4 font-body md:bottom-5 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2"
       style={{
         background:   'linear-gradient(180deg, rgba(10,35,64,0.96) 0%, rgba(8,26,48,0.96) 100%)',
         backdropFilter: 'blur(20px)',
@@ -1890,14 +1749,16 @@ const App: React.FC = () => {
         {currentView === 'home' ? (
           <>
             <Hero onWaitlist={toggleStripe} />
-            <ROISection />
-            <React.Suspense fallback={<LazyFallback height={800} />}>
+            <ROISection onWaitlist={toggleStripe} />
+            <React.Suspense fallback={<LazyFallback height={420} />}>
               <FeaturesGrid onWaitlist={toggleStripe} />
             </React.Suspense>
-            <ComparisonSection />
-            <DemoSection />
+            <React.Suspense fallback={<LazyFallback height={520} />}>
+              <Testimonials />
+            </React.Suspense>
+            <DemoSection onWaitlist={toggleStripe} />
             <Pricing onWaitlist={toggleStripe} />
-            <FAQ />
+            <FAQ onWaitlist={toggleStripe} />
             <FinalCTA onWaitlist={toggleStripe} />
           </>
         ) : (

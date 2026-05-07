@@ -90,33 +90,12 @@ export default function LoginPage() {
 
   return (
     <div
-      className="relative min-h-[100dvh] overflow-hidden px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
-      style={{
-        background:
-          'radial-gradient(circle at 14% 18%, rgba(255,107,43,0.12) 0%, transparent 32%),' +
-          'radial-gradient(circle at 82% 26%, rgba(153,203,255,0.10) 0%, transparent 34%),' +
-          '#051426',
-      }}
+      className="public-page-shell px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
     >
-      <div
-        className="pointer-events-none fixed inset-0 opacity-30"
-        aria-hidden="true"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(153,203,255,0.04) 1px, transparent 1px),' +
-            'linear-gradient(90deg, rgba(153,203,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute left-[-10%] top-[8%] h-[320px] w-[320px] rounded-full opacity-40 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(255,107,43,0.22) 0%, transparent 72%)' }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-[-8%] right-[-4%] h-[320px] w-[320px] rounded-full opacity-35 blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.16) 0%, transparent 72%)' }}
-      />
+      <div className="public-page-grid" aria-hidden="true" />
+      <div className="public-page-vignette" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--orange" aria-hidden="true" />
+      <div className="public-page-orb public-page-orb--blue" aria-hidden="true" />
 
       <div
         className="relative mx-auto w-full max-w-[1180px]"
@@ -154,7 +133,7 @@ export default function LoginPage() {
                 Sign in and get back to the work that matters.
               </h1>
               <p className="mt-5 max-w-[48ch] text-[16px] leading-relaxed text-offwhite/58 sm:text-[17px]">
-                Trade Receptionist keeps answering while you’re on the tools. Your dashboard shows what Sarah captured, who called, and what needs your attention next.
+                Trade Receptionist keeps answering while you’re on the tools. Your dashboard shows what your receptionist captured, who called, and what needs your attention next.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -187,7 +166,7 @@ export default function LoginPage() {
                       Live operating mode
                     </p>
                     <p className="mt-2 max-w-[44ch] text-[14px] leading-relaxed text-offwhite/56">
-                      Once signed in, you’ll see the enquiries Sarah handled, the jobs that were booked, and the follow-up that still needs your call back.
+                      Once signed in, you’ll see the enquiries your AI receptionist handled, the jobs that were booked, and the follow-up that still needs your call back.
                     </p>
                   </div>
                   <div
@@ -297,7 +276,7 @@ export default function LoginPage() {
                         Your calls are already covered.
                       </h2>
                       <p className="mt-4 max-w-[40ch] text-[15px] leading-relaxed text-offwhite/56">
-                        Sign in to see what Sarah has handled today, connect your calendar, and keep refining how your receptionist works.
+                        Sign in to see what your receptionist has handled today, connect your calendar, and keep refining how Trade Receptionist works for your business.
                       </p>
                     </div>
 
@@ -305,7 +284,7 @@ export default function LoginPage() {
                       className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-2"
                       style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.16)' }}
                       role="status"
-                      aria-label="Sarah is live and answering calls"
+                      aria-label="Your AI receptionist is live and answering calls"
                     >
                       <div className="relative flex h-2 w-2 items-center justify-center">
                         <span className="absolute h-full w-full rounded-full bg-orange animate-ping opacity-60" />
@@ -313,7 +292,7 @@ export default function LoginPage() {
                       </div>
                       <Phone size={12} className="text-orange-soft" aria-hidden="true" />
                       <span className="text-[12px] font-semibold tracking-[-0.01em] text-orange-soft">
-                        Sarah is live and answering calls
+                        Your AI receptionist is live and answering calls
                       </span>
                     </div>
 

@@ -863,7 +863,9 @@ test('TEST 10 — Edge Cases: 404 route, offline state, wrong credentials', asyn
 // TEST 11 — Mobile at 375×812 (iPhone SE)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('TEST 11 — Mobile 375×812: homepage, login form, nav drawer, touch targets', { timeout: 120_000 }, async ({ page }) => {
+test('TEST 11 — Mobile 375×812: homepage, login form, nav drawer, touch targets', async ({ page }) => {
+  test.setTimeout(120_000);
+
   // Force iPhone SE viewport (playwright.config.ts `mobile` project handles this,
   // but we set it explicitly here for the --grep single-test case)
   await page.setViewportSize({ width: 375, height: 812 });

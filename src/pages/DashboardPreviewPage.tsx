@@ -68,7 +68,7 @@ const PREVIEW_CALLS: PreviewCall[] = [
     caller_number: '07855 101209',
     started_at: '2026-05-05T07:58:00.000Z',
     duration_secs: 182,
-    outcome: 'lead',
+    outcome: 'lead_captured',
     is_emergency: true,
     recording_url: '#',
   },
@@ -86,7 +86,7 @@ const PREVIEW_CALLS: PreviewCall[] = [
     caller_number: '07702 003811',
     started_at: '2026-05-04T15:37:00.000Z',
     duration_secs: 214,
-    outcome: 'lead',
+    outcome: 'lead_captured',
     is_emergency: false,
     recording_url: '#',
   },
@@ -116,9 +116,9 @@ const PREVIEW_LEADS: PreviewLead[] = [
   },
   {
     id: 'lead_2',
-    caller_name: 'Sarah Lee',
+    caller_name: 'Helen Briggs',
     caller_number: '07855 101209',
-    caller_email: 'sarah@example.com',
+    caller_email: 'helen@example.com',
     postcode: 'CR0',
     job_type: 'Emergency leak',
     urgency: 'emergency',
@@ -160,7 +160,7 @@ const PREVIEW_SETTINGS = {
   owner_mobile: '+44 7791 138264',
   twilio_number: '+44 20 4571 9023',
   own_number: '+44 20 8333 9122',
-  after_hours_message: 'We are currently off the tools, but Sarah has taken full details and we will call you back first thing.',
+  after_hours_message: 'We are currently off the tools, but your AI receptionist has taken full details and we will call you back first thing.',
   google_cal_id: 'hendricksplumbing@gmail.com',
   google_cal_connected: true,
 };
@@ -448,7 +448,7 @@ export default function DashboardPreviewPage() {
         </section>
 
         <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard-preview/calls" helper="Inbound conversations captured by Sarah." />
+          <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard-preview/calls" helper="Inbound conversations captured by your receptionist." />
           <StatCard label="Leads captured" value={String(totalLeads)} icon={Users} href="/dashboard-preview/leads" helper="Enquiries worth reviewing and following up." />
           <StatCard label="Jobs booked" value={String(bookedJobs)} icon={TrendingUp} accent helper="Calls already converted into booked work." />
           <StatCard label="Emergencies" value={String(emergencies)} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
@@ -492,7 +492,7 @@ export default function DashboardPreviewPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number}</p>
-                      <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by Sarah'}</p>
+                      <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by your receptionist'}</p>
                     </div>
                   </div>
                   <span className="text-[12px] text-offwhite/38 tabular-nums">{formatDate(call.started_at)}</span>
@@ -746,7 +746,7 @@ export function DashboardPreviewCallsPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number}</p>
-                    <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by Sarah'}</p>
+                    <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
                   </div>
                 </div>
                 <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
@@ -981,7 +981,7 @@ export function DashboardPreviewSettingsPage() {
                 <div className="max-w-[58ch]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings preview</p>
                   <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                    Keep Sarah aligned with how your business runs.
+                    Keep your AI receptionist aligned with how your business runs.
                   </h1>
                   <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
                     This seeded settings view lets you inspect the upgraded layout and form hierarchy while keeping everything completely local to preview mode.
@@ -1017,7 +1017,7 @@ export function DashboardPreviewSettingsPage() {
               <SettingsSection
                 title="Business details"
                 icon={User}
-                description="The core identity Sarah uses when speaking to callers and sending follow-up context back to you."
+                description="The core identity Trade Receptionist uses when speaking to callers and sending follow-up context back to you."
               >
                 <div className="grid gap-4">
                   <LabeledField label="Business name" name="preview-business-name" value={form.business_name} onChange={value => setField('business_name', value)} />
@@ -1084,7 +1084,7 @@ export function DashboardPreviewSettingsPage() {
               <SettingsSection
                 title="Google Calendar"
                 icon={Calendar}
-                description="Give Sarah live diary awareness so she can check availability and help move callers into real appointments."
+                description="Give Trade Receptionist live diary awareness so it can check availability and help move callers into real appointments."
               >
                 <div className="flex flex-wrap items-center gap-3 rounded-[18px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                   <CheckCircle size={15} className="text-status-success" aria-hidden="true" />

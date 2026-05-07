@@ -213,7 +213,7 @@ export default function SettingsPage() {
                 <div className="max-w-[58ch]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings</p>
                   <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                    Keep Sarah aligned with how your business runs.
+                    Keep your AI receptionist aligned with how your business runs.
                   </h1>
                   <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
                     These controls shape your receptionist’s contact details, messaging, call diversion setup, and diary connection without changing the core flow behind the product.
@@ -249,7 +249,7 @@ export default function SettingsPage() {
               <SettingsSection
                 title="Business details"
                 icon={User}
-                description="The core identity Sarah uses when speaking to callers and sending follow-up context back to you."
+                description="The core identity Trade Receptionist uses when speaking to callers and sending follow-up context back to you."
               >
                 <div className="grid gap-4">
                   <LabeledField
@@ -316,7 +316,7 @@ export default function SettingsPage() {
                       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Divert activation code</p>
                       <code className="mt-3 block break-all font-mono text-[18px] tracking-[0.16em] text-offwhite">{activationCode}</code>
                       <p className="mt-3 text-[12px] leading-relaxed text-orange-soft/86">
-                        Dial this on your mobile and press call once to switch your missed-call diversion on. That keeps Sarah covering you automatically.
+                        Dial this on your mobile and press call once to switch your missed-call diversion on. That keeps your receptionist covering you automatically.
                       </p>
                     </div>
                   ) : null}
@@ -336,7 +336,7 @@ export default function SettingsPage() {
                   value={form.after_hours_message ?? ''}
                   onChange={event => set('after_hours_message', event.target.value)}
                   rows={4}
-                  placeholder="We're closed right now, but Sarah has taken full details of your enquiry and we’ll follow up as soon as we’re back on the tools."
+                  placeholder="We're closed right now, but your AI receptionist has taken full details of your enquiry and we’ll follow up as soon as we’re back on the tools."
                   className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
                   style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                 />
@@ -345,7 +345,7 @@ export default function SettingsPage() {
               <SettingsSection
                 title="Google Calendar"
                 icon={Calendar}
-                description="Give Sarah live diary awareness so she can check availability and help move callers into real appointments."
+                description="Give Trade Receptionist live diary awareness so it can check availability and help move callers into real appointments."
               >
                 {form.google_cal_connected ? (
                   <div>
@@ -370,7 +370,7 @@ export default function SettingsPage() {
                 ) : (
                   <div>
                     <p className="text-[13px] leading-relaxed text-offwhite/48">
-                      Sign in with Google to connect your calendar automatically. Once connected, Sarah can check availability and book work directly into your diary.
+                      Sign in with Google to connect your calendar automatically. Once connected, Trade Receptionist can check availability and book work directly into your diary.
                     </p>
                     <div className="mt-4">
                       <Button

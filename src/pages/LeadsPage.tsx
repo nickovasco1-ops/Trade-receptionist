@@ -164,7 +164,7 @@ export default function LeadsPage() {
             <EmptyState
               icon={Users}
               title="No leads yet"
-              description="Leads captured from answered calls will appear here once Sarah starts taking real enquiries."
+              description="Leads captured from answered calls will appear here once your AI receptionist starts taking real enquiries."
               action={{ label: 'Review settings', href: '/settings' }}
             />
           </div>
