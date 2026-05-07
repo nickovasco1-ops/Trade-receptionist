@@ -1012,7 +1012,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-2">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Sample Call</p>
-              <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Real-style repair enquiry, handled end to end</p>
+              <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Mike — bathroom radiator leak, SE24. Handled end to end.</p>
             </div>
             <div
               className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-soft"
@@ -1040,9 +1040,9 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
           </p>
           <div className="space-y-3">
             {[
-              { label: 'Caller', value: 'Mike — 07700 900342' },
-              { label: 'Job', value: 'Boiler leak, kitchen — urgent, needs someone this week' },
-              { label: 'Action', value: 'Summary sent to WhatsApp · Follow-up scheduled' },
+              { label: 'Caller', value: 'Mike Patterson — 07831 440 295 · SE24 0EB, Herne Hill' },
+              { label: 'Job', value: 'Bathroom radiator leaking at pipe connection — active, floorboard risk' },
+              { label: 'Outcome', value: 'Dave booked for today, 3:30 pm · Confirmation text sent' },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-3">
                 <span
