@@ -22,7 +22,7 @@ const FEATURES: Feature[] = [
     num: '01',
     icon: Phone,
     title: 'Always-On Call Answering',
-    desc: "Sarah answers every call 24/7 in a natural British accent. Callers never know it's AI. No voicemail, no missed work — every enquiry gets a real answer.",
+    desc: "Your AI receptionist answers every call 24/7 in a natural British accent. No voicemail, no missed work, and every enquiry gets a real answer.",
     outcome: 'So every enquiry becomes a lead',
   },
   {
@@ -36,14 +36,14 @@ const FEATURES: Feature[] = [
     num: '03',
     icon: ShieldCheck,
     title: 'Smart Spam Filtering',
-    desc: 'PPI calls, cold callers, and time-wasters get handled automatically. Sarah deflects them politely before they waste your time — only real customers get through.',
+    desc: 'PPI calls, cold callers, and time-wasters get handled automatically. Your receptionist deflects them politely before they waste your time — only real customers get through.',
     outcome: 'So you only deal with real customers',
   },
   {
     num: '04',
     icon: Calendar,
     title: 'Diary Integration',
-    desc: 'Sarah books jobs directly into your Google Calendar, Outlook, or ServiceM8. The customer gets a confirmation. No double-booking, no admin, no calls back.',
+    desc: 'Trade Receptionist books jobs directly into your Google Calendar, Outlook, or ServiceM8. The customer gets a confirmation. No double-booking, no admin, and no calls back.',
     outcome: 'So you wake up to a full diary',
   },
 ];
@@ -115,7 +115,7 @@ const CallScreen = () => (
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
         >
           <p className="text-[11px] font-body" style={{ color: 'rgba(240,244,248,0.5)' }}>
-            <span style={{ color: '#ffb59a' }}>Sarah: </span>
+            <span style={{ color: '#ffb59a' }}>Trade Receptionist: </span>
             "Good morning, you've reached Hendricks Plumbing. How can I help you today?"
           </p>
         </div>
@@ -322,7 +322,7 @@ const DiaryScreen = () => (
         style={{ background: 'rgba(255,107,43,0.07)', border: '1px solid rgba(255,107,43,0.12)' }}
       >
         <p className="text-[11px] font-body" style={{ color: '#ffb59a' }}>
-          ✓ 2 new bookings added by Sarah while you were on-site
+          ✓ 2 new bookings added by your receptionist while you were on-site
         </p>
       </div>
     </div>

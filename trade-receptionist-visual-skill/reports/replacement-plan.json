@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-05-07T10:04:26.317Z",
+  "findings": [
+    {
+      "assetId": "hero-call-answering-stage",
+      "section": "hero",
+      "areaName": "Homepage hero visual",
+      "replacementType": "image",
+      "integrationTarget": {
+        "filePath": "App.tsx",
+        "strategy": "replace-string-literal",
+        "searchValue": "/assets/generated/landing-hero-generated.png"
+      },
+      "recommendedReplacementDirection": "Replace the hero art with a clearer 16:9 trade-call composition that keeps strong negative space on the left, shows one crisp phone UI, and adds believable customer-summary / routing cues for a real trade business."
+    }
+  ],
+  "manifest": {
+    "repo": "trade-receptionist",
+    "generatedAt": "2026-05-07T10:04:26.314Z",
+    "assets": [
+      {
+        "assetId": "final-cta-proof-cue",
+        "section": "cta",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "promptPath": "trade-receptionist-visual-skill/prompts/final-cta-proof-cue.prompt.md",
+        "altText": "Support visual showing a captured trade enquiry and booked follow-up beside the final Trade Receptionist call to action.",
+        "severity": 4,
+        "integrationRisk": "medium",
+        "status": "planned",
+        "createdAt": "2026-05-07T09:28:54.136Z",
+        "updatedAt": "2026-05-07T10:03:59.388Z",
+        "currentVisualSource": "Glow-only final CTA block in App.tsx with no supporting product cue | Framework: Vite + React + React Router + TypeScript | Component: App.tsx",
+        "applyStrategy": "manual-component-redesign",
+        "applyTargetFile": "App.tsx",
+        "notes": "Add one subtle but credible support visual showing the end-state: answered call, captured lead, and booked follow-up, without turning the CTA into a busy feature section."
+      },
+      {
+        "assetId": "hero-call-answering-stage",
+        "section": "hero",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "oldAssetPath": "/assets/generated/landing-hero-generated.png",
+        "promptPath": "trade-receptionist-visual-skill/prompts/hero-call-answering-stage.prompt.md",
+        "altText": "Trade Receptionist phone interface showing answered customer calls, captured job details, and routed summaries for a trade business.",
+        "severity": 4,
+        "integrationRisk": "low",
+        "status": "planned",
+        "createdAt": "2026-05-07T09:05:03.953Z",
+        "updatedAt": "2026-05-07T10:04:26.313Z",
+        "currentVisualSource": "Hero scene image in App.tsx using /assets/generated/landing-hero-generated.png with fallback /assets/hero-phone-upscaled-transparent.png | Framework: Vite + React + React Router + TypeScript | Component: App.tsx",
+        "applyStrategy": "replace-string-literal",
+        "applyTargetFile": "App.tsx",
+        "applySearchValue": "/assets/generated/landing-hero-generated.png",
+        "notes": "Replace the hero art with a clearer 16:9 trade-call composition that keeps strong negative space on the left, shows one crisp phone UI, and adds believable customer-summary / routing cues for a real trade business."
+      },
+      {
+        "assetId": "pricing-trust-support",
+        "section": "trust-security",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "promptPath": "trade-receptionist-visual-skill/prompts/pricing-trust-support.prompt.md",
+        "altText": "Compact product proof showing answered calls and simple setup reassurance beside Trade Receptionist pricing.",
+        "severity": 3,
+        "integrationRisk": "medium",
+        "status": "planned",
+        "createdAt": "2026-05-07T09:28:54.136Z",
+        "updatedAt": "2026-05-07T10:03:59.388Z",
+        "currentVisualSource": "Plan cards and glow-only background in Pricing section within App.tsx | Framework: Vite + React + React Router + TypeScript | Component: App.tsx",
+        "applyStrategy": "manual-component-redesign",
+        "applyTargetFile": "App.tsx",
+        "notes": "Support pricing with one compact trust visual or micro-panel showing answered calls, clean summaries, and simple setup cues rather than more decorative glow."
+      },
+      {
+        "assetId": "sample-call-summary-proof",
+        "section": "call-answering",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "promptPath": "trade-receptionist-visual-skill/prompts/sample-call-summary-proof.prompt.md",
+        "altText": "Call summary panel showing captured job details and routed follow-up message for Trade Receptionist.",
+        "severity": 4,
+        "integrationRisk": "medium",
+        "status": "planned",
+        "createdAt": "2026-05-07T09:28:54.136Z",
+        "updatedAt": "2026-05-07T10:03:59.388Z",
+        "currentVisualSource": "Audio player card and glow treatment in DemoSection within App.tsx | Framework: Vite + React + React Router + TypeScript | Component: App.tsx",
+        "applyStrategy": "manual-component-redesign",
+        "applyTargetFile": "App.tsx",
+        "notes": "Add a supporting 16:9 proof visual showing the captured enquiry, urgency, and WhatsApp-style handoff back to the business while keeping the audio player intact."
+      },
+      {
+        "assetId": "workflow-proof-panel",
+        "section": "workflow",
+        "pagePath": "/",
+        "componentPath": "components/FeaturesGrid.tsx",
+        "promptPath": "trade-receptionist-visual-skill/prompts/workflow-proof-panel.prompt.md",
+        "altText": "Workflow showing a customer call becoming a qualified job summary and booked diary slot for a trade business.",
+        "severity": 4,
+        "integrationRisk": "medium",
+        "status": "planned",
+        "createdAt": "2026-05-07T09:28:54.136Z",
+        "updatedAt": "2026-05-07T10:03:59.388Z",
+        "currentVisualSource": "Icon-only timeline cards and compact feature cards in components/FeaturesGrid.tsx | Framework: Vite + React + React Router + TypeScript | Component: components/FeaturesGrid.tsx",
+        "applyStrategy": "manual-component-redesign",
+        "applyTargetFile": "components/FeaturesGrid.tsx",
+        "notes": "Introduce a premium supporting 16:9 workflow visual or reusable panel that shows caller, captured details, message summary, and booked outcome in one scannable sequence."
+      }
+    ]
+  }
+}

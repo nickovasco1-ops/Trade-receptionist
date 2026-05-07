@@ -43,7 +43,7 @@ CREATE TRIGGER clients_updated_at
 CREATE TABLE business_config (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id               UUID        NOT NULL UNIQUE REFERENCES clients(id) ON DELETE CASCADE,
-  receptionist_name       TEXT        NOT NULL DEFAULT 'Sarah',
+  receptionist_name       TEXT        NOT NULL DEFAULT 'Trade Receptionist',
   services                TEXT[]      NOT NULL DEFAULT '{}',
   service_areas           TEXT[]      NOT NULL DEFAULT '{}',
   hourly_rate_min         NUMERIC(8,2),

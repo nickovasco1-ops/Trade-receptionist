@@ -157,7 +157,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({ isOpen
                     plan.popular
                       ? {
                           background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)',
-                          color: '#fff',
+                          color: '#F0F4F8',
                           boxShadow: '0 0 20px rgba(255,107,43,0.35)',
                         }
                       : {

@@ -1,0 +1,57 @@
+{
+  "productName": "Trade Receptionist",
+  "tagline": "Premium AI receptionist for UK tradespeople",
+  "personality": [
+    "Premium",
+    "Reliable",
+    "Calm",
+    "Business-first",
+    "Modern SaaS",
+    "Trustworthy",
+    "Practical",
+    "Built for real trade businesses"
+  ],
+  "targetUsers": [
+    "UK tradespeople",
+    "small trade businesses",
+    "plumbers",
+    "electricians",
+    "HVAC engineers",
+    "builders",
+    "roofers",
+    "landscapers"
+  ],
+  "visualStyle": {
+    "base": "Deep charcoal / dark navy",
+    "surface": "Soft off-white surfaces",
+    "primaryAccent": "Premium green messaging accent",
+    "secondaryAccent": "Muted teal or blue secondary accent",
+    "supportAccent": "Subtle warm orange accent only where useful",
+    "mood": [
+      "Clean dashboard UI",
+      "Elegant workflow diagrams",
+      "High-end SaaS composition",
+      "Realistic communication flows",
+      "Conversion-focused clarity",
+      "Crisp spacing",
+      "Strong hierarchy",
+      "No visual clutter"
+    ]
+  },
+  "avoid": [
+    "AI blobs",
+    "Random abstract 3D shapes",
+    "Fake warped dashboards",
+    "Messy glassmorphism",
+    "Overused neon gradients",
+    "Cartoon mascots",
+    "Unreadable text inside images",
+    "Deformed people or hands",
+    "Generic robot imagery",
+    "Fake WhatsApp logos",
+    "Unauthorised trademark usage",
+    "Screens that imply false product functionality",
+    "Stock-template SaaS art"
+  ],
+  "messagingCue": "Use generic green chat bubbles, message routing, customer conversation cards, phone-call icons, and notification flows instead of official WhatsApp logos."
+}

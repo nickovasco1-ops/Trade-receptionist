@@ -19,8 +19,11 @@ export function useParallax(): { primary: ParallaxOffset; secondary: ParallaxOff
   });
 
   useEffect(() => {
-    // Skip on touch devices
-    if (window.matchMedia('(pointer: coarse)').matches) return;
+    // Skip on touch devices or when motion should be reduced.
+    if (
+      window.matchMedia('(pointer: coarse)').matches ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const px = (e.clientX / window.innerWidth - 0.5) * 20;

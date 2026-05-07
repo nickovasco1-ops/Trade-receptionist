@@ -46,7 +46,7 @@ const updateSchema = createSchema.partial().extend({
 });
 
 const configSchema = z.object({
-  receptionist_name:    z.string().min(1).default('Sarah'),
+  receptionist_name:    z.string().min(1).default('Trade Receptionist'),
   services:             z.array(z.string()).default([]),
   service_areas:        z.array(z.string()).default([]),
   hourly_rate_min:      z.number().positive().optional(),

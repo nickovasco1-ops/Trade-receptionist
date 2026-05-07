@@ -1,0 +1,417 @@
+{
+  "generatedAt": "2026-05-07T10:04:26.315Z",
+  "inspection": {
+    "rootDir": "/Users/nickovasco/Trade Receptionist Website New/Trade-receptionist",
+    "framework": "Vite + React + React Router + TypeScript",
+    "routing": {
+      "type": "react-router-dom BrowserRouter",
+      "routes": [
+        {
+          "path": "/",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/login",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard/calls",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard/leads",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/settings",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/onboarding",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/onboarding-preview",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard-preview",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard-preview/calls",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard-preview/leads",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/dashboard-preview/settings",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/welcome",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/terms",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "/privacy",
+          "sourceFile": "index.tsx"
+        },
+        {
+          "path": "*",
+          "sourceFile": "index.tsx"
+        }
+      ]
+    },
+    "pageFiles": [
+      ".claude/worktrees/elastic-easley/App.tsx",
+      "App.tsx",
+      "src/pages/CallsPage.tsx",
+      "src/pages/DashboardPage.tsx",
+      "src/pages/DashboardPreviewPage.tsx",
+      "src/pages/LeadsPage.tsx",
+      "src/pages/legal/PrivacyPage.tsx",
+      "src/pages/legal/TermsPage.tsx",
+      "src/pages/LoginPage.tsx",
+      "src/pages/NotFoundPage.tsx",
+      "src/pages/OnboardingPage.tsx",
+      "src/pages/OnboardingPreviewPage.tsx",
+      "src/pages/SettingsPage.tsx",
+      "src/pages/WelcomePage.tsx"
+    ],
+    "componentFiles": [
+      ".claude/worktrees/elastic-easley/components/AudioPlayer.tsx",
+      ".claude/worktrees/elastic-easley/components/BlueprintGrid.tsx",
+      ".claude/worktrees/elastic-easley/components/BookDemo.tsx",
+      ".claude/worktrees/elastic-easley/components/Calculator.tsx",
+      ".claude/worktrees/elastic-easley/components/ContactUs.tsx",
+      ".claude/worktrees/elastic-easley/components/Logo.tsx",
+      ".claude/worktrees/elastic-easley/components/Testimonials.tsx",
+      ".claude/worktrees/elastic-easley/components/UI.tsx",
+      ".claude/worktrees/elastic-easley/components/WaitlistModal.tsx",
+      "components/AudioPlayer.tsx",
+      "components/BlueprintGrid.tsx",
+      "components/BookDemo.tsx",
+      "components/Calculator.tsx",
+      "components/ContactUs.tsx",
+      "components/FeaturesGrid.tsx",
+      "components/Logo.tsx",
+      "components/StickyFeatures.tsx",
+      "components/StripeCheckoutModal.tsx",
+      "components/Testimonials.tsx",
+      "components/TradesMarquee.tsx",
+      "components/UI.tsx",
+      "components/WaitlistModal.tsx",
+      "src/components/dashboard/DashboardShell.tsx",
+      "src/components/dashboard/ui/Button.tsx",
+      "src/components/dashboard/ui/EmptyState.tsx",
+      "src/components/dashboard/ui/Field.tsx",
+      "src/components/dashboard/ui/Panel.tsx",
+      "src/components/dashboard/ui/Select.tsx",
+      "src/components/dashboard/ui/StatusBadge.tsx",
+      "src/components/dashboard/ui/Textarea.tsx"
+    ],
+    "assetFolders": [
+      "public",
+      "public/assets",
+      "public/assets/generated",
+      "public/assets/generated/how-it-works",
+      "public/assets/generated/og",
+      "public/assets/generated/pain-points",
+      "public/assets/generated/testimonials",
+      "public/assets/generated/trade-receptionist",
+      "public/assets/generated/use-cases"
+    ],
+    "imageReferences": [
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 125,
+        "assetPath": "/assets/generated/landing-hero-generated.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 126,
+        "assetPath": "/assets/hero-phone-upscaled-transparent.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 546,
+        "assetPath": "/assets/generated/use-cases/plumber.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 552,
+        "assetPath": "/assets/generated/use-cases/electrician.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 558,
+        "assetPath": "/assets/generated/use-cases/builder.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 564,
+        "assetPath": "/assets/generated/use-cases/hvac.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 727,
+        "assetPath": "/assets/generated/how-it-works/step-1.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 735,
+        "assetPath": "/assets/generated/how-it-works/step-2.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "App.tsx",
+        "lineNumber": 743,
+        "assetPath": "/assets/generated/how-it-works/step-3.webp",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "components/AudioPlayer.tsx",
+        "lineNumber": 4,
+        "assetPath": "/assets/generated/sample-call.wav",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "components/Logo.tsx",
+        "lineNumber": 3,
+        "assetPath": "/assets/logo.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "e2e/onboarding.spec.ts",
+        "lineNumber": 11,
+        "assetPath": "/assets/generated/sample-call.wav",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "index.html",
+        "lineNumber": 25,
+        "assetPath": "/assets/generated/og/og-image.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "index.html",
+        "lineNumber": 25,
+        "assetPath": "/assets/generated/og/og-image.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "index.html",
+        "lineNumber": 25,
+        "assetPath": "/assets/generated/og/og-image.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "trade-receptionist-visual-skill/src/visualScanner.ts",
+        "lineNumber": 16,
+        "assetPath": "/assets/generated/landing-hero-generated.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "trade-receptionist-visual-skill/src/visualScanner.ts",
+        "lineNumber": 16,
+        "assetPath": "/assets/hero-phone-upscaled-transparent.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "trade-receptionist-visual-skill/src/visualScanner.ts",
+        "lineNumber": 16,
+        "assetPath": "/assets/generated/landing-hero-generated.png",
+        "sourceType": "asset-string"
+      },
+      {
+        "filePath": "trade-receptionist-visual-skill/src/visualScanner.ts",
+        "lineNumber": 16,
+        "assetPath": "/assets/generated/landing-hero-generated.png",
+        "sourceType": "asset-string"
+      }
+    ],
+    "imageConventions": {
+      "publicAssetRoot": "public/assets",
+      "preferredGeneratedDir": "public/assets/generated",
+      "detectedFormats": [
+        "png",
+        "webp",
+        "wav"
+      ]
+    },
+    "tokens": {
+      "colors": {
+        "color-void": "#020D18",
+        "color-navy": "#051426",
+        "color-navy-mid": "#0A2340",
+        "color-navy-high": "#0F3060",
+        "color-orange": "#FF6B2B",
+        "color-orange-glow": "#FF8C55",
+        "color-orange-soft": "#ffb59a",
+        "color-accent": "#99cbff",
+        "color-accent-glow": "#60A5FA",
+        "color-offwhite": "#F0F4F8",
+        "color-brand-50": "#fff7ed",
+        "color-brand-100": "#ffedd5",
+        "color-brand-200": "#fed7aa",
+        "color-brand-500": "#FF6B2B",
+        "color-brand-600": "#FF6B2B",
+        "color-brand-900": "#7c2d12",
+        "color-status-success": "#86efac",
+        "color-status-warn": "#fde68a",
+        "color-status-danger": "#fca5a5",
+        "color-status-muted": "#9ca3af",
+        "color-status-muted-2": "#6b7280",
+        "tailwind-void": "#020D18",
+        "tailwind-DEFAULT": "#99cbff",
+        "tailwind-mid": "#0A2340",
+        "tailwind-high": "#0F3060",
+        "tailwind-glow": "#60A5FA",
+        "tailwind-soft": "#ffb59a",
+        "tailwind-offwhite": "#F0F4F8",
+        "tailwind-success": "#86efac",
+        "tailwind-warn": "#fde68a",
+        "tailwind-danger": "#fca5a5",
+        "tailwind-muted": "#9ca3af",
+        "tailwind-50": "#f0f7ff",
+        "tailwind-100": "#ffedd5",
+        "tailwind-200": "#fed7aa",
+        "tailwind-500": "#FF6B2B",
+        "tailwind-600": "#FF6B2B",
+        "tailwind-900": "#051426",
+        "tailwind-950": "#020D18"
+      },
+      "fonts": {
+        "font-sans": "'Manrope', sans-serif",
+        "font-body": "'Manrope', sans-serif",
+        "font-display": "'Space Grotesk', sans-serif",
+        "font-mono": "'JetBrains Mono', monospace"
+      },
+      "radii": {
+        "radius-card": "16px",
+        "radius-btn": "14px",
+        "radius-button": "14px",
+        "radius-badge": "999px",
+        "radius-field": "10px"
+      }
+    },
+    "brandColors": [
+      "#020D18",
+      "#051426",
+      "#0A2340",
+      "#0F3060",
+      "#FF6B2B",
+      "#FF8C55",
+      "#ffb59a",
+      "#99cbff",
+      "#60A5FA",
+      "#F0F4F8",
+      "#fff7ed",
+      "#ffedd5"
+    ],
+    "imageComponents": [
+      ".claude/worktrees/elastic-easley/components/Testimonials.tsx",
+      "components/Logo.tsx"
+    ],
+    "landingVisualAreas": [
+      {
+        "areaName": "Homepage hero",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Hero scene with product image background and primary conversion copy."
+      },
+      {
+        "areaName": "Missed-call calculator",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Calculator proof block with stat cards and ROI explainer."
+      },
+      {
+        "areaName": "Workflow timeline",
+        "pagePath": "/",
+        "componentPath": "components/FeaturesGrid.tsx",
+        "rendered": true,
+        "notes": "Outcome-led workflow and compact feature cards."
+      },
+      {
+        "areaName": "Testimonials",
+        "pagePath": "/",
+        "componentPath": "components/Testimonials.tsx",
+        "rendered": true,
+        "notes": "Floating testimonial carousel with glass cards."
+      },
+      {
+        "areaName": "Sample call demo",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Audio-led call proof block with supporting card UI."
+      },
+      {
+        "areaName": "Pricing",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Scrollable pricing cards and contract reassurance."
+      },
+      {
+        "areaName": "FAQ / objection handling",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Accordion proof section near bottom funnel."
+      },
+      {
+        "areaName": "Final CTA",
+        "pagePath": "/",
+        "componentPath": "App.tsx",
+        "rendered": true,
+        "notes": "Bottom conversion block with glow-only support visuals."
+      }
+    ]
+  },
+  "findings": [
+    {
+      "assetId": "hero-call-answering-stage",
+      "section": "hero",
+      "areaName": "Homepage hero visual",
+      "pagePath": "/",
+      "componentPath": "App.tsx",
+      "currentVisualSource": "Hero scene image in App.tsx using /assets/generated/landing-hero-generated.png with fallback /assets/hero-phone-upscaled-transparent.png | Framework: Vite + React + React Router + TypeScript | Component: App.tsx",
+      "oldAssetPath": "/assets/generated/landing-hero-generated.png",
+      "whyItWeakensConversion": "The hero currently leans on a single floating product-device composite. It signals polish, but it underplays the real-world trade context and customer-to-job handoff that first-time visitors need to trust within seconds.",
+      "problemCategory": "Low trust dashboard",
+      "recommendedReplacementDirection": "Replace the hero art with a clearer 16:9 trade-call composition that keeps strong negative space on the left, shows one crisp phone UI, and adds believable customer-summary / routing cues for a real trade business.",
+      "suggestedAltText": "Trade Receptionist phone interface showing answered customer calls, captured job details, and routed summaries for a trade business.",
+      "replacementType": "image",
+      "promptTemplate": "hero",
+      "integrationTarget": {
+        "filePath": "App.tsx",
+        "strategy": "replace-string-literal",
+        "searchValue": "/assets/generated/landing-hero-generated.png"
+      },
+      "severity": 4,
+      "conversionImpact": "high",
+      "integrationRisk": "low"
+    }
+  ]
+}

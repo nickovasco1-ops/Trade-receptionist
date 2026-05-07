@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "vite",
@@ -11,6 +14,10 @@
     "build:api": "cd server && npm run build",
     "preview": "vite preview",
     "generate:demo-audio": "node scripts/generate-sample-call.mjs",
+    "generate:landing-asset": "node scripts/generate-landing-asset.mjs",
+    "visual-skill:build": "tsc -p trade-receptionist-visual-skill/tsconfig.json",
+    "visual-skill": "npm run visual-skill:build --silent && node trade-receptionist-visual-skill/dist/cli.js",
+    "visual-skill:dry-run": "npm run visual-skill -- dry-run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
@@ -28,6 +35,7 @@
     "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
+    "@google/genai": "^1.52.0",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.14.0",
