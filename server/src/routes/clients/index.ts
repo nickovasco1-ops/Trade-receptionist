@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { supabase } from '../../services/supabase';
 import { buildSystemPrompt } from '../../lib/prompt-builder';
 import {
-  updateAgentPrompt,
+  updateAgentConfiguration,
   createRetellAgent,
   deleteRetellAgent,
   deleteRetellLlm,
@@ -25,6 +25,12 @@ import type {
 
 const router = Router();
 
+function bearerToken(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  return auth.slice('Bearer '.length).trim() || null;
+}
+
 // ── Validation schemas ────────────────────────────────────────────────────────
 
 const createSchema = z.object({
@@ -43,6 +49,13 @@ const updateSchema = createSchema.partial().extend({
   google_cal_id:        z.string().optional(),
   google_refresh_token: z.string().optional(),
   is_active:            z.boolean().optional(),
+});
+
+const settingsSchema = z.object({
+  business_name:        z.string().min(1),
+  owner_name:           z.string().min(1),
+  owner_mobile:         z.string().nullable().optional(),
+  after_hours_message:  z.string().trim().max(240).nullable().optional(),
 });
 
 const configSchema = z.object({
@@ -212,14 +225,153 @@ router.patch('/:id', async (req: Request, res: Response) => {
       .single();
 
     if (configRow) {
-      const prompt = buildSystemPrompt(client, configRow as BusinessConfig);
-      updateAgentPrompt(client.retell_agent_id, prompt).catch((err: unknown) =>
+      updateAgentConfiguration(client, configRow as BusinessConfig).catch((err: unknown) =>
         console.error('[clients] Retell prompt sync failed', err)
       );
     }
   }
 
   res.json({ success: true, data: client } satisfies ApiResponse<Client>);
+});
+
+router.patch('/:id/settings', async (req: Request, res: Response) => {
+  const parsed = settingsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.message } satisfies ApiResponse);
+    return;
+  }
+
+  const clientId = req.params.id;
+  const { business_name, owner_name, owner_mobile, after_hours_message } = parsed.data;
+
+  const token = bearerToken(req);
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Missing authentication token' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  const ownerEmail = authData.user?.email;
+  if (authError || !ownerEmail) {
+    res.status(401).json({ success: false, error: 'Invalid authentication token' } satisfies ApiResponse);
+    return;
+  }
+
+  const [{ data: existingClient, error: clientFetchError }, { data: existingConfig, error: configFetchError }] = await Promise.all([
+    supabase.from('clients').select('*').eq('id', clientId).eq('owner_email', ownerEmail).single(),
+    supabase.from('business_config').select('*').eq('client_id', clientId).maybeSingle(),
+  ]);
+
+  if (clientFetchError || !existingClient) {
+    res.status(404).json({ success: false, error: clientFetchError?.message ?? 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  if (configFetchError) {
+    res.status(404).json({
+      success: false,
+      error: configFetchError.message,
+    } satisfies ApiResponse);
+    return;
+  }
+
+  const previousClient = existingClient as Client;
+  const previousConfig = existingConfig as BusinessConfig | null;
+  if (after_hours_message !== undefined && !previousConfig) {
+    res.status(409).json({
+      success: false,
+      error: 'After-hours settings are not available for this account yet.',
+    } satisfies ApiResponse);
+    return;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const clientPatch = {
+    business_name,
+    owner_name,
+    owner_mobile: owner_mobile ?? null,
+    updated_at: timestamp,
+  };
+
+  const nextClient = { ...previousClient, ...clientPatch } as Client;
+  const nextConfig = previousConfig
+    ? ({
+        ...previousConfig,
+        ...(after_hours_message !== undefined ? { after_hours_message } : {}),
+        updated_at: timestamp,
+      } as BusinessConfig)
+    : null;
+
+  const rollbackSettings = async () => {
+    await supabase.from('clients').update({
+      business_name: previousClient.business_name,
+      owner_name: previousClient.owner_name,
+      owner_mobile: previousClient.owner_mobile,
+      updated_at: previousClient.updated_at,
+    }).eq('id', clientId);
+
+    if (previousConfig && after_hours_message !== undefined) {
+      await supabase.from('business_config').update({
+        after_hours_message: previousConfig.after_hours_message,
+        updated_at: previousConfig.updated_at,
+      }).eq('client_id', clientId);
+    }
+  };
+
+  const { error: clientUpdateError } = await supabase
+    .from('clients')
+    .update(clientPatch)
+    .eq('id', clientId);
+
+  if (clientUpdateError) {
+    res.status(500).json({ success: false, error: clientUpdateError.message } satisfies ApiResponse);
+    return;
+  }
+
+  if (after_hours_message !== undefined && previousConfig) {
+    const { error: configUpdateError } = await supabase
+      .from('business_config')
+      .update({
+        after_hours_message,
+        updated_at: timestamp,
+      })
+      .eq('client_id', clientId);
+
+    if (configUpdateError) {
+      await rollbackSettings().catch((err: unknown) =>
+        console.error('[clients] settings rollback failed after config update error', err)
+      );
+      res.status(500).json({
+        success: false,
+        error: 'Could not save your after-hours settings. No changes were applied.',
+      } satisfies ApiResponse);
+      return;
+    }
+  }
+
+  if (previousClient.retell_agent_id && nextConfig) {
+    try {
+      await updateAgentConfiguration(nextClient, nextConfig);
+    } catch (err: unknown) {
+      await rollbackSettings().catch((rollbackErr: unknown) =>
+        console.error('[clients] settings rollback failed after prompt sync error', rollbackErr)
+      );
+      res.status(502).json({
+        success: false,
+        error: 'Your settings were not synced to the live receptionist. No changes were applied.',
+      } satisfies ApiResponse);
+      return;
+    }
+  }
+
+  res.json({
+    success: true,
+    data: {
+      client: nextClient,
+      config: nextConfig,
+    },
+  } satisfies ApiResponse);
 });
 
 router.delete('/:id', async (req: Request, res: Response) => {
@@ -337,6 +489,7 @@ router.post('/provision', async (req: Request, res: Response) => {
       agentName:    `${receptionist_name} — ${business_name}`,
       prompt,
       ownerNumber:  owner_mobile ?? null,
+      calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: undefined,
     });
     state.llmId   = agentIds.llmId;
@@ -588,8 +741,7 @@ router.post('/rebuild-agent', async (req: Request, res: Response) => {
   }
 
   try {
-    const prompt = buildSystemPrompt(client as Client, config as BusinessConfig);
-    await updateAgentPrompt(client.retell_agent_id as string, prompt);
+    await updateAgentConfiguration(client as Client, config as BusinessConfig);
     console.log(`[clients] Rebuilt Retell prompt for ${client.business_name} (${client.id})`);
     res.json({ success: true } satisfies ApiResponse);
   } catch (err: unknown) {

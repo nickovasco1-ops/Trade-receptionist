@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ElementType, FormEvent, ReactNode } from 'react';
-import { Bell, Calendar, CheckCircle, Key, Phone, Save, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, Bell, Calendar, CheckCircle, Key, Phone, Save, ShieldCheck, User } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
@@ -108,35 +108,72 @@ export default function SettingsPage() {
   const animRef = useScrollAnimation();
   const [clientId, setClientId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<ClientSettings>>({});
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [calConnecting, setCalConnecting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoadError(null);
+      setActionError(null);
 
-      const { data } = await supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setLoadError('Could not verify your session. Please refresh and try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!user?.email) {
+        setLoadError('Could not find your account details. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('clients')
-        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, after_hours_message, google_cal_id')
+        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id')
         .eq('owner_email', user.email)
         .maybeSingle();
 
-      if (data) {
-        setClientId(data.id);
-        setForm({
-          business_name: data.business_name ?? '',
-          owner_name: data.owner_name ?? '',
-          owner_email: data.owner_email ?? '',
-          owner_mobile: data.owner_mobile ?? '',
-          twilio_number: data.twilio_number ?? null,
-          own_number: data.own_number ?? null,
-          after_hours_message: data.after_hours_message ?? '',
-          google_cal_id: data.google_cal_id ?? '',
-          google_cal_connected: !!data.google_cal_id,
-        });
+      if (error) {
+        setLoadError('We could not load your settings right now. Please try again shortly.');
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setLoadError('We could not find a business profile for this account yet.');
+        setLoading(false);
+        return;
+      }
+
+      const { data: configData, error: configError } = await supabase
+        .from('business_config')
+        .select('after_hours_message')
+        .eq('client_id', data.id)
+        .maybeSingle();
+
+      setClientId(data.id);
+      setForm({
+        business_name: data.business_name ?? '',
+        owner_name: data.owner_name ?? '',
+        owner_email: data.owner_email ?? '',
+        owner_mobile: data.owner_mobile ?? '',
+        twilio_number: data.twilio_number ?? null,
+        own_number: data.own_number ?? null,
+        after_hours_message: configData?.after_hours_message ?? '',
+        google_cal_id: data.google_cal_id ?? '',
+        google_cal_connected: !!data.google_cal_id,
+      });
+      setConfigLoaded(!configError && !!configData);
+
+      if (configError) {
+        setLoadError('Your main settings loaded, but the after-hours message could not be loaded.');
       }
 
       setLoading(false);
@@ -154,28 +191,76 @@ export default function SettingsPage() {
     if (!clientId) return;
 
     setSaving(true);
+    setActionError(null);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    await supabase.from('clients').update({
-      business_name: form.business_name,
-      owner_name: form.owner_name,
-      owner_mobile: form.owner_mobile,
-      after_hours_message: form.after_hours_message || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', clientId);
+      if (sessionError || !session?.access_token) {
+        setActionError('Your session has expired. Please sign in again before saving.');
+        return;
+      }
 
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+      const res = await fetch(`/api/clients/${clientId}/settings`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          business_name: form.business_name ?? '',
+          owner_name: form.owner_name ?? '',
+          owner_mobile: form.owner_mobile || null,
+          ...(configLoaded ? { after_hours_message: form.after_hours_message || null } : {}),
+        }),
+      });
+
+      const json = await res.json().catch(() => ({ success: false, error: 'Could not save your settings.' }));
+
+      if (!res.ok || !json.success) {
+        setActionError(json.error ?? 'Your changes could not be saved. Please try again.');
+        return;
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setActionError('Could not reach the settings service. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function connectGoogleCalendar() {
-    if (!clientId) return;
+    if (!clientId) {
+      setActionError('Your settings are not fully loaded yet. Please refresh and try again.');
+      return;
+    }
+
     setCalConnecting(true);
-    const res = await fetch(`/api/auth/google?clientId=${clientId}`);
-    const json = await res.json();
-    if (json.success && json.data?.url) {
-      window.location.href = json.data.url;
-    } else {
+    setActionError(null);
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        setActionError('Your session has expired. Please sign in again before connecting Google Calendar.');
+        setCalConnecting(false);
+        return;
+      }
+
+      const res = await fetch(`/api/auth/google?clientId=${clientId}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+
+      if (json.success && json.data?.url) {
+        window.location.href = json.data.url;
+        return;
+      }
+
+      setActionError(json.error ?? 'Could not start the Google Calendar connection.');
+      setCalConnecting(false);
+    } catch {
+      setActionError('Could not reach the calendar connection service. Please try again.');
       setCalConnecting(false);
     }
   }
@@ -191,6 +276,36 @@ export default function SettingsPage() {
             <div key={index} className="h-44 rounded-[28px] bg-white/[0.04]" />
           ))}
         </div>
+      </DashboardShell>
+    );
+  }
+
+  if (loadError && !clientId) {
+    return (
+      <DashboardShell>
+        <section
+          className="rounded-[30px] px-6 py-6 sm:px-7 sm:py-7"
+          style={{
+            background:
+              'radial-gradient(circle at 86% 18%, rgba(255,107,43,0.12) 0%, transparent 30%),' +
+              'linear-gradient(180deg, rgba(17,31,53,0.92) 0%, rgba(10,23,39,0.96) 100%)',
+            boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 28px 64px rgba(2,13,24,0.30)',
+          }}
+        >
+          <div
+            className="rounded-[22px] px-4 py-4"
+            role="alert"
+            style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle size={16} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+              <div>
+                <p className="text-[13px] font-semibold text-offwhite">Settings unavailable</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/86">{loadError}</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </DashboardShell>
     );
   }
@@ -244,6 +359,22 @@ export default function SettingsPage() {
                 ))}
               </div>
             </article>
+
+            {loadError ? (
+              <div
+                className="rounded-[22px] px-4 py-4"
+                role="alert"
+                style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+              >
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={16} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-offwhite">Settings unavailable</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/86">{loadError}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <form onSubmit={handleSave} className="space-y-5">
               <SettingsSection
@@ -335,11 +466,17 @@ export default function SettingsPage() {
                   id="after_hours_message"
                   value={form.after_hours_message ?? ''}
                   onChange={event => set('after_hours_message', event.target.value)}
+                  disabled={!configLoaded}
                   rows={4}
                   placeholder="We're closed right now, but your AI receptionist has taken full details of your enquiry and we’ll follow up as soon as we’re back on the tools."
                   className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
                   style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                 />
+                {!configLoaded ? (
+                  <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">
+                    This message is temporarily unavailable until your full business settings finish loading.
+                  </p>
+                ) : null}
               </SettingsSection>
 
               <SettingsSection
@@ -386,6 +523,19 @@ export default function SettingsPage() {
                   </div>
                 )}
               </SettingsSection>
+
+              {actionError ? (
+                <div
+                  className="rounded-[20px] px-4 py-4"
+                  role="alert"
+                  style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={15} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+                    <p className="text-[12px] leading-relaxed text-orange-soft/86">{actionError}</p>
+                  </div>
+                </div>
+              ) : null}
 
               <Button type="submit" disabled={saving} variant={saved ? 'secondary' : 'primary'}>
                 <Save size={14} aria-hidden="true" />

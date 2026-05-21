@@ -78,12 +78,16 @@ function RequireAuth({ children }: { children: ReactNode }) {
       if (
         _event === 'SIGNED_IN' &&
         session?.user?.app_metadata?.provider === 'google' &&
+        session.access_token &&
         session.provider_refresh_token &&
         session.user.email
       ) {
         fetch('/api/auth/google/save-calendar-token', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({
             email:                session.user.email,
             providerToken:        session.provider_token ?? undefined,

@@ -122,7 +122,7 @@ export default function DashboardPage() {
       setStats({
         totalCalls: calls.length,
         totalLeads: leads.length,
-        bookedJobs: calls.filter(call => call.outcome === 'booked').length,
+        bookedJobs: leads.filter(lead => lead.status === 'booked').length,
         emergencies: calls.filter(call => call.is_emergency).length,
       });
 

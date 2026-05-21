@@ -54,6 +54,7 @@ export interface BusinessConfig {
   client_id: string;
   receptionist_name: string;
   receptionist_tone: ReceptionistTone;
+  after_hours_message: string | null;
   services: string[];
   service_areas: string[];
   hourly_rate_min: number | null;
@@ -112,6 +113,7 @@ export interface Booking {
   id: string;
   client_id: string;
   lead_id: string | null;
+  call_id: string | null;
   google_event_id: string | null;
   scheduled_at: string;
   job_type: string | null;

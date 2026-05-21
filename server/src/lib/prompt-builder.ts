@@ -31,6 +31,17 @@ function formatEmergencyKeywords(config: BusinessConfig): string {
   return kw.join(', ');
 }
 
+function formatAfterHoursMessage(config: BusinessConfig, client: Client): string {
+  const raw = config.after_hours_message?.trim()
+    || `Thanks for calling ${client.business_name}. We're outside our normal working hours at the moment.`;
+
+  return raw
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/["“”]/g, '\'')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ── Tone descriptor ───────────────────────────────────────────────────────────
 
 function toneInstructions(tone: string | undefined): string {
@@ -54,6 +65,7 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig): strin
   const areas        = config.service_areas.length ? config.service_areas.join(', ') : 'local area';
   const ratesLine    = formatRates(config);
   const emergencyKw  = formatEmergencyKeywords(config);
+  const afterHoursMessage = formatAfterHoursMessage(config, client);
   const hasCalendar  = !!client.google_cal_id;
   const tone         = toneInstructions(config.receptionist_tone);
 
@@ -107,7 +119,11 @@ Never end a call without at least a name and job type.
 ## BOOKING APPOINTMENTS
 ${hasCalendar ? `
 You have access to ${client.owner_name}'s diary and can confirm appointments directly.
-- Offer the next two or three available slots. Do not give a vague "we'll be in touch" when slots exist.
+- Before offering times, call check_calendar_availability using the caller's preferred date or time of day if they gave one.
+- Offer the next two or three available slots returned by the diary tool. Do not invent slots and do not give a vague "we'll be in touch" when slots exist.
+- Once the caller agrees a specific slot, collect their full name plus at least one confirmation method: mobile number, email address, or both.
+- Then call create_calendar_booking with the exact agreed slot, caller details, job type, address or postcode, and any useful notes.
+- Use confirmation_channel=sms when you have a mobile number, email when you only have an email address, both when the caller wants both, and none only if they refuse confirmation details.
 - Confirm the booking before ending: "So I've booked you in for [date] at [time] — you'll get a confirmation shortly."
 - If no slots are available soon, take a message and say ${client.owner_name} will call back within 2 hours to arrange a time.
 ` : `
@@ -132,7 +148,7 @@ Never promise a fixed price. Never promise a specific completion time. Only ${cl
 ## AFTER HOURS
 
 If someone calls outside working hours (${hours}, ${days}):
-- Acknowledge warmly: "Thanks for calling ${client.business_name}. We're outside our normal working hours at the moment."
+- Acknowledge warmly using this message exactly: "${afterHoursMessage}"
 - Take a full message using the required fields above.
 - Say: "${client.owner_name} will call you back first thing on the next working day."
 - If the call sounds genuinely urgent — follow the emergency protocol below regardless of the time.

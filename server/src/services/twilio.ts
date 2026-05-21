@@ -187,9 +187,10 @@ export async function sendCallerSms(opts: {
   businessName: string;
   ownerName:    string;
   booked?:      boolean;
+  scheduledAt?: string | null;
 }): Promise<string> {
   const body = opts.booked
-    ? `Hi, thanks for calling ${opts.businessName}! Your booking is confirmed — ${opts.ownerName} will be in touch to confirm the details.`
+    ? `Hi, thanks for calling ${opts.businessName}! Your booking is confirmed${opts.scheduledAt ? ` for ${new Date(opts.scheduledAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} — ${opts.ownerName} will be in touch if anything changes.`
     : `Hi, thanks for calling ${opts.businessName}! We've taken a note of your enquiry and ${opts.ownerName} will be in touch shortly.`;
 
   return sendSms(opts.to, body, opts.from);

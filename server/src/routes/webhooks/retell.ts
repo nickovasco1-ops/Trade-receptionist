@@ -207,8 +207,38 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       status:        outcome === 'booked' ? 'booked' : 'new',
     };
 
-    const { error: leadErr } = await supabase.from('leads').insert(lead);
-    if (leadErr) console.error('[retell] lead insert failed', leadErr);
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('call_id', call.id)
+      .maybeSingle();
+
+    const { data: insertedLead, error: leadErr } = existingLead
+      ? await supabase
+          .from('leads')
+          .update({ ...lead, updated_at: new Date().toISOString() })
+          .eq('id', existingLead.id)
+          .select('id')
+          .single()
+      : await supabase
+          .from('leads')
+          .insert(lead)
+          .select('id')
+          .single();
+
+    if (leadErr) {
+      console.error('[retell] lead insert failed', leadErr);
+    } else if (insertedLead) {
+      const { error: bookingLinkError } = await supabase
+        .from('bookings')
+        .update({ lead_id: insertedLead.id })
+        .eq('call_id', call.id)
+        .is('lead_id', null);
+
+      if (bookingLinkError) {
+        console.error('[retell] booking lead link failed', bookingLinkError);
+      }
+    }
   }
 
   // Emergency escalation

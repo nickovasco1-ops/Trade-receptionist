@@ -1,6 +1,7 @@
 import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
-import type { Client, Call } from '../../../shared/types';
+import { buildSystemPrompt } from '../lib/prompt-builder';
+import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
 
@@ -26,6 +27,8 @@ export interface RetellAgentConfig {
   prompt:       string;
   /** Owner's E.164 mobile number — used for transfer_to_owner tool */
   ownerNumber?: string | null;
+  /** Whether live calendar tools should be attached to the agent */
+  calendarBookingEnabled?: boolean;
   /** Optional: first utterance spoken when call connects */
   beginMessage?: string;
 }
@@ -42,10 +45,115 @@ export interface ProvisionedAgent {
  * When ownerNumber is provided, a native transfer_call tool is registered so
  * the agent can route calls to the owner without any server-side code.
  */
-export async function createRetellLlm(
-  prompt: string,
-  ownerNumber?: string | null
-): Promise<{ llmId: string }> {
+function retellFunctionBaseUrl(): string | null {
+  const explicit = process.env.RETELL_FUNCTION_BASE_URL?.trim();
+  if (explicit) {
+    return explicit.replace(/\/$/, '');
+  }
+
+  const webhookUrl = process.env.RETELL_WEBHOOK_URL?.trim();
+  if (!webhookUrl) return null;
+
+  try {
+    const parsed = new URL(webhookUrl);
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+function buildCalendarTools(baseUrl: string): Record<string, unknown>[] {
+  return [
+    {
+      type: 'custom',
+      name: 'check_calendar_availability',
+      description: 'Check the business diary and return the best available booking slots before you offer times to the caller.',
+      url: `${baseUrl}/retell-tools/check-availability`,
+      method: 'POST',
+      speak_during_execution: true,
+      speak_after_execution: true,
+      execution_message_type: 'static_text',
+      execution_message_description: 'Let me check the diary for you now.',
+      timeout_ms: 15000,
+      parameters: {
+        type: 'object',
+        properties: {
+          requested_date: {
+            type: 'string',
+            description: 'Optional preferred booking date in YYYY-MM-DD format. Leave blank if the caller just wants the next available slot.',
+          },
+          time_preference: {
+            type: 'string',
+            description: 'Caller preference for time of day. Use one of: any, morning, afternoon.',
+          },
+          duration_mins: {
+            type: 'number',
+            description: 'Length of the booking in minutes. Use 60 unless you have a specific reason to use a different length.',
+          },
+        },
+      },
+    },
+    {
+      type: 'custom',
+      name: 'create_calendar_booking',
+      description: 'Create the booking in the client diary only after the caller has agreed a specific slot and you have their contact details.',
+      url: `${baseUrl}/retell-tools/create-booking`,
+      method: 'POST',
+      speak_during_execution: true,
+      speak_after_execution: true,
+      execution_message_type: 'static_text',
+      execution_message_description: 'Great, I am getting that booked in for you now.',
+      timeout_ms: 20000,
+      parameters: {
+        type: 'object',
+        required: ['start_time_iso', 'customer_name', 'job_type', 'confirmation_channel'],
+        properties: {
+          start_time_iso: {
+            type: 'string',
+            description: 'The exact agreed booking start time as an ISO-8601 timestamp from a previously returned available slot.',
+          },
+          customer_name: {
+            type: 'string',
+            description: 'Caller full name for the booking.',
+          },
+          caller_number: {
+            type: 'string',
+            description: 'Caller mobile or phone number in international format if available.',
+          },
+          caller_email: {
+            type: 'string',
+            description: 'Caller email address if available and needed for confirmation.',
+          },
+          job_type: {
+            type: 'string',
+            description: 'Short description of the job being booked.',
+          },
+          address: {
+            type: 'string',
+            description: 'Job address or postcode if the caller has provided it.',
+          },
+          notes: {
+            type: 'string',
+            description: 'Important job notes, access details, or anything the owner should know.',
+          },
+          confirmation_channel: {
+            type: 'string',
+            description: 'How to send the caller confirmation. Use one of: sms, email, both, none.',
+          },
+          duration_mins: {
+            type: 'number',
+            description: 'Length of the booking in minutes. Use 60 unless a different duration was clearly agreed.',
+          },
+        },
+      },
+    },
+  ];
+}
+
+function buildRetellTools(
+  ownerNumber?: string | null,
+  calendarBookingEnabled = false
+): Record<string, unknown>[] {
   const tools: Record<string, unknown>[] = [
     {
       type:        'end_call',
@@ -69,6 +177,23 @@ export async function createRetellLlm(
       },
     });
   }
+
+  if (calendarBookingEnabled) {
+    const baseUrl = retellFunctionBaseUrl();
+    if (baseUrl) {
+      tools.push(...buildCalendarTools(baseUrl));
+    }
+  }
+
+  return tools;
+}
+
+export async function createRetellLlm(
+  prompt: string,
+  ownerNumber?: string | null,
+  calendarBookingEnabled = false
+): Promise<{ llmId: string }> {
+  const tools = buildRetellTools(ownerNumber, calendarBookingEnabled);
 
   const res = await fetch(`${BASE_URL}/create-retell-llm`, {
     method:  'POST',
@@ -97,6 +222,23 @@ export async function updateRetellLlm(llmId: string, prompt: string): Promise<vo
   if (!res.ok) throw new Error(`Retell updateLlm failed: ${await res.text()}`);
 }
 
+export async function updateRetellLlmConfig(
+  llmId: string,
+  prompt: string,
+  ownerNumber?: string | null,
+  calendarBookingEnabled = false
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({
+      general_prompt: prompt,
+      general_tools: buildRetellTools(ownerNumber, calendarBookingEnabled),
+    }),
+  });
+  if (!res.ok) throw new Error(`Retell updateLlm failed: ${await res.text()}`);
+}
+
 /** Delete a Retell LLM. Used during provisioning rollback. */
 export async function deleteRetellLlm(llmId: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/delete-retell-llm/${llmId}`, {
@@ -120,7 +262,11 @@ export async function deleteRetellLlm(llmId: string): Promise<void> {
 export async function createRetellAgent(
   config: RetellAgentConfig
 ): Promise<ProvisionedAgent> {
-  const { llmId } = await createRetellLlm(config.prompt, config.ownerNumber);
+  const { llmId } = await createRetellLlm(
+    config.prompt,
+    config.ownerNumber,
+    config.calendarBookingEnabled ?? false
+  );
 
   const webhookUrl = process.env.RETELL_WEBHOOK_URL;
 
@@ -260,6 +406,29 @@ export async function updateAgentPrompt(agentId: string, prompt: string): Promis
   if (!res.ok) throw new Error(`Retell updateAgent failed: ${await res.text()}`);
 }
 
+export async function updateAgentConfiguration(
+  client: Client,
+  config: BusinessConfig
+): Promise<void> {
+  if (!client.retell_agent_id) return;
+
+  const prompt = buildSystemPrompt(client, config);
+
+  const agentRes = await fetch(`${BASE_URL}/get-agent/${client.retell_agent_id}`, { headers: headers() });
+  if (agentRes.ok) {
+    const agent = (await agentRes.json()) as {
+      response_engine?: { type: string; llm_id?: string };
+    };
+    const llmId = agent.response_engine?.llm_id;
+    if (llmId) {
+      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, !!client.google_cal_id);
+      return;
+    }
+  }
+
+  await updateAgentPrompt(client.retell_agent_id, prompt);
+}
+
 // ── Legacy ────────────────────────────────────────────────────────────────────
 
 /** @deprecated Use createRetellAgent() instead. Kept for existing callers. */
@@ -337,7 +506,7 @@ export async function postCallWorkflow(
   );
 
   // Caller: SMS confirmation (skip spam, no_answer, voicemail)
-  const confirmOutcomes = ['booked', 'lead_captured', 'enquiry'];
+  const confirmOutcomes = ['lead_captured', 'enquiry'];
   if (call.caller_number && fromNumber && confirmOutcomes.includes(outcome)) {
     tasks.push(
       sendCallerSms({

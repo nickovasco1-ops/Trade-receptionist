@@ -8,6 +8,8 @@ import webhooksRouter from './routes/webhooks';
 import clientsRouter  from './routes/clients';
 import callsRouter    from './routes/calls';
 import authRouter     from './routes/auth';
+import bookingsRouter from './routes/bookings';
+import retellToolsRouter from './routes/retell-tools';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -99,14 +101,23 @@ const webhookLimiter = rateLimit({
 
 app.use('/clients',           defaultLimiter);
 app.use('/calls',             defaultLimiter);
+app.use('/bookings',          defaultLimiter, (req, res, next) => {
+  if (req.method === 'POST') {
+    return writeLimiter(req, res, next);
+  }
+
+  return next();
+});
 app.use('/auth',              writeLimiter);
 app.use('/webhooks',          webhookLimiter);
+app.use('/retell-tools',      webhookLimiter);
 
 // ── Body parsers ──────────────────────────────────────────────────────────────
 // /webhooks/retell and /webhooks/stripe need the raw Buffer for HMAC verification.
 // These MUST be registered before express.json() or the raw body is lost.
 app.use('/webhooks/retell',  express.raw({ type: 'application/json' }));
 app.use('/webhooks/stripe',  express.raw({ type: 'application/json' }));
+app.use('/retell-tools',     express.raw({ type: 'application/json' }));
 
 // Everything else gets parsed JSON
 app.use(express.json());
@@ -119,7 +130,9 @@ app.use('/health',   healthRouter);
 app.use('/webhooks', webhooksRouter);
 app.use('/clients',  clientsRouter);
 app.use('/calls',    callsRouter);
+app.use('/bookings', bookingsRouter);
 app.use('/auth',     authRouter);
+app.use('/retell-tools', retellToolsRouter);
 
 // 404 fallback
 app.use((_req, res) => {

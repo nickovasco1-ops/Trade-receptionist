@@ -240,6 +240,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       agentName:    `Trade Receptionist — ${ownerName}`,
       prompt,
       ownerNumber:  ownerMobile,
+      calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: undefined,
     });
     agentId = ids.agentId;

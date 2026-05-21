@@ -1,9 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { generateOAuthUrl, handleOAuthCallback } from '../../services/calendar';
+import { updateAgentConfiguration } from '../../services/retell';
 import { supabase } from '../../services/supabase';
-import type { ApiResponse } from '../../../../shared/types';
+import type { ApiResponse, BusinessConfig, Client } from '../../../../shared/types';
 
 const router = Router();
+
+function bearerToken(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  return auth.slice('Bearer '.length).trim() || null;
+}
 
 /**
  * GET /auth/google?clientId=<uuid>
@@ -11,21 +18,53 @@ const router = Router();
  * The frontend redirects the user's browser to this URL.
  */
 router.get('/google', (req: Request, res: Response) => {
-  const { clientId } = req.query;
-  if (!clientId || typeof clientId !== 'string') {
-    res.status(400).json({ success: false, error: 'clientId query param required' } satisfies ApiResponse);
-    return;
-  }
+  (async () => {
+    const { clientId } = req.query;
+    if (!clientId || typeof clientId !== 'string') {
+      res.status(400).json({ success: false, error: 'clientId query param required' } satisfies ApiResponse);
+      return;
+    }
 
-  try {
-    const url = generateOAuthUrl(clientId);
-    res.json({ success: true, data: { url } } satisfies ApiResponse<{ url: string }>);
-  } catch (err: unknown) {
+    const token = bearerToken(req);
+    if (!token) {
+      res.status(401).json({ success: false, error: 'Missing authentication token' } satisfies ApiResponse);
+      return;
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    const ownerEmail = authData.user?.email;
+    if (authError || !ownerEmail) {
+      res.status(401).json({ success: false, error: 'Invalid authentication token' } satisfies ApiResponse);
+      return;
+    }
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', clientId)
+      .eq('owner_email', ownerEmail)
+      .maybeSingle();
+
+    if (!client) {
+      res.status(403).json({ success: false, error: 'You do not have access to this client' } satisfies ApiResponse);
+      return;
+    }
+
+    try {
+      const url = generateOAuthUrl(clientId, ownerEmail);
+      res.json({ success: true, data: { url } } satisfies ApiResponse<{ url: string }>);
+    } catch (err: unknown) {
+      res.status(500).json({
+        success: false,
+        error:   err instanceof Error ? err.message : 'Failed to generate OAuth URL',
+      } satisfies ApiResponse);
+    }
+  })().catch((err: unknown) => {
     res.status(500).json({
       success: false,
-      error:   err instanceof Error ? err.message : 'Failed to generate OAuth URL',
+      error: err instanceof Error ? err.message : 'Failed to generate OAuth URL',
     } satisfies ApiResponse);
-  }
+  });
 });
 
 /**
@@ -48,6 +87,17 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
   try {
     const clientId = await handleOAuthCallback(code, state);
+    const [{ data: client }, { data: config }] = await Promise.all([
+      supabase.from('clients').select('*').eq('id', clientId).maybeSingle(),
+      supabase.from('business_config').select('*').eq('client_id', clientId).maybeSingle(),
+    ]);
+
+    if (client && config) {
+      await updateAgentConfiguration(client as Client, config as BusinessConfig).catch((err: unknown) =>
+        console.error('[auth] failed to sync Retell config after Google callback', err)
+      );
+    }
+
     // Redirect to a success page or return JSON depending on the integration
     const successUrl = process.env.GOOGLE_OAUTH_SUCCESS_URL ?? '/';
     res.redirect(`${successUrl}?connected=google&clientId=${clientId}`);
@@ -63,14 +113,32 @@ router.get('/google/callback', async (req: Request, res: Response) => {
  * Saves the provider refresh token and primary calendar ID against the client record.
  */
 router.post('/google/save-calendar-token', async (req: Request, res: Response) => {
+  const token = bearerToken(req);
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Missing authentication token' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  const authenticatedEmail = authData.user?.email;
+  if (authError || !authenticatedEmail) {
+    res.status(401).json({ success: false, error: 'Invalid authentication token' } satisfies ApiResponse);
+    return;
+  }
+
   const { email, providerToken, providerRefreshToken } = req.body as {
     email?: string;
     providerToken?: string;
     providerRefreshToken?: string;
   };
 
-  if (!email || !providerRefreshToken) {
-    res.status(400).json({ success: false, error: 'email and providerRefreshToken required' } satisfies ApiResponse);
+  if (!providerRefreshToken) {
+    res.status(400).json({ success: false, error: 'providerRefreshToken required' } satisfies ApiResponse);
+    return;
+  }
+
+  if (email && email !== authenticatedEmail) {
+    res.status(403).json({ success: false, error: 'Authenticated user does not match requested email' } satisfies ApiResponse);
     return;
   }
 
@@ -87,14 +155,30 @@ router.post('/google/save-calendar-token', async (req: Request, res: Response) =
       }
     }
 
-    await supabase
+    const { data: updatedClient } = await supabase
       .from('clients')
       .update({
         google_refresh_token: providerRefreshToken,
         google_cal_id:        calendarId,
         updated_at:           new Date().toISOString(),
       })
-      .eq('owner_email', email);
+      .eq('owner_email', authenticatedEmail)
+      .select('*')
+      .maybeSingle();
+
+    if (updatedClient) {
+      const { data: config } = await supabase
+        .from('business_config')
+        .select('*')
+        .eq('client_id', updatedClient.id)
+        .maybeSingle();
+
+      if (config) {
+        await updateAgentConfiguration(updatedClient as Client, config as BusinessConfig).catch((err: unknown) =>
+          console.error('[auth] failed to sync Retell config after calendar token save', err)
+        );
+      }
+    }
 
     res.json({ success: true } satisfies ApiResponse);
   } catch (err: unknown) {

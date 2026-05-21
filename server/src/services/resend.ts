@@ -48,6 +48,16 @@ export interface CallEmailData {
   durationSecs?: number | null;
 }
 
+export interface BookingConfirmationEmailData {
+  businessName: string;
+  ownerName: string;
+  scheduledAt: string;
+  timezone: string;
+  customerName?: string | null;
+  jobType?: string | null;
+  address?: string | null;
+}
+
 const OUTCOME_LABELS: Record<string, string> = {
   booked:        'Job booked',
   lead_captured: 'New lead captured',
@@ -195,4 +205,62 @@ export async function sendPostCallEmail(
   const outcomeLabel = OUTCOME_LABELS[data.outcome] ?? data.outcome;
   const subject      = `${outcomeLabel} — call from ${data.callerNumber}`;
   await sendEmail({ to, subject, html: callSummaryHtml(data) });
+}
+
+function bookingConfirmationHtml(data: BookingConfirmationEmailData): string {
+  const bookingTime = new Date(data.scheduledAt).toLocaleString('en-GB', {
+    timeZone: data.timezone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F3F4F6">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto">
+    <tr>
+      <td style="background:#020D18;padding:20px 24px">
+        <p style="margin:0;font-size:18px;font-weight:700;color:#F0F4F8;font-family:sans-serif;letter-spacing:-0.02em">
+          ${data.businessName}
+        </p>
+        <p style="margin:4px 0 0;font-size:12px;color:rgba(240,244,248,0.5);font-family:sans-serif">
+          Booking confirmation
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px">
+        <div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+          <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#111827;font-family:sans-serif">
+            ${data.customerName ? `Hi ${data.customerName},` : 'Hello,'}
+          </p>
+          <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#111827;font-family:sans-serif">
+            Your booking with <strong>${data.businessName}</strong> has been confirmed for <strong>${bookingTime}</strong>.
+          </p>
+          ${data.jobType ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#111827;font-family:sans-serif"><strong>Job:</strong> ${data.jobType}</p>` : ''}
+          ${data.address ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#111827;font-family:sans-serif"><strong>Address:</strong> ${data.address}</p>` : ''}
+          <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#374151;font-family:sans-serif">
+            If anything changes, ${data.ownerName} will contact you directly.
+          </p>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendBookingConfirmationEmail(
+  to: string,
+  data: BookingConfirmationEmailData
+): Promise<void> {
+  await sendEmail({
+    to,
+    subject: `${data.businessName} booking confirmed`,
+    html: bookingConfirmationHtml(data),
+  });
 }

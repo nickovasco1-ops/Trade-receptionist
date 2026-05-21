@@ -4,20 +4,85 @@
 // Required env vars:
 //   GOOGLE_CLIENT_ID
 //   GOOGLE_CLIENT_SECRET
-//   GOOGLE_REDIRECT_URI  e.g. https://api.tradereceptionist.com/auth/google/callback
+//   GOOGLE_REDIRECT_URI  optional override; otherwise derived from the public backend URL
 
+import crypto from 'crypto';
 import { supabase } from './supabase';
 
 // ── Env ───────────────────────────────────────────────────────────────────────
 
+function trimEnv(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.replace(/\/$/, '') : null;
+}
+
+function publicBackendBaseUrl(): string | null {
+  const explicitBase = trimEnv(process.env.PUBLIC_API_BASE_URL);
+  if (explicitBase) return explicitBase;
+
+  const retellFunctionBase = trimEnv(process.env.RETELL_FUNCTION_BASE_URL);
+  if (retellFunctionBase) return retellFunctionBase;
+
+  const webhookUrl = trimEnv(process.env.RETELL_WEBHOOK_URL);
+  if (!webhookUrl) return null;
+
+  try {
+    return new URL(webhookUrl).origin;
+  } catch {
+    return null;
+  }
+}
+
 function oauthConfig() {
   const clientId     = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri  = process.env.GOOGLE_REDIRECT_URI;
+  const configuredRedirect = trimEnv(process.env.GOOGLE_REDIRECT_URI);
+  const derivedRedirect = publicBackendBaseUrl()
+    ? `${publicBackendBaseUrl()}/auth/google/callback`
+    : null;
+  const redirectUri = derivedRedirect ?? configuredRedirect;
   if (!clientId || !clientSecret || !redirectUri) {
     throw new Error('GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI must be set');
   }
   return { clientId, clientSecret, redirectUri };
+}
+
+function oauthStateSecret(): string {
+  return process.env.GOOGLE_OAUTH_STATE_SECRET
+    ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+    ?? '';
+}
+
+interface OAuthState {
+  clientId: string;
+  ownerEmail: string;
+  issuedAt: number;
+}
+
+function encodeOAuthState(state: OAuthState): string {
+  const secret = oauthStateSecret();
+  if (!secret) throw new Error('GOOGLE_OAUTH_STATE_SECRET or SUPABASE_SERVICE_ROLE_KEY must be set');
+
+  const payload = Buffer.from(JSON.stringify(state)).toString('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  return `${payload}.${signature}`;
+}
+
+function decodeOAuthState(rawState: string): OAuthState {
+  const secret = oauthStateSecret();
+  if (!secret) throw new Error('GOOGLE_OAUTH_STATE_SECRET or SUPABASE_SERVICE_ROLE_KEY must be set');
+
+  const [payload, signature] = rawState.split('.');
+  if (!payload || !signature) throw new Error('Invalid OAuth state');
+
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    throw new Error('OAuth state signature check failed');
+  }
+
+  return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as OAuthState;
 }
 
 // ── OAuth helpers ─────────────────────────────────────────────────────────────
@@ -27,9 +92,13 @@ function oauthConfig() {
  * Embed clientId in the `state` param so the callback knows which client
  * to save the refresh_token against.
  */
-export function generateOAuthUrl(clientId: string): string {
+export function generateOAuthUrl(clientId: string, ownerEmail: string): string {
   const { clientId: gClientId, redirectUri } = oauthConfig();
-  const state = Buffer.from(clientId).toString('base64url');
+  const state = encodeOAuthState({
+    clientId,
+    ownerEmail,
+    issuedAt: Date.now(),
+  });
 
   const params = new URLSearchParams({
     client_id:     gClientId,
@@ -102,7 +171,8 @@ async function getAccessToken(refreshToken: string): Promise<string> {
  * Call from GET /auth/google/callback.
  */
 export async function handleOAuthCallback(code: string, state: string): Promise<string> {
-  const clientId = Buffer.from(state, 'base64url').toString('utf8');
+  const decodedState = decodeOAuthState(state);
+  const clientId = decodedState.clientId;
   const { accessToken, refreshToken } = await exchangeOAuthCode(code);
 
   // Fetch the user's primary calendar ID so we don't have to ask for it
@@ -114,14 +184,21 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
     ? ((await calRes.json()) as { id: string }).id
     : 'primary';
 
-  await supabase
+  const { data: updated, error } = await supabase
     .from('clients')
     .update({
       google_refresh_token: refreshToken,
       google_cal_id:        calendarId,
       updated_at:           new Date().toISOString(),
     })
-    .eq('id', clientId);
+    .eq('id', clientId)
+    .eq('owner_email', decodedState.ownerEmail)
+    .select('id')
+    .maybeSingle();
+
+  if (error || !updated) {
+    throw new Error('Calendar callback could not match a valid client owner');
+  }
 
   return clientId;
 }
@@ -163,6 +240,53 @@ function dateStringInTz(date: Date, tz: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(date); // YYYY-MM-DD
 }
 
+function localMinutesInTz(date: Date, tz: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? '0');
+
+  return (hour * 60) + minute;
+}
+
+function busyWindowsOverlap(
+  busy: Array<{ start: Date; end: Date }>,
+  slotStart: Date,
+  slotEnd: Date
+): boolean {
+  return busy.some((window) => slotStart < window.end && slotEnd > window.start);
+}
+
+async function getBusyWindows(
+  calendarId: string,
+  refreshToken: string,
+  timeMin: string,
+  timeMax: string
+): Promise<Array<{ start: Date; end: Date }>> {
+  const token = await getAccessToken(refreshToken);
+
+  const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ timeMin, timeMax, items: [{ id: calendarId }] }),
+  });
+  if (!fbRes.ok) throw new Error(`Google freeBusy failed: ${await fbRes.text()}`);
+
+  const fbData = (await fbRes.json()) as {
+    calendars: Record<string, { busy: Array<{ start: string; end: string }> }>;
+  };
+
+  return (fbData.calendars[calendarId]?.busy ?? []).map((window) => ({
+    start: new Date(window.start),
+    end:   new Date(window.end),
+  }));
+}
+
 // ── Availability ──────────────────────────────────────────────────────────────
 
 export interface SlotOptions {
@@ -196,26 +320,9 @@ export async function getAvailableSlots(opts: SlotOptions): Promise<Date[]> {
     maxSlots    = 20,
   } = opts;
 
-  const token    = await getAccessToken(refreshToken);
   const timeMin  = fromDate.toISOString();
   const timeMax  = new Date(fromDate.getTime() + days * 86_400_000).toISOString();
-
-  // Fetch busy intervals
-  const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ timeMin, timeMax, items: [{ id: calendarId }] }),
-  });
-  if (!fbRes.ok) throw new Error(`Google freeBusy failed: ${await fbRes.text()}`);
-
-  const fbData = (await fbRes.json()) as {
-    calendars: Record<string, { busy: Array<{ start: string; end: string }> }>;
-  };
-
-  const busy = (fbData.calendars[calendarId]?.busy ?? []).map((b) => ({
-    start: new Date(b.start),
-    end:   new Date(b.end),
-  }));
+  const busy = await getBusyWindows(calendarId, refreshToken, timeMin, timeMax);
 
   const now    = new Date();
   const buffer = 30 * 60_000; // 30-min look-ahead buffer
@@ -243,13 +350,57 @@ export async function getAvailableSlots(opts: SlotOptions): Promise<Date[]> {
       const slotEnd   = new Date(slotStart.getTime() + durationMins * 60_000);
 
       if (slotStart.getTime() < now.getTime() + buffer) continue;
-      if (busy.some((b) => slotStart < b.end && slotEnd > b.start)) continue;
+      if (busyWindowsOverlap(busy, slotStart, slotEnd)) continue;
 
       slots.push(slotStart);
     }
   }
 
   return slots;
+}
+
+export interface SlotAvailabilityOptions extends Omit<SlotOptions, 'fromDate' | 'days' | 'maxSlots'> {
+  startTime: Date;
+}
+
+export async function isSlotAvailable(opts: SlotAvailabilityOptions): Promise<boolean> {
+  const {
+    calendarId,
+    refreshToken,
+    startTime,
+    durationMins = 60,
+    startHour = '08:00',
+    endHour = '18:00',
+    workingDays = [1, 2, 3, 4, 5],
+    timezone = 'Europe/London',
+  } = opts;
+
+  const slotEnd = new Date(startTime.getTime() + durationMins * 60_000);
+  const now = new Date();
+  const buffer = 30 * 60_000;
+
+  if (startTime.getTime() < now.getTime() + buffer) return false;
+  if (!workingDays.includes(dayOfWeekInTz(startTime, timezone))) return false;
+
+  const [sh, sm] = startHour.split(':').map(Number);
+  const [eh, em] = endHour.split(':').map(Number);
+  const slotStartMinutes = localMinutesInTz(startTime, timezone);
+  const slotEndMinutes = localMinutesInTz(slotEnd, timezone);
+  const startWindowMinutes = (sh * 60) + sm;
+  const endWindowMinutes = (eh * 60) + em;
+
+  if (slotStartMinutes < startWindowMinutes || slotEndMinutes > endWindowMinutes) {
+    return false;
+  }
+
+  const busy = await getBusyWindows(
+    calendarId,
+    refreshToken,
+    startTime.toISOString(),
+    slotEnd.toISOString()
+  );
+
+  return !busyWindowsOverlap(busy, startTime, slotEnd);
 }
 
 // ── Event creation ────────────────────────────────────────────────────────────
@@ -304,4 +455,24 @@ export async function createCalendarEvent(
   );
   if (!res.ok) throw new Error(`Google Calendar createEvent failed: ${await res.text()}`);
   return ((await res.json()) as { id: string }).id;
+}
+
+export async function deleteCalendarEvent(
+  calendarId: string,
+  refreshToken: string,
+  eventId: string
+): Promise<void> {
+  const token = await getAccessToken(refreshToken);
+
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`Google Calendar deleteEvent failed: ${await res.text()}`);
+  }
 }
