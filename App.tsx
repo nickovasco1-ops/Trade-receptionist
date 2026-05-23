@@ -1065,7 +1065,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
 
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
-const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
+const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: (planKey: string) => void }) => {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
 
   const plans: PricingTier[] = [
@@ -1076,6 +1076,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       description: 'Solo traders',
       features: ['Up to 100 calls/month', '24/7 answering', 'WhatsApp job summaries', 'Google Calendar sync'],
       buttonText: 'Start Free Trial',
+      planKey: 'starter',
     },
     {
       name: 'Pro',
@@ -1085,6 +1086,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       isPopular: true,
       features: ['Up to 300 calls/month', 'Everything in Starter', 'Call transfer logic', 'Calendar booking', 'Priority support'],
       buttonText: 'Start Free Trial',
+      planKey: 'pro',
     },
     {
       name: 'Agency',
@@ -1093,6 +1095,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
       description: 'Growing teams',
       features: ['Unlimited calls', 'Everything in Pro', 'Multiple departments', 'Shared team access', 'Dedicated account manager'],
       buttonText: 'Start Free Trial',
+      planKey: 'agency',
     },
   ];
 
@@ -1234,7 +1237,7 @@ const Pricing = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <Button
               variant={plan.isPopular ? 'primary' : 'outline'}
               fullWidth
-              onClick={onWaitlist}
+              onClick={() => plan.planKey && onStripe ? onStripe(plan.planKey) : onWaitlist()}
             >
               {plan.buttonText}
             </Button>
@@ -1730,6 +1733,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [isStripeOpen, setIsStripeOpen] = useState(false);
+  const [stripePlanKey, setStripePlanKey] = useState<string | null>(null);
 
   const handleViewChange = (view: View) => {
     window.scrollTo(0, 0);
@@ -1738,6 +1742,10 @@ const App: React.FC = () => {
 
   const toggleWaitlist = () => setIsWaitlistOpen(v => !v);
   const toggleStripe = () => setIsStripeOpen(v => !v);
+  const openStripe = (planKey?: string) => {
+    setStripePlanKey(planKey ?? null);
+    setIsStripeOpen(true);
+  };
 
   return (
     <div className="min-h-screen font-body text-offwhite" style={{ isolation: 'isolate', background: 'transparent' }}>
@@ -1757,7 +1765,7 @@ const App: React.FC = () => {
               <Testimonials />
             </React.Suspense>
             <DemoSection onWaitlist={toggleStripe} />
-            <Pricing onWaitlist={toggleStripe} />
+            <Pricing onWaitlist={toggleStripe} onStripe={openStripe} />
             <FAQ onWaitlist={toggleStripe} />
             <FinalCTA onWaitlist={toggleStripe} />
           </>
@@ -1773,7 +1781,7 @@ const App: React.FC = () => {
       <WhatsAppButton />
       {isStripeOpen && (
         <React.Suspense fallback={null}>
-          <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => setIsStripeOpen(false)} onWaitlist={toggleWaitlist} />
+          <StripeCheckoutModal isOpen={isStripeOpen} onClose={() => { setIsStripeOpen(false); setStripePlanKey(null); }} planKey={stripePlanKey} />
         </React.Suspense>
       )}
       {isWaitlistOpen && (

@@ -14,6 +14,7 @@ export interface PricingTier {
   features: string[];
   isPopular?: boolean;
   buttonText?: string;
+  planKey?: string;
 }
 
 export interface FAQItem {
