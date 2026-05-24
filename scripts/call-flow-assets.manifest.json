@@ -1,0 +1,105 @@
+{
+  "baseStylePrompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter.",
+  "assets": [
+    {
+      "id": "ringing-smartphone",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/ringing-smartphone.png",
+      "alt": "Soft-shaded 3D icon of a ringing smartphone representing a customer call while the trade is busy on-site.",
+      "promptSuffix": "Minimal 3D clay icon of a ringing smartphone with a glowing incoming-call pulse, tailored to a UK trades business receiving a new customer enquiry.",
+      "placeholderKind": "ringing-smartphone"
+    },
+    {
+      "id": "ai-receptionist-headset",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/ai-receptionist-headset.png",
+      "alt": "Soft-shaded 3D icon of a receptionist headset showing Trade Receptionist answering in the business name.",
+      "promptSuffix": "Minimal 3D clay icon of a premium receptionist headset with a small call-status light, signalling Trade Receptionist answering professionally in the business name.",
+      "placeholderKind": "ai-receptionist-headset"
+    },
+    {
+      "id": "job-sheet-clipboard",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/job-sheet-clipboard.png",
+      "alt": "Soft-shaded 3D icon of a clipboard job sheet showing captured customer details for a trade enquiry.",
+      "promptSuffix": "Minimal 3D clay icon of a clipboard job sheet with tidy customer detail rows and a highlighted call-out note, showing a captured trade enquiry.",
+      "placeholderKind": "job-sheet-clipboard"
+    },
+    {
+      "id": "whatsapp-summary-bubble",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/whatsapp-summary-bubble.png",
+      "alt": "Soft-shaded 3D icon of a green message bubble and summary card showing a WhatsApp-style job handoff.",
+      "promptSuffix": "Minimal 3D clay icon of a green chat bubble and summary sheet, a WhatsApp-style handoff for a captured trade job with clean message cues and no branded text.",
+      "placeholderKind": "whatsapp-summary-bubble"
+    },
+    {
+      "id": "booked-diary-calendar",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/booked-diary-calendar.png",
+      "alt": "Soft-shaded 3D icon of a diary calendar with a confirmed check mark showing a booked trade job.",
+      "promptSuffix": "Minimal 3D clay icon of a diary calendar with a bold confirmed check mark, showing a real trade job booked into the diary.",
+      "placeholderKind": "booked-diary-calendar"
+    },
+    {
+      "id": "phone-clock-247",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/phone-clock-247.png",
+      "alt": "Soft-shaded 3D icon of a phone and clock showing around-the-clock call answering for a trade business.",
+      "promptSuffix": "Minimal 3D clay icon of a phone paired with a clear clock face, showing calls answered 24 hours a day for a busy trade business.",
+      "placeholderKind": "phone-clock-247"
+    },
+    {
+      "id": "spam-shield-filter",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/spam-shield-filter.png",
+      "alt": "Soft-shaded 3D icon of a shield filtering out nuisance callers and spam calls.",
+      "promptSuffix": "Minimal 3D clay icon of a protective shield filtering nuisance calls, with subtle blocked-call cues and a premium dark SaaS finish.",
+      "placeholderKind": "spam-shield-filter"
+    },
+    {
+      "id": "urgent-call-siren",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/urgent-call-siren.png",
+      "alt": "Soft-shaded 3D icon of an urgent call siren showing emergency trade enquiries being prioritised.",
+      "promptSuffix": "Minimal 3D clay icon of an urgent call siren with premium orange alert light, representing emergency trade enquiries being prioritised fast.",
+      "placeholderKind": "urgent-call-siren"
+    },
+    {
+      "id": "call-records-notes",
+      "type": "icon",
+      "size": "1024x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/icons/call-records-notes.png",
+      "alt": "Soft-shaded 3D icon of call notes and transcript records for checking what was said after a call.",
+      "promptSuffix": "Minimal 3D clay icon of layered call notes and transcript records, showing clean post-call records without a voicemail player.",
+      "placeholderKind": "call-records-notes"
+    },
+    {
+      "id": "customer-call-workflow",
+      "type": "panel",
+      "size": "1536x1024",
+      "quality": "medium",
+      "output": "public/assets/marketing/call-flow/panels/customer-call-workflow.png",
+      "alt": "Wide workflow illustration showing a customer call turning into captured details, a WhatsApp-style summary, and a booked diary slot for a UK trade business.",
+      "promptSuffix": "Wide 16:9 workflow illustration reading left to right: incoming customer call, captured job details, green message-summary handoff, and booked diary confirmation for a UK trades business. Use believable trade context cues, subtle connectors, and clean legible UI shapes with no tiny text.",
+      "placeholderKind": "customer-call-workflow"
+    }
+  ]
+}

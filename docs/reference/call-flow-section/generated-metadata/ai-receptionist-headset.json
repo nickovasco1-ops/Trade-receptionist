@@ -1,0 +1,10 @@
+{
+  "id": "ai-receptionist-headset",
+  "output": "public/assets/marketing/call-flow/icons/ai-receptionist-headset.png",
+  "model": "gpt-image-2",
+  "size": "1024x1024",
+  "quality": "medium",
+  "alt": "Soft-shaded 3D icon of a receptionist headset showing Trade Receptionist answering in the business name.",
+  "prompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter. Minimal 3D clay icon of a premium receptionist headset with a small call-status light, signalling Trade Receptionist answering professionally in the business name.",
+  "generatedAt": "2026-05-22T21:31:55.874Z"
+}

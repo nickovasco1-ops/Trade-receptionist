@@ -1,0 +1,10 @@
+{
+  "id": "customer-call-workflow",
+  "output": "public/assets/marketing/call-flow/panels/customer-call-workflow.png",
+  "model": "gpt-image-2",
+  "size": "1536x1024",
+  "quality": "medium",
+  "alt": "Wide workflow illustration showing a customer call turning into captured details, a WhatsApp-style summary, and a booked diary slot for a UK trade business.",
+  "prompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter. Wide 16:9 workflow illustration reading left to right: incoming customer call, captured job details, green message-summary handoff, and booked diary confirmation for a UK trades business. Use believable trade context cues, subtle connectors, and clean legible UI shapes with no tiny text.",
+  "generatedAt": "2026-05-22T21:38:22.792Z"
+}

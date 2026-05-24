@@ -1,0 +1,10 @@
+{
+  "id": "phone-clock-247",
+  "output": "public/assets/marketing/call-flow/icons/phone-clock-247.png",
+  "model": "gpt-image-2",
+  "size": "1024x1024",
+  "quality": "medium",
+  "alt": "Soft-shaded 3D icon of a phone and clock showing around-the-clock call answering for a trade business.",
+  "prompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter. Minimal 3D clay icon of a phone paired with a clear clock face, showing calls answered 24 hours a day for a busy trade business.",
+  "generatedAt": "2026-05-22T21:35:17.097Z"
+}

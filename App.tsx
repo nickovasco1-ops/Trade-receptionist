@@ -409,7 +409,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <div className="hero-fade mt-5 flex flex-wrap gap-2.5 text-[12px] text-offwhite/52 font-body" style={{ animationDelay: '280ms' }}>
               {[
                 'No new number needed',
-                'Natural British voice',
+                'Custom voice and greeting',
                 'Setup in minutes',
                 'Cancel anytime',
               ].map((item) => (
@@ -946,7 +946,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </p>
 
         <div className="mb-8 flex flex-wrap gap-3">
-          {['Natural British voice', 'Captures the job', 'WhatsApp summary back'].map((item) => (
+          {['Custom voice and greeting', 'Captures the job', 'WhatsApp summary back'].map((item) => (
             <span
               key={item}
               className="rounded-full px-4 py-2 text-[12px] font-semibold tracking-[0.02em] text-offwhite/72"
@@ -1455,7 +1455,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
             { icon: CheckCircle2, label: 'No new number needed' },
             { icon: CheckCircle2, label: 'Setup in minutes' },
             { icon: CheckCircle2, label: 'Cancel anytime' },
-            { icon: CheckCircle2, label: 'Natural British voice' },
+            { icon: CheckCircle2, label: 'Custom voice and greeting' },
           ].map(({ icon: Icon, label }) => (
             <span
               key={label}
@@ -1677,7 +1677,7 @@ const CookieNotice: React.FC = () => {
   if (!visible) return null;
   return (
     <div
-      className="fixed bottom-24 left-4 right-4 z-[60] rounded-[20px] p-4 font-body md:bottom-5 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2"
+      className="fixed bottom-24 left-4 right-4 z-[60] rounded-[20px] p-4 font-body md:hidden"
       style={{
         background:   'linear-gradient(180deg, rgba(10,35,64,0.96) 0%, rgba(8,26,48,0.96) 100%)',
         backdropFilter: 'blur(20px)',
@@ -1703,24 +1703,9 @@ const CookieNotice: React.FC = () => {
           Privacy Policy
         </a>
       </p>
-      <div className="hidden md:flex items-center justify-between gap-3 mb-1">
-        <p className="text-[12px] leading-relaxed text-offwhite/54">
-          Necessary cookies only. No ad tracking.{' '}
-          <a href="/privacy#cookies" className="text-orange-soft hover:text-orange transition-colors underline underline-offset-2">
-            Privacy Policy
-          </a>
-        </p>
-        <button
-          onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
-          className="min-w-[122px] h-10 rounded-btn px-4 text-[13px] font-semibold text-white transition-all duration-200"
-          style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 12px 26px rgba(249,115,22,0.24)' }}
-        >
-          Continue
-        </button>
-      </div>
       <button
         onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
-        className="w-full h-10 rounded-btn text-[13px] font-semibold text-white transition-all duration-200 md:hidden"
+        className="w-full h-10 rounded-btn text-[13px] font-semibold text-white transition-all duration-200"
         style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 12px 26px rgba(249,115,22,0.24)' }}
       >
         Continue

@@ -1,0 +1,10 @@
+{
+  "id": "call-records-notes",
+  "output": "public/assets/marketing/call-flow/icons/call-records-notes.png",
+  "model": "gpt-image-2",
+  "size": "1024x1024",
+  "quality": "medium",
+  "alt": "Soft-shaded 3D icon of call notes and transcript records for checking what was said after a call.",
+  "prompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter. Minimal 3D clay icon of layered call notes and transcript records, showing clean post-call records without a voicemail player.",
+  "generatedAt": "2026-05-22T21:37:41.641Z"
+}

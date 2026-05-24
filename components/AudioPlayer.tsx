@@ -194,7 +194,7 @@ export const AudioPlayer: React.FC = () => {
                 No Hot Water — Customer Call Sample
               </p>
               <p className="text-[12px] text-offwhite/40 font-body leading-none">
-                Trade Receptionist · British voice demo
+                Trade Receptionist · custom voice demo
               </p>
             </div>
           </div>

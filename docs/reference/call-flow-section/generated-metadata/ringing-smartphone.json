@@ -1,0 +1,10 @@
+{
+  "id": "ringing-smartphone",
+  "output": "public/assets/marketing/call-flow/icons/ringing-smartphone.png",
+  "model": "gpt-image-2",
+  "size": "1024x1024",
+  "quality": "medium",
+  "alt": "Soft-shaded 3D icon of a ringing smartphone representing a customer call while the trade is busy on-site.",
+  "prompt": "Premium UK trades SaaS icon or illustration, soft 3D clay render, deep navy background or transparency, warm orange accent glow, subtle blue secondary light, simple readable shapes, dark premium atmosphere, no text, no purple, no generic SaaS blobs, no cartoon mascot, no distorted hands, no warped UI, no extra decorative clutter. Minimal 3D clay icon of a ringing smartphone with a glowing incoming-call pulse, tailored to a UK trades business receiving a new customer enquiry.",
+  "generatedAt": "2026-05-22T21:31:03.318Z"
+}
