@@ -1,6 +1,7 @@
 import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt } from '../lib/prompt-builder';
+import { isE2ETestMode } from '../config/e2e';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
@@ -193,6 +194,10 @@ export async function createRetellLlm(
   ownerNumber?: string | null,
   calendarBookingEnabled = false
 ): Promise<{ llmId: string }> {
+  if (isE2ETestMode()) {
+    return { llmId: `llm_e2e_${Date.now()}` };
+  }
+
   const tools = buildRetellTools(ownerNumber, calendarBookingEnabled);
 
   const res = await fetch(`${BASE_URL}/create-retell-llm`, {
@@ -214,6 +219,10 @@ export async function createRetellLlm(
  * Called by the PATCH /clients/:id route whenever client config changes.
  */
 export async function updateRetellLlm(llmId: string, prompt: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
     method:  'PATCH',
     headers: headers(),
@@ -228,6 +237,10 @@ export async function updateRetellLlmConfig(
   ownerNumber?: string | null,
   calendarBookingEnabled = false
 ): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
     method: 'PATCH',
     headers: headers(),
@@ -241,6 +254,10 @@ export async function updateRetellLlmConfig(
 
 /** Delete a Retell LLM. Used during provisioning rollback. */
 export async function deleteRetellLlm(llmId: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const res = await fetch(`${BASE_URL}/delete-retell-llm/${llmId}`, {
     method:  'DELETE',
     headers: headers(),
@@ -262,6 +279,13 @@ export async function deleteRetellLlm(llmId: string): Promise<void> {
 export async function createRetellAgent(
   config: RetellAgentConfig
 ): Promise<ProvisionedAgent> {
+  if (isE2ETestMode()) {
+    return {
+      agentId: `agent_e2e_${Date.now()}`,
+      llmId: `llm_e2e_${Date.now()}`,
+    };
+  }
+
   const { llmId } = await createRetellLlm(
     config.prompt,
     config.ownerNumber,
@@ -302,6 +326,10 @@ export async function createRetellAgent(
 
 /** Delete a Retell agent. Used during provisioning rollback. */
 export async function deleteRetellAgent(agentId: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const res = await fetch(`${BASE_URL}/delete-agent/${agentId}`, {
     method:  'DELETE',
     headers: headers(),
@@ -322,6 +350,10 @@ export async function importTwilioNumber(
   phoneNumber: string,
   agentId:     string
 ): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const twSid   = process.env.TWILIO_ACCOUNT_SID;
   const twToken = process.env.TWILIO_AUTH_TOKEN;
   if (!twSid || !twToken) {
@@ -350,6 +382,10 @@ export async function assignAgentToNumber(
   phoneNumber: string,
   agentId:     string
 ): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const encoded = encodeURIComponent(phoneNumber);
   const res = await fetch(`${BASE_URL}/update-phone-number/${encoded}`, {
     method:  'PATCH',
@@ -361,6 +397,10 @@ export async function assignAgentToNumber(
 
 /** Release a Retell-managed phone number. Used during provisioning rollback. */
 export async function releaseRetellNumber(phoneNumber: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const encoded = encodeURIComponent(phoneNumber);
   const res = await fetch(`${BASE_URL}/delete-phone-number/${encoded}`, {
     method:  'DELETE',
@@ -374,6 +414,10 @@ export async function releaseRetellNumber(phoneNumber: string): Promise<void> {
 // ── Call API ──────────────────────────────────────────────────────────────────
 
 export async function getCall(callId: string): Promise<Record<string, unknown> | null> {
+  if (isE2ETestMode()) {
+    return null;
+  }
+
   const res = await fetch(`${BASE_URL}/get-call/${callId}`, { headers: headers() });
   if (!res.ok) return null;
   return res.json() as Promise<Record<string, unknown>>;

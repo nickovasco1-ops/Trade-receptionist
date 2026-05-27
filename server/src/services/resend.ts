@@ -1,3 +1,5 @@
+import { isE2ETestMode } from '../config/e2e';
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL     = process.env.RESEND_FROM_EMAIL ?? 'hello@tradereceptionist.com';
 
@@ -11,6 +13,10 @@ export interface EmailPayload {
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<string> {
+  if (isE2ETestMode()) {
+    return `email_e2e_${Buffer.from(`${payload.to}:${payload.subject}`).toString('hex').slice(0, 24)}`;
+  }
+
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not set');
 
   const res = await fetch('https://api.resend.com/emails', {

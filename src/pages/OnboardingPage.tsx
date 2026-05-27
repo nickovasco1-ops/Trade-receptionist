@@ -363,7 +363,7 @@ function StepPane({ children, stepKey }: { children: ReactNode; stepKey: string 
     return () => cancelAnimationFrame(raf);
   }, [stepKey]);
 
-  return <div ref={ref}>{children}</div>;
+  return <div ref={ref} data-testid={`onboarding-step-${stepKey}`}>{children}</div>;
 }
 
 interface PrimaryBtnProps {
@@ -778,7 +778,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   const suggestedServices = SERVICES_BY_TRADE[form.trade_type] ?? SERVICES_BY_TRADE.Other;
 
   return (
-    <div
+    <main
       className="public-page-shell px-4 py-6 font-body sm:px-6 sm:py-8 lg:px-8 lg:py-10"
     >
       <div className="public-page-grid" aria-hidden="true" />
@@ -1446,6 +1446,6 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
           </span>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -19,6 +19,11 @@ interface Stats {
 
 type CallRow = Pick<Call, 'id' | 'outcome' | 'is_emergency' | 'started_at' | 'caller_number' | 'duration_secs'>;
 
+interface SubscriptionAlert {
+  title: string;
+  copy: string;
+}
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -26,6 +31,7 @@ interface StatCardProps {
   href?: string;
   accent?: boolean;
   helper?: string;
+  testId?: string;
 }
 
 function formatPercent(value: number) {
@@ -40,9 +46,10 @@ function formatDuration(seconds: number | null) {
   return minutes > 0 ? `${minutes}m ${secs}s` : `${secs}s`;
 }
 
-function StatCard({ label, value, icon: Icon, href, accent = false, helper }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, href, accent = false, helper, testId }: StatCardProps) {
   const content = (
     <article
+      data-testid={testId}
       className="group h-full rounded-[24px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
       style={{
         background: accent
@@ -81,11 +88,30 @@ function StatCard({ label, value, icon: Icon, href, accent = false, helper }: St
   return href ? <Link to={href} className="block h-full">{content}</Link> : content;
 }
 
+function subscriptionMessage(subscriptionStatus?: string | null, paymentStatus?: string | null): SubscriptionAlert | null {
+  if (paymentStatus === 'failed' || subscriptionStatus === 'past_due' || subscriptionStatus === 'unpaid') {
+    return {
+      title: 'Payment needs attention',
+      copy: 'Your receptionist is paused until the payment issue is resolved. Update billing or contact support so call handling can resume.',
+    };
+  }
+
+  if (paymentStatus === 'canceled' || subscriptionStatus === 'canceled') {
+    return {
+      title: 'Subscription canceled',
+      copy: 'Your receptionist is paused because this subscription has ended. Contact support to reactivate call handling.',
+    };
+  }
+
+  return null;
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const animRef = useScrollAnimation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
+  const [subscriptionAlert, setSubscriptionAlert] = useState<SubscriptionAlert | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
 
@@ -96,7 +122,7 @@ export default function DashboardPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id, onboarding_complete')
+        .select('id, onboarding_complete, subscription_status, payment_status')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -104,6 +130,8 @@ export default function DashboardPage() {
         navigate('/onboarding', { replace: true });
         return;
       }
+
+      setSubscriptionAlert(subscriptionMessage(clientRow.subscription_status, clientRow.payment_status));
 
       const [callsRes, leadsRes] = await Promise.all([
         supabase
@@ -155,6 +183,23 @@ export default function DashboardPage() {
   return (
     <DashboardShell>
       <div ref={animRef} data-animate>
+        {subscriptionAlert ? (
+          <div
+            data-testid="subscription-status-banner"
+            role="alert"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={17} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+              <div>
+                <p className="text-[14px] font-semibold text-offwhite">{subscriptionAlert.title}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">{subscriptionAlert.copy}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
           <article
             className="overflow-hidden rounded-[32px] px-6 py-6 sm:px-7 sm:py-7"
@@ -311,14 +356,15 @@ export default function DashboardPage() {
         ) : stats ? (
           <>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Total calls" value={totalCallsDisplay} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
-              <StatCard label="Leads captured" value={totalLeadsDisplay} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
+              <StatCard testId="dashboard-stat-total-calls" label="Total calls" value={totalCallsDisplay} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
+              <StatCard testId="dashboard-stat-total-leads" label="Leads captured" value={totalLeadsDisplay} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
               <StatCard label="Jobs booked" value={bookedJobsDisplay} icon={TrendingUp} accent helper="Calls already converted into booked work." />
               <StatCard label="Emergencies" value={emergenciesDisplay} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
             </section>
 
             <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
               <article
+                data-testid="dashboard-recent-calls"
                 className="rounded-[30px] overflow-hidden"
                 style={{
                   background: 'linear-gradient(180deg, rgba(17,31,53,0.90) 0%, rgba(10,23,39,0.96) 100%)',

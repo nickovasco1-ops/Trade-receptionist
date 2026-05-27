@@ -23,6 +23,166 @@ const PRODUCT_TO_PLAN: Record<string, Plan> = {
   'prod_UQeXswCVtfNvZq': 'agency',
 };
 
+type StripeObject = Record<string, unknown>;
+
+function asRecord(value: unknown): StripeObject | null {
+  return value && typeof value === 'object' ? value as StripeObject : null;
+}
+
+function stripeId(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) return value;
+  const record = asRecord(value);
+  const id = record?.['id'];
+  return typeof id === 'string' && id.trim() ? id : null;
+}
+
+function unixSecondsToIso(value: unknown): string | null {
+  return typeof value === 'number' ? new Date(value * 1000).toISOString() : null;
+}
+
+function invoiceSubscriptionId(invoice: StripeObject): string | null {
+  const direct = stripeId(invoice['subscription']);
+  if (direct) return direct;
+
+  const parent = asRecord(invoice['parent']);
+  const subscriptionDetails = asRecord(parent?.['subscription_details']);
+  return stripeId(subscriptionDetails?.['subscription']);
+}
+
+function invoiceCurrentPeriodEnd(invoice: StripeObject): string | null {
+  const lines = asRecord(invoice['lines']);
+  const data = Array.isArray(lines?.['data']) ? lines['data'] as unknown[] : [];
+  const firstLine = asRecord(data[0]);
+  const period = asRecord(firstLine?.['period']);
+  return unixSecondsToIso(period?.['end']) ?? unixSecondsToIso(invoice['period_end']);
+}
+
+async function findClientForStripe(opts: {
+  customerId?: string | null;
+  subscriptionId?: string | null;
+  email?: string | null;
+}): Promise<StripeObject | null> {
+  const select = 'id,owner_email,stripe_customer_id,stripe_subscription_id';
+
+  if (opts.subscriptionId) {
+    const { data } = await supabase
+      .from('clients')
+      .select(select)
+      .eq('stripe_subscription_id', opts.subscriptionId)
+      .maybeSingle();
+    if (data) return data as StripeObject;
+  }
+
+  if (opts.customerId) {
+    const { data } = await supabase
+      .from('clients')
+      .select(select)
+      .eq('stripe_customer_id', opts.customerId)
+      .maybeSingle();
+    if (data) return data as StripeObject;
+  }
+
+  if (opts.email) {
+    const { data } = await supabase
+      .from('clients')
+      .select(select)
+      .eq('owner_email', opts.email)
+      .maybeSingle();
+    if (data) return data as StripeObject;
+  }
+
+  return null;
+}
+
+async function updateClientStripeState(
+  eventType: string,
+  identifiers: { customerId?: string | null; subscriptionId?: string | null; email?: string | null },
+  values: StripeObject,
+): Promise<void> {
+  const client = await findClientForStripe(identifiers);
+  if (!client?.['id']) {
+    console.warn('[stripe] lifecycle event has no matching client', eventType, {
+      customerId: identifiers.customerId ?? null,
+      subscriptionId: identifiers.subscriptionId ?? null,
+      email: identifiers.email ?? null,
+    });
+    return;
+  }
+
+  const patch: StripeObject = {
+    ...values,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (identifiers.customerId) patch.stripe_customer_id = identifiers.customerId;
+  if (identifiers.subscriptionId) patch.stripe_subscription_id = identifiers.subscriptionId;
+
+  const { error } = await supabase
+    .from('clients')
+    .update(patch)
+    .eq('id', client['id']);
+
+  if (error) {
+    console.error('[stripe] lifecycle update failed', eventType, error);
+    return;
+  }
+
+  console.log('[stripe] lifecycle updated client', client['id'], eventType);
+}
+
+async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<void> {
+  await updateClientStripeState(
+    'invoice.payment_succeeded',
+    {
+      customerId: stripeId(invoice['customer']),
+      subscriptionId: invoiceSubscriptionId(invoice),
+      email: typeof invoice['customer_email'] === 'string' ? invoice['customer_email'] : null,
+    },
+    {
+      subscription_status: 'active',
+      payment_status: 'current',
+      is_active: true,
+      current_period_end: invoiceCurrentPeriodEnd(invoice),
+      last_payment_at: unixSecondsToIso(invoice['created']) ?? new Date().toISOString(),
+      last_payment_failed_at: null,
+    },
+  );
+}
+
+async function handleInvoicePaymentFailed(invoice: StripeObject): Promise<void> {
+  await updateClientStripeState(
+    'invoice.payment_failed',
+    {
+      customerId: stripeId(invoice['customer']),
+      subscriptionId: invoiceSubscriptionId(invoice),
+      email: typeof invoice['customer_email'] === 'string' ? invoice['customer_email'] : null,
+    },
+    {
+      subscription_status: 'past_due',
+      payment_status: 'failed',
+      is_active: false,
+      current_period_end: invoiceCurrentPeriodEnd(invoice),
+      last_payment_failed_at: unixSecondsToIso(invoice['created']) ?? new Date().toISOString(),
+    },
+  );
+}
+
+async function handleSubscriptionDeleted(subscription: StripeObject): Promise<void> {
+  await updateClientStripeState(
+    'customer.subscription.deleted',
+    {
+      customerId: stripeId(subscription['customer']),
+      subscriptionId: stripeId(subscription['id']),
+    },
+    {
+      subscription_status: 'canceled',
+      payment_status: 'canceled',
+      is_active: false,
+      current_period_end: unixSecondsToIso(subscription['current_period_end']),
+    },
+  );
+}
+
 /**
  * Resolve plan by calling Stripe's line-items API.
  * Used as a fallback when the Payment Link has no metadata.plan set.
@@ -161,6 +321,8 @@ function welcomeHtml(opts: {
 async function provisionClient(session: Record<string, unknown>): Promise<void> {
   const details  = session['customer_details'] as Record<string, string | null> | null;
   const metadata = session['metadata']         as Record<string, string>        | null;
+  const customerId = stripeId(session['customer']);
+  const subscriptionId = stripeId(session['subscription']);
 
   const ownerEmail  = details?.['email'];
   const ownerName   = details?.['name'] ?? 'New Customer';
@@ -188,6 +350,15 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     .maybeSingle();
 
   if (existing) {
+    await updateClientStripeState(
+      'checkout.session.completed',
+      { customerId, subscriptionId, email: ownerEmail },
+      {
+        subscription_status: 'trialing',
+        payment_status: 'current',
+        is_active: true,
+      },
+    );
     console.log(`[stripe] ${ownerEmail} already provisioned — skipping`);
     return;
   }
@@ -196,7 +367,18 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
 
   const { data: clientRow, error: clientErr } = await supabase
     .from('clients')
-    .insert({ business_name: ownerName, owner_name: ownerName, owner_email: ownerEmail, owner_mobile: ownerMobile, plan })
+    .insert({
+      business_name: ownerName,
+      owner_name: ownerName,
+      owner_email: ownerEmail,
+      owner_mobile: ownerMobile,
+      plan,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
+      subscription_status: 'trialing',
+      payment_status: 'current',
+      is_active: true,
+    })
     .select()
     .single();
 
@@ -348,15 +530,31 @@ router.post('/', async (req: Request, res: Response) => {
     return;
   }
 
-  if (event['type'] !== 'checkout.session.completed') return;
-
-  const session = (event['data'] as Record<string, unknown>)['object'] as Record<string, unknown>;
+  const eventType = event['type'];
+  const data = asRecord(event['data']);
+  const object = asRecord(data?.['object']);
+  if (!object || typeof eventType !== 'string') return;
 
   (async () => {
     try {
-      await provisionClient(session);
+      switch (eventType) {
+        case 'checkout.session.completed':
+          await provisionClient(object);
+          break;
+        case 'invoice.payment_succeeded':
+          await handleInvoicePaymentSucceeded(object);
+          break;
+        case 'invoice.payment_failed':
+          await handleInvoicePaymentFailed(object);
+          break;
+        case 'customer.subscription.deleted':
+          await handleSubscriptionDeleted(object);
+          break;
+        default:
+          break;
+      }
     } catch (err: unknown) {
-      console.error('[stripe] unhandled error in provisionClient', err);
+      console.error('[stripe] unhandled error in webhook handler', err);
     }
   })();
 });

@@ -13,6 +13,8 @@ interface ClientSettings {
   owner_mobile: string;
   twilio_number: string | null;
   own_number: string | null;
+  subscription_status: string | null;
+  payment_status: string | null;
   after_hours_message: string | null;
   google_cal_id: string | null;
   google_cal_connected: boolean;
@@ -104,6 +106,24 @@ function LabeledField({
   );
 }
 
+function subscriptionMessage(subscriptionStatus?: string | null, paymentStatus?: string | null) {
+  if (paymentStatus === 'failed' || subscriptionStatus === 'past_due' || subscriptionStatus === 'unpaid') {
+    return {
+      title: 'Payment needs attention',
+      copy: 'Your receptionist is paused until the payment issue is resolved. Please update your billing details or contact support so calls are not missed.',
+    };
+  }
+
+  if (paymentStatus === 'canceled' || subscriptionStatus === 'canceled') {
+    return {
+      title: 'Subscription canceled',
+      copy: 'Your receptionist is paused because this subscription has ended. Contact support to reactivate call handling for this business.',
+    };
+  }
+
+  return null;
+}
+
 export default function SettingsPage() {
   const animRef = useScrollAnimation();
   const [clientId, setClientId] = useState<string | null>(null);
@@ -136,7 +156,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('clients')
-        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id')
+        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id, subscription_status, payment_status')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -166,6 +186,8 @@ export default function SettingsPage() {
         owner_mobile: data.owner_mobile ?? '',
         twilio_number: data.twilio_number ?? null,
         own_number: data.own_number ?? null,
+        subscription_status: data.subscription_status ?? null,
+        payment_status: data.payment_status ?? null,
         after_hours_message: configData?.after_hours_message ?? '',
         google_cal_id: data.google_cal_id ?? '',
         google_cal_connected: !!data.google_cal_id,
@@ -267,6 +289,7 @@ export default function SettingsPage() {
 
   const isKeepExisting = !!form.own_number && !!form.twilio_number;
   const activationCode = isKeepExisting ? buildActivationCode(form.twilio_number!) : null;
+  const subscriptionAlert = subscriptionMessage(form.subscription_status, form.payment_status);
 
   if (loading) {
     return (
@@ -345,6 +368,23 @@ export default function SettingsPage() {
             ))}
           </div>
         </article>
+
+        {subscriptionAlert ? (
+          <div
+            data-testid="subscription-status-banner"
+            role="alert"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle size={17} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+              <div>
+                <p className="text-[14px] font-semibold text-offwhite">{subscriptionAlert.title}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">{subscriptionAlert.copy}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <div className="space-y-5">
@@ -509,9 +549,16 @@ export default function SettingsPage() {
                 </div>
               ) : null}
 
-              <Button type="submit" disabled={saving} variant={saved ? 'secondary' : 'primary'}>
+              <Button
+                type="submit"
+                disabled={saving}
+                variant={saved ? 'secondary' : 'primary'}
+                data-testid="settings-save-button"
+              >
                 <Save size={14} aria-hidden="true" />
-                {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
+                <span data-testid="settings-save-status">
+                  {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
+                </span>
               </Button>
             </form>
           </div>

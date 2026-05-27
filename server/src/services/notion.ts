@@ -1,10 +1,13 @@
 import { Client as NotionClient } from '@notionhq/client';
+import { isE2ETestMode } from '../config/e2e';
 
 // Lazy singleton — only created if NOTION_API_KEY is set.
 // All exported functions silently no-op when credentials are absent.
 let _notion: NotionClient | null = null;
 
 function getNotion(): NotionClient | null {
+  if (isE2ETestMode()) return null;
+
   const key = process.env.NOTION_API_KEY;
   if (!key) return null;
   if (!_notion) _notion = new NotionClient({ auth: key });

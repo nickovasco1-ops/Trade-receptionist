@@ -1,3 +1,5 @@
+import { isE2ETestMode } from '../config/e2e';
+
 // ── Credentials ───────────────────────────────────────────────────────────────
 
 function creds() {
@@ -40,6 +42,10 @@ export interface PurchasedNumber {
 // ── Messaging ─────────────────────────────────────────────────────────────────
 
 export async function sendSms(to: string, body: string, from: string): Promise<string> {
+  if (isE2ETestMode()) {
+    return `SM_e2e_${Buffer.from(`${from}:${to}:${body}`).toString('hex').slice(0, 24)}`;
+  }
+
   const params = new URLSearchParams({ From: from, To: to, Body: body });
   const res = await fetch(`${baseUrl()}/Messages.json`, {
     method: 'POST',
@@ -57,6 +63,15 @@ export async function sendSms(to: string, body: string, from: string): Promise<s
  * Results are random — call once and pick the first available.
  */
 export async function searchUkNumbers(count = 5): Promise<AvailableNumber[]> {
+  if (isE2ETestMode()) {
+    return Array.from({ length: count }, (_, index) => ({
+      phoneNumber: `+4420457190${String(index).padStart(2, '0')}`,
+      friendlyName: `E2E Test Number ${index + 1}`,
+      locality: 'London',
+      region: 'GB',
+    }));
+  }
+
   // UK Local numbers require a separate regulatory bundle (not yet approved).
   // Mobile numbers work with the existing twilio-approved bundle — prefer them.
   for (const type of ['Mobile', 'Local']) {
@@ -95,6 +110,14 @@ export async function searchUkNumbers(count = 5): Promise<AvailableNumber[]> {
 
 /** Purchase a UK phone number. Returns the SID needed for later release. */
 export async function buyUkNumber(phoneNumber: string): Promise<PurchasedNumber> {
+  if (isE2ETestMode()) {
+    return {
+      sid: `PN_e2e_${phoneNumber.replace(/\D/g, '').slice(-10)}`,
+      phoneNumber,
+      friendlyName: 'E2E Test Number',
+    };
+  }
+
   const params = new URLSearchParams({ PhoneNumber: phoneNumber });
 
   // UK numbers require a registered address + regulatory bundle (Ofcom / Twilio policy).
@@ -127,6 +150,10 @@ export async function buyUkNumber(phoneNumber: string): Promise<PurchasedNumber>
 
 /** Release a purchased number by its SID. Used during provisioning rollback. */
 export async function releaseNumber(phoneNumberSid: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const res = await fetch(`${baseUrl()}/IncomingPhoneNumbers/${phoneNumberSid}.json`, {
     method:  'DELETE',
     headers: authHeader(),
@@ -207,6 +234,10 @@ export async function warmTransferCall(
   callSid: string,
   transferTo: string
 ): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
   const twiml = `<Response><Dial><Number>${transferTo}</Number></Dial></Response>`;
   const params = new URLSearchParams({ Twiml: twiml });
 

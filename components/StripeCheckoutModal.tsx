@@ -3,6 +3,8 @@ import { X, ArrowRight, ShieldCheck, Phone, Zap } from 'lucide-react';
 import { PLANS } from '../src/lib/plans';
 import type { PlanConfig } from '../src/lib/plans';
 
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export interface StripeCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,7 +49,7 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
                 14-day free trial
               </p>
             </div>
-            <p className="text-[18px] font-bold font-display text-offwhite tracking-tight">{plan.name} plan</p>
+            <p id="stripe-checkout-title" className="text-[18px] font-bold font-display text-offwhite tracking-tight">{plan.name} plan</p>
           </div>
           {plan.popular && (
             <span
@@ -85,6 +87,7 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
       {/* Primary CTA */}
       <a
         href={plan.stripeUrl}
+        data-testid="stripe-checkout-cta"
         target="_blank"
         rel="noopener noreferrer"
         className="flex w-full items-center justify-center gap-2.5 rounded-[18px] px-6 py-4 text-[15px] font-bold text-white transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
@@ -117,7 +120,7 @@ function PlanSelector({ onSelect }: { onSelect: (plan: PlanConfig) => void }) {
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft mb-3">
           Choose your plan
         </p>
-        <h3 className="font-display text-[28px] font-bold text-offwhite leading-tight tracking-[-0.03em]">
+        <h3 id="stripe-checkout-title" className="font-display text-[28px] font-bold text-offwhite leading-tight tracking-[-0.03em]">
           Start your <em className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent">free</em> trial
         </h3>
         <p className="mt-2 text-[13px] text-offwhite/44 font-body">
@@ -129,6 +132,7 @@ function PlanSelector({ onSelect }: { onSelect: (plan: PlanConfig) => void }) {
         {PLANS.map((plan) => (
           <button
             key={plan.key}
+            data-testid={`stripe-plan-${plan.key}`}
             onClick={() => onSelect(plan)}
             className="group w-full rounded-[16px] px-5 py-4 text-left transition-all duration-200 hover:-translate-y-0.5"
             style={
@@ -181,11 +185,50 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 }) => {
   const initialPlan = PLANS.find(p => p.key === planKey) ?? null;
   const [selectedPlan, setSelectedPlan] = useState<PlanConfig | null>(initialPlan);
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
   // Sync when planKey prop changes (modal re-opened with different plan)
   React.useEffect(() => {
     setSelectedPlan(PLANS.find(p => p.key === planKey) ?? null);
   }, [planKey, isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    requestAnimationFrame(() => {
+      const firstFocusable = modalRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      firstFocusable?.focus();
+    });
+
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen]);
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab' || !modalRef.current) return;
+
+    const focusable = Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+      .filter(element => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first || !last) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   if (!isOpen) return null;
 
@@ -205,6 +248,11 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stripe-checkout-title"
+        onKeyDown={handleKeyDown}
         className="relative w-full max-w-[420px] rounded-[32px] overflow-hidden"
         style={{
           background: 'linear-gradient(180deg, rgba(16,29,50,0.98) 0%, rgba(8,21,36,0.99) 100%)',

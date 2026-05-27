@@ -10,6 +10,7 @@ import callsRouter    from './routes/calls';
 import authRouter     from './routes/auth';
 import bookingsRouter from './routes/bookings';
 import retellToolsRouter from './routes/retell-tools';
+import { applyE2ETestProviderEnv } from './config/e2e';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -140,6 +141,8 @@ app.use((_req, res) => {
 });
 
 // ── Startup validation ────────────────────────────────────────────────────────
+applyE2ETestProviderEnv();
+
 const REQUIRED_ENV: string[] = [
   'TWILIO_ACCOUNT_SID',
   'TWILIO_AUTH_TOKEN',

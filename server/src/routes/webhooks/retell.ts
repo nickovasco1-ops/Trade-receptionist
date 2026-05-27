@@ -207,27 +207,17 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       status:        outcome === 'booked' ? 'booked' : 'new',
     };
 
-    const { data: existingLead } = await supabase
+    const { data: insertedLead, error: leadErr } = await supabase
       .from('leads')
+      .upsert(
+        { ...lead, updated_at: new Date().toISOString() },
+        { onConflict: 'call_id' }
+      )
       .select('id')
-      .eq('call_id', call.id)
-      .maybeSingle();
-
-    const { data: insertedLead, error: leadErr } = existingLead
-      ? await supabase
-          .from('leads')
-          .update({ ...lead, updated_at: new Date().toISOString() })
-          .eq('id', existingLead.id)
-          .select('id')
-          .single()
-      : await supabase
-          .from('leads')
-          .insert(lead)
-          .select('id')
-          .single();
+      .single();
 
     if (leadErr) {
-      console.error('[retell] lead insert failed', leadErr);
+      console.error('[retell] lead upsert failed', leadErr);
     } else if (insertedLead) {
       const { error: bookingLinkError } = await supabase
         .from('bookings')

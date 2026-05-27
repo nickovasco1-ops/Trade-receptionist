@@ -35,7 +35,15 @@ export default function DashboardShell({
   const PAGE_TITLES: Record<string, string> = {
     '': 'Overview', '/calls': 'Calls', '/leads': 'Leads', '/settings': 'Settings',
   };
-  const activeSuffix = NAV.find(n => n.suffix && (pathname === `${navBase}${n.suffix}` || pathname.startsWith(`${navBase}${n.suffix}/`)))?.suffix ?? '';
+  const navHref = (suffix: string) => {
+    if (!suffix) return navBase;
+    if (suffix === '/settings' && navBase === '/dashboard') return '/settings';
+    return `${navBase}${suffix}`;
+  };
+  const activeSuffix = NAV.find(n => {
+    const href = navHref(n.suffix);
+    return n.suffix ? pathname === href || pathname.startsWith(`${href}/`) : pathname === href;
+  })?.suffix ?? '';
   const pageTitle = PAGE_TITLES[activeSuffix] ?? 'Overview';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -125,7 +133,7 @@ export default function DashboardShell({
         {mobile && (
           <button
             onClick={() => setMobileOpen(false)}
-            className="text-offwhite/50 hover:text-offwhite transition-colors p-1 rounded-[8px] hover:bg-white/[0.05]"
+            className="flex h-11 w-11 items-center justify-center rounded-[10px] text-offwhite/50 transition-colors hover:bg-white/[0.05] hover:text-offwhite"
             aria-label="Close menu"
           >
             <X size={18} />
@@ -150,7 +158,7 @@ export default function DashboardShell({
 
       <div className="flex-1 space-y-1">
         {NAV.map(({ label, suffix, icon: Icon }) => {
-          const href = suffix ? `${navBase}${suffix}` : navBase;
+          const href = navHref(suffix);
           const active = suffix
             ? pathname === href || pathname.startsWith(`${href}/`)
             : pathname === href;
@@ -300,7 +308,7 @@ export default function DashboardShell({
               <button
                 ref={menuBtnRef}
                 onClick={() => setMobileOpen(true)}
-                className="rounded-[10px] p-1 text-offwhite/60 transition-colors hover:text-offwhite"
+                className="flex h-11 w-11 items-center justify-center rounded-[10px] text-offwhite/60 transition-colors hover:text-offwhite"
                 aria-label="Open menu"
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-nav"
