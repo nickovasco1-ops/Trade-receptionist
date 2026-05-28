@@ -1,5 +1,6 @@
 import { Client as NotionClient } from '@notionhq/client';
 import { isE2ETestMode } from '../config/e2e';
+import { errorMessage, logEvent } from '../lib/observability';
 
 // Lazy singleton — only created if NOTION_API_KEY is set.
 // All exported functions silently no-op when credentials are absent.
@@ -58,7 +59,11 @@ export async function logCall(entry: CallLogEntry): Promise<void> {
 
     await notion.pages.create({ parent: { database_id: dbId }, properties });
   } catch (err: unknown) {
-    console.error('[notion] logCall failed', err instanceof Error ? err.message : err);
+    logEvent('error', 'notion.provider_failure', {
+      provider: 'notion',
+      operation: 'log_call',
+      error: errorMessage(err),
+    });
   }
 }
 
@@ -86,7 +91,11 @@ export async function logSubscriber(entry: SubscriberEntry): Promise<void> {
 
     await notion.pages.create({ parent: { database_id: dbId }, properties });
   } catch (err: unknown) {
-    console.error('[notion] logSubscriber failed', err instanceof Error ? err.message : err);
+    logEvent('error', 'notion.provider_failure', {
+      provider: 'notion',
+      operation: 'log_subscriber',
+      error: errorMessage(err),
+    });
   }
 }
 
@@ -118,6 +127,10 @@ export async function logIncident(entry: IncidentEntry): Promise<void> {
 
     await notion.pages.create({ parent: { database_id: dbId }, properties });
   } catch (err: unknown) {
-    console.error('[notion] logIncident failed', err instanceof Error ? err.message : err);
+    logEvent('error', 'notion.provider_failure', {
+      provider: 'notion',
+      operation: 'log_incident',
+      error: errorMessage(err),
+    });
   }
 }

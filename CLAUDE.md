@@ -856,7 +856,7 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Trade-receptionist** (1458 symbols, 1881 relationships, 27 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Trade-receptionist** (2197 symbols, 3468 relationships, 111 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

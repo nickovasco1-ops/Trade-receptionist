@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import { postCallWorkflow } from '../../services/retell';
 import { detectEmergency, escalateEmergency } from '../../lib/emergency';
 import { logCall, logIncident } from '../../services/notion';
+import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import type {
   RetellCallStartedEvent,
   RetellCallEndedEvent,
@@ -95,12 +96,12 @@ async function handleCallStarted(event: RetellCallStartedEvent): Promise<void> {
     .single();
 
   if (!client) {
-    console.warn('[retell] call_started: no client for agent_id', event.agent_id);
+    logEvent('warn', 'retell.webhook.client_not_found', { eventType: 'call_started' });
     return;
   }
 
   // Insert a placeholder call so we have a row from the moment it starts
-  await supabase.from('calls').upsert(
+  const { error } = await supabase.from('calls').upsert(
     {
       client_id:      client.id,
       retell_call_id: event.call_id,
@@ -112,7 +113,16 @@ async function handleCallStarted(event: RetellCallStartedEvent): Promise<void> {
     { onConflict: 'retell_call_id', ignoreDuplicates: true }
   );
 
-  console.log(`[retell] call_started  call_id=${event.call_id}`);
+  if (error) {
+    logEvent('error', 'retell.webhook.db_persistence_failed', {
+      eventType: 'call_started',
+      clientId: client.id,
+      error: error.message,
+    });
+    return;
+  }
+
+  logEvent('info', 'retell.webhook.call_started_persisted', { eventType: 'call_started', clientId: client.id });
 }
 
 async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
@@ -124,7 +134,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     .single();
 
   if (!clientRow) {
-    console.warn('[retell] call_ended: no client for agent_id', event.agent_id);
+    logEvent('warn', 'retell.webhook.client_not_found', { eventType: 'call_ended' });
     return;
   }
 
@@ -164,7 +174,11 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     .single();
 
   if (callErr || !callRow) {
-    console.error('[retell] call upsert failed', callErr);
+    logEvent('error', 'retell.webhook.db_persistence_failed', {
+      eventType: 'call_ended',
+      clientId: client.id,
+      error: callErr?.message ?? 'call upsert returned no row',
+    });
     void logIncident({
       errorType:      'call_upsert_failed',
       subscriberName: client.business_name,
@@ -179,7 +193,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   // Save transcript
   if (transcript || summary) {
-    await supabase.from('transcripts').upsert(
+    const { error: transcriptErr } = await supabase.from('transcripts').upsert(
       {
         call_id:   call.id,
         full_text: transcript || null,
@@ -188,6 +202,14 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       },
       { onConflict: 'call_id' }
     );
+
+    if (transcriptErr) {
+      logEvent('error', 'retell.webhook.db_persistence_failed', {
+        eventType: 'call_ended',
+        clientId: client.id,
+        error: transcriptErr.message,
+      });
+    }
   }
 
   // Extract and persist lead for outcomes worth following up
@@ -217,8 +239,17 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       .single();
 
     if (leadErr) {
-      console.error('[retell] lead upsert failed', leadErr);
+      logEvent('error', 'retell.webhook.db_persistence_failed', {
+        eventType: 'call_ended',
+        clientId: client.id,
+        error: leadErr.message,
+      });
     } else if (insertedLead) {
+      logEvent('info', 'retell.webhook.lead_upserted', {
+        eventType: 'call_ended',
+        clientId: client.id,
+      });
+
       const { error: bookingLinkError } = await supabase
         .from('bookings')
         .update({ lead_id: insertedLead.id })
@@ -226,7 +257,11 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
         .is('lead_id', null);
 
       if (bookingLinkError) {
-        console.error('[retell] booking lead link failed', bookingLinkError);
+        logEvent('error', 'retell.webhook.db_persistence_failed', {
+          eventType: 'call_ended',
+          clientId: client.id,
+          error: bookingLinkError.message,
+        });
       }
     }
   }
@@ -252,13 +287,22 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   // Normal post-call workflow (SMS + email)
   const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
-  await postCallWorkflow(client, call, summary, {
-    callerName:  leadData.caller_name  ?? null,
-    jobType:     leadData.job_type     ?? null,
-    postcode:    leadData.postcode     ?? null,
-    urgency:     leadData.urgency      ?? null,
-    transcript:  transcript            || null,
-  });
+  try {
+    await postCallWorkflow(client, call, summary, {
+      callerName:  leadData.caller_name  ?? null,
+      jobType:     leadData.job_type     ?? null,
+      postcode:    leadData.postcode     ?? null,
+      urgency:     leadData.urgency      ?? null,
+      transcript:  transcript            || null,
+    });
+  } catch (err: unknown) {
+    logEvent('error', 'retell.webhook.provider_failure', {
+      eventType: 'call_ended',
+      clientId: client.id,
+      provider: 'post_call_workflow',
+      error: errorMessage(err),
+    });
+  }
 
   void logCall({
     callerName:     leadData.caller_name   ?? null,
@@ -273,7 +317,12 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     timestamp:      new Date().toISOString(),
   });
 
-  console.log(`[retell] call_ended  call_id=${event.call_id}  outcome=${outcome}  duration=${durationSecs}s`);
+  logEvent('info', 'retell.webhook.call_ended_processed', {
+    eventType: 'call_ended',
+    clientId: client.id,
+    outcome,
+    durationSecs,
+  });
 }
 
 async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void> {
@@ -285,12 +334,12 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
     .single();
 
   if (!callRow) {
-    console.warn('[retell] call_analyzed: call not found', event.call_id);
+    logEvent('warn', 'retell.webhook.call_not_found', { eventType: 'call_analyzed' });
     return;
   }
 
   // Update transcript with refined analysis
-  await supabase.from('transcripts').upsert(
+  const { error: transcriptErr } = await supabase.from('transcripts').upsert(
     {
       call_id:   callRow.id,
       summary:   event.call_analysis?.call_summary ?? null,
@@ -299,17 +348,31 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
     { onConflict: 'call_id' }
   );
 
+  if (transcriptErr) {
+    logEvent('error', 'retell.webhook.db_persistence_failed', {
+      eventType: 'call_analyzed',
+      error: transcriptErr.message,
+    });
+  }
+
   // Update lead if custom_analysis_data has better structured values
   const customData = event.call_analysis?.custom_analysis_data;
   if (customData && Object.keys(customData).length > 0) {
     const lead = extractLeadData('', customData);
-    await supabase
+    const { error: leadErr } = await supabase
       .from('leads')
       .update({ ...lead, updated_at: new Date().toISOString() })
       .eq('call_id', callRow.id);
+
+    if (leadErr) {
+      logEvent('error', 'retell.webhook.db_persistence_failed', {
+        eventType: 'call_analyzed',
+        error: leadErr.message,
+      });
+    }
   }
 
-  console.log(`[retell] call_analyzed  call_id=${event.call_id}`);
+  logEvent('info', 'retell.webhook.call_analyzed_processed', { eventType: 'call_analyzed' });
 }
 
 // ── Main POST handler ─────────────────────────────────────────────────────────
@@ -318,13 +381,16 @@ router.post('/', async (req: Request, res: Response) => {
   // req.body is a raw Buffer here (set in index.ts before express.json())
   const rawBody = req.body as Buffer;
   const signature = req.headers['x-retell-signature'] as string | undefined;
+  const reqId = requestId(req);
 
-  // Log every inbound webhook for Railway observability
-  const preview = rawBody?.toString('utf8').slice(0, 300) ?? '(empty body)';
-  console.log(`[retell] inbound webhook  sig=${signature ?? 'none'}  body=${preview}`);
+  logEvent('info', 'retell.webhook.received', {
+    requestId: reqId,
+    hasSignature: Boolean(signature),
+    bodyBytes: rawBody?.length ?? 0,
+  });
 
   if (!verifySignature(rawBody, signature ?? '')) {
-    console.warn('[retell] rejected request — invalid or missing signature');
+    logEvent('warn', 'retell.webhook.invalid_signature', { requestId: reqId, hasSignature: Boolean(signature) });
     // Return 200 so Retell does not retry a rejected request (prevents log spam)
     res.status(200).json({ ok: false, reason: 'invalid_signature' });
     return;
@@ -337,7 +403,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     event = JSON.parse(rawBody.toString('utf8')) as RetellWebhookEvent;
   } catch (err) {
-    console.error('[retell] body parse error', err, 'raw:', preview);
+    logEvent('error', 'retell.webhook.malformed_payload', { requestId: reqId, error: errorMessage(err) });
     return;
   }
 
@@ -355,10 +421,14 @@ router.post('/', async (req: Request, res: Response) => {
           await handleCallAnalyzed(event);
           break;
         default:
-          console.log('[retell] unknown event', (event as { event: string }).event);
+          logEvent('warn', 'retell.webhook.unknown_event', { requestId: reqId, eventType: (event as { event: string }).event });
       }
     } catch (err) {
-      console.error('[retell] unhandled error in event handler', err);
+      logEvent('error', 'retell.webhook.handler_error', {
+        requestId: reqId,
+        eventType: event.event,
+        error: errorMessage(err),
+      });
       void logIncident({
         errorType:      'webhook_handler_error',
         subscriberName: null,

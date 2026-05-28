@@ -25,7 +25,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:smoke": "playwright test -c playwright.smoke.config.ts",
+    "test:release-smoke": "npm run test:smoke",
+    "validate:env": "node scripts/validate-env.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.50.0",

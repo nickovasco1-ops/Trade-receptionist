@@ -2,6 +2,7 @@ import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt } from '../lib/prompt-builder';
 import { isE2ETestMode } from '../config/e2e';
+import { errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
@@ -528,7 +529,12 @@ export async function postCallWorkflow(
         postcode:     extra.postcode,
         urgency:      extra.urgency,
         businessName: client.business_name,
-      }).catch((err: unknown) => console.error('[postCall] owner SMS failed', err))
+      }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+        clientId: client.id,
+        provider: 'twilio',
+        channel: 'owner_sms',
+        error: errorMessage(err),
+      }))
     );
   }
 
@@ -546,7 +552,12 @@ export async function postCallWorkflow(
       transcript:    extra.transcript,
       recordingUrl:  call.recording_url,
       durationSecs:  call.duration_secs,
-    }).catch((err: unknown) => console.error('[postCall] email failed', err))
+    }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+      clientId: client.id,
+      provider: 'resend',
+      channel: 'email',
+      error: errorMessage(err),
+    }))
   );
 
   // Caller: SMS confirmation (skip spam, no_answer, voicemail)
@@ -559,7 +570,12 @@ export async function postCallWorkflow(
         businessName: client.business_name,
         ownerName:    client.owner_name,
         booked:       outcome === 'booked',
-      }).catch((err: unknown) => console.error('[postCall] caller SMS failed', err))
+      }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+        clientId: client.id,
+        provider: 'twilio',
+        channel: 'caller_sms',
+        error: errorMessage(err),
+      }))
     );
   }
 

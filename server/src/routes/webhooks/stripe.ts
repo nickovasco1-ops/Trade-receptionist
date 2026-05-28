@@ -6,6 +6,7 @@ import { buildSystemPrompt } from '../../lib/prompt-builder';
 import { createRetellAgent, importTwilioNumber } from '../../services/retell';
 import { searchUkNumbers, buyUkNumber } from '../../services/twilio';
 import { logSubscriber } from '../../services/notion';
+import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
@@ -101,10 +102,11 @@ async function updateClientStripeState(
 ): Promise<void> {
   const client = await findClientForStripe(identifiers);
   if (!client?.['id']) {
-    console.warn('[stripe] lifecycle event has no matching client', eventType, {
-      customerId: identifiers.customerId ?? null,
-      subscriptionId: identifiers.subscriptionId ?? null,
-      email: identifiers.email ?? null,
+    logEvent('warn', 'stripe.webhook.client_not_found', {
+      eventType,
+      hasCustomerId: Boolean(identifiers.customerId),
+      hasSubscriptionId: Boolean(identifiers.subscriptionId),
+      hasEmail: Boolean(identifiers.email),
     });
     return;
   }
@@ -123,11 +125,18 @@ async function updateClientStripeState(
     .eq('id', client['id']);
 
   if (error) {
-    console.error('[stripe] lifecycle update failed', eventType, error);
+    logEvent('error', 'stripe.webhook.db_persistence_failed', {
+      eventType,
+      clientId: String(client['id']),
+      error: error.message,
+    });
     return;
   }
 
-  console.log('[stripe] lifecycle updated client', client['id'], eventType);
+  logEvent('info', 'stripe.webhook.lifecycle_updated', {
+    eventType,
+    clientId: String(client['id']),
+  });
 }
 
 async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<void> {
@@ -338,7 +347,10 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     : await planFromStripeSession(session['id'] as string);
 
   if (!ownerEmail) {
-    console.error('[stripe] checkout.session.completed missing customer email — cannot provision');
+    logEvent('error', 'stripe.webhook.malformed_payload', {
+      eventType: 'checkout.session.completed',
+      error: 'missing customer email',
+    });
     return;
   }
 
@@ -359,7 +371,10 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
         is_active: true,
       },
     );
-    console.log(`[stripe] ${ownerEmail} already provisioned — skipping`);
+    logEvent('info', 'stripe.webhook.duplicate_event_idempotent', {
+      eventType: 'checkout.session.completed',
+      clientId: String(existing.id),
+    });
     return;
   }
 
@@ -383,7 +398,10 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     .single();
 
   if (clientErr || !clientRow) {
-    console.error('[stripe] client insert failed', clientErr);
+    logEvent('error', 'stripe.webhook.db_persistence_failed', {
+      eventType: 'checkout.session.completed',
+      error: clientErr?.message ?? 'client insert returned no row',
+    });
     return;
   }
 
@@ -408,7 +426,11 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     .single();
 
   if (configErr || !configRow) {
-    console.error('[stripe] business_config insert failed', configErr);
+    logEvent('error', 'stripe.webhook.db_persistence_failed', {
+      eventType: 'checkout.session.completed',
+      clientId: client.id,
+      error: configErr?.message ?? 'business_config insert returned no row',
+    });
     // Non-fatal — continue
   }
 
@@ -427,12 +449,24 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     });
     agentId = ids.agentId;
 
-    await supabase
+    const { error: updateErr } = await supabase
       .from('clients')
       .update({ retell_agent_id: agentId, updated_at: new Date().toISOString() })
       .eq('id', client.id);
+    if (updateErr) {
+      logEvent('error', 'stripe.webhook.db_persistence_failed', {
+        eventType: 'checkout.session.completed',
+        clientId: client.id,
+        error: updateErr.message,
+      });
+    }
   } catch (err: unknown) {
-    console.error('[stripe] Retell agent creation failed', err);
+    logEvent('error', 'stripe.webhook.provider_failure', {
+      eventType: 'checkout.session.completed',
+      clientId: client.id,
+      provider: 'retell',
+      error: errorMessage(err),
+    });
   }
 
   // ── 4. Twilio number ──────────────────────────────────────────────────────────
@@ -443,26 +477,56 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     try {
       const available = await searchUkNumbers(5);
       if (!available.length) {
-        console.error('[stripe] No UK numbers available from Twilio');
+        logEvent('warn', 'stripe.webhook.provider_failure', {
+          eventType: 'checkout.session.completed',
+          clientId: client.id,
+          provider: 'twilio',
+          error: 'no UK numbers available',
+        });
       } else {
         const purchased = await buyUkNumber(available[0].phoneNumber);
         phoneNumber     = purchased.phoneNumber;
-        console.log(`[stripe] Twilio number purchased: ${phoneNumber} (SID: ${purchased.sid})`);
+        logEvent('info', 'stripe.webhook.twilio_number_purchased', {
+          eventType: 'checkout.session.completed',
+          clientId: client.id,
+          provider: 'twilio',
+        });
 
         try {
           await importTwilioNumber(phoneNumber, agentId);
-          console.log(`[stripe] Retell import succeeded — ${phoneNumber} linked to agent ${agentId}`);
+          logEvent('info', 'stripe.webhook.retell_number_imported', {
+            eventType: 'checkout.session.completed',
+            clientId: client.id,
+            provider: 'retell',
+          });
         } catch (importErr: unknown) {
-          console.error('[stripe] Retell importTwilioNumber FAILED — number purchased but not linked to agent. Call routing will not work.', importErr instanceof Error ? importErr.message : importErr);
+          logEvent('error', 'stripe.webhook.provider_failure', {
+            eventType: 'checkout.session.completed',
+            clientId: client.id,
+            provider: 'retell',
+            error: errorMessage(importErr),
+          });
         }
 
-        await supabase
+        const { error: twilioUpdateErr } = await supabase
           .from('clients')
           .update({ twilio_number: phoneNumber, updated_at: new Date().toISOString() })
           .eq('id', client.id);
+        if (twilioUpdateErr) {
+          logEvent('error', 'stripe.webhook.db_persistence_failed', {
+            eventType: 'checkout.session.completed',
+            clientId: client.id,
+            error: twilioUpdateErr.message,
+          });
+        }
       }
     } catch (err: unknown) {
-      console.error('[stripe] Twilio number provisioning failed', err instanceof Error ? err.message : err);
+      logEvent('error', 'stripe.webhook.provider_failure', {
+        eventType: 'checkout.session.completed',
+        clientId: client.id,
+        provider: 'twilio',
+        error: errorMessage(err),
+      });
     }
   }
 
@@ -482,7 +546,12 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       ?.properties?.action_link;
     if (actionLink) loginUrl = actionLink;
   } catch (err: unknown) {
-    console.error('[stripe] Supabase auth setup failed', err instanceof Error ? err.message : err);
+    logEvent('error', 'stripe.webhook.provider_failure', {
+      eventType: 'checkout.session.completed',
+      clientId: client.id,
+      provider: 'supabase_auth',
+      error: errorMessage(err),
+    });
   }
 
   // ── 6. Welcome email ──────────────────────────────────────────────────────────
@@ -494,7 +563,12 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       html:    welcomeHtml({ firstName, plan: plan.charAt(0).toUpperCase() + plan.slice(1), phoneNumber, loginUrl }),
     });
   } catch (err: unknown) {
-    console.error('[stripe] welcome email failed', err instanceof Error ? err.message : err);
+    logEvent('error', 'stripe.webhook.provider_failure', {
+      eventType: 'checkout.session.completed',
+      clientId: client.id,
+      provider: 'resend',
+      error: errorMessage(err),
+    });
   }
 
   void logSubscriber({
@@ -504,7 +578,13 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     signupDate:   new Date().toISOString(),
   });
 
-  console.log(`[stripe] provisioned ${ownerEmail} | plan=${plan} | number=${phoneNumber ?? 'pending'} | agent=${agentId ?? 'failed'}`);
+  logEvent('info', 'stripe.webhook.checkout_provisioned', {
+    eventType: 'checkout.session.completed',
+    clientId: client.id,
+    plan,
+    hasPhoneNumber: Boolean(phoneNumber),
+    hasAgent: Boolean(agentId),
+  });
 }
 
 // ── POST handler ──────────────────────────────────────────────────────────────
@@ -513,12 +593,13 @@ router.post('/', async (req: Request, res: Response) => {
   const rawBody  = req.body as Buffer;
   const sigHeader = req.headers['stripe-signature'] as string | undefined;
   const secret    = process.env.STRIPE_WEBHOOK_SECRET;
+  const reqId = requestId(req);
 
   // Always ack Stripe first — they retry on non-2xx
   res.status(200).json({ received: true });
 
   if (secret && sigHeader && !verifyStripeSignature(rawBody, sigHeader, secret)) {
-    console.warn('[stripe] rejected webhook — invalid signature');
+    logEvent('warn', 'stripe.webhook.invalid_signature', { requestId: reqId, hasSignature: true });
     return;
   }
 
@@ -526,14 +607,19 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     event = JSON.parse(rawBody.toString('utf8')) as Record<string, unknown>;
   } catch {
-    console.error('[stripe] body parse error');
+    logEvent('error', 'stripe.webhook.malformed_payload', { requestId: reqId });
     return;
   }
 
   const eventType = event['type'];
   const data = asRecord(event['data']);
   const object = asRecord(data?.['object']);
-  if (!object || typeof eventType !== 'string') return;
+  if (!object || typeof eventType !== 'string') {
+    logEvent('warn', 'stripe.webhook.malformed_payload', { requestId: reqId });
+    return;
+  }
+
+  logEvent('info', 'stripe.webhook.received', { requestId: reqId, eventType });
 
   (async () => {
     try {
@@ -551,10 +637,15 @@ router.post('/', async (req: Request, res: Response) => {
           await handleSubscriptionDeleted(object);
           break;
         default:
+          logEvent('info', 'stripe.webhook.ignored_event', { requestId: reqId, eventType });
           break;
       }
     } catch (err: unknown) {
-      console.error('[stripe] unhandled error in webhook handler', err);
+      logEvent('error', 'stripe.webhook.handler_error', {
+        requestId: reqId,
+        eventType,
+        error: errorMessage(err),
+      });
     }
   })();
 });

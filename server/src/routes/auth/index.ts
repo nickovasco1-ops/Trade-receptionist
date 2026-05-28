@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { generateOAuthUrl, handleOAuthCallback } from '../../services/calendar';
 import { updateAgentConfiguration } from '../../services/retell';
 import { supabase } from '../../services/supabase';
+import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import type { ApiResponse, BusinessConfig, Client } from '../../../../shared/types';
 
 const router = Router();
@@ -52,14 +53,25 @@ router.get('/google', (req: Request, res: Response) => {
 
     try {
       const url = generateOAuthUrl(clientId, ownerEmail);
+      logEvent('info', 'google.oauth.url_generated', { requestId: requestId(req), clientId });
       res.json({ success: true, data: { url } } satisfies ApiResponse<{ url: string }>);
     } catch (err: unknown) {
+      logEvent('error', 'google.oauth.provider_failure', {
+        requestId: requestId(req),
+        clientId,
+        provider: 'google',
+        error: errorMessage(err),
+      });
       res.status(500).json({
         success: false,
         error:   err instanceof Error ? err.message : 'Failed to generate OAuth URL',
       } satisfies ApiResponse);
     }
   })().catch((err: unknown) => {
+    logEvent('error', 'google.oauth.handler_error', {
+      requestId: requestId(req),
+      error: errorMessage(err),
+    });
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Failed to generate OAuth URL',
@@ -94,7 +106,12 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     if (client && config) {
       await updateAgentConfiguration(client as Client, config as BusinessConfig).catch((err: unknown) =>
-        console.error('[auth] failed to sync Retell config after Google callback', err)
+        logEvent('error', 'google.oauth.provider_failure', {
+          requestId: requestId(req),
+          clientId,
+          provider: 'retell',
+          error: errorMessage(err),
+        })
       );
     }
 
@@ -102,7 +119,11 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const successUrl = process.env.GOOGLE_OAUTH_SUCCESS_URL ?? '/';
     res.redirect(`${successUrl}?connected=google&clientId=${clientId}`);
   } catch (err: unknown) {
-    console.error('[auth] Google OAuth callback failed', err);
+    logEvent('error', 'google.oauth.provider_failure', {
+      requestId: requestId(req),
+      provider: 'google',
+      error: errorMessage(err),
+    });
     res.status(500).send('Failed to complete Google Calendar connection. Please try again.');
   }
 });
@@ -175,14 +196,23 @@ router.post('/google/save-calendar-token', async (req: Request, res: Response) =
 
       if (config) {
         await updateAgentConfiguration(updatedClient as Client, config as BusinessConfig).catch((err: unknown) =>
-          console.error('[auth] failed to sync Retell config after calendar token save', err)
+          logEvent('error', 'google.oauth.provider_failure', {
+            requestId: requestId(req),
+            clientId: updatedClient.id,
+            provider: 'retell',
+            error: errorMessage(err),
+          })
         );
       }
     }
 
     res.json({ success: true } satisfies ApiResponse);
   } catch (err: unknown) {
-    console.error('[auth] save-calendar-token failed', err);
+    logEvent('error', 'google.oauth.provider_failure', {
+      requestId: requestId(req),
+      provider: 'google',
+      error: errorMessage(err),
+    });
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Failed to save calendar token',
