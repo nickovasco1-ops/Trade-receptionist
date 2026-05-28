@@ -1,6 +1,6 @@
 # Pre-Launch Bug Report — Trade Receptionist
 
-Generated: May 28, 2026
+Generated: May 28, 2026 10:23 BST
 Test runner: Playwright 1.59.1
 Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_API_BASE_URL=http://localhost:3001`, `E2E_TEST_MODE=true`, `VITE_STRIPE_MODE=test`, real Supabase test project, external providers stubbed in test mode.
 
@@ -8,13 +8,13 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 
 | # | Area | Bug | Evidence | File:Line | Severity | Recommended fix |
 |---|------|-----|----------|-----------|----------|-----------------|
-| — | — | No remaining P0 launch blockers after applying the schema migration to project `pyeztxqgjdrguktydtez`. | Postgres and PostgREST both see `business_config.after_hours_message` and `bookings.call_id`; focused settings/Retell run passed with no schema skips/errors. | `supabase/migrations/007_after_hours_message.sql:4`, `supabase/migrations/009_booking_call_link.sql:2` | — | Continue with P1 items below. |
+| — | — | No remaining P0 launch blockers after applying the schema migration to project `pyeztxqgjdrguktydtez`. | Final full run passed: `npm run test:e2e` reported 60 passed, 5 skipped, 0 failed. | `supabase/migrations/007_after_hours_message.sql:4`, `supabase/migrations/009_booking_call_link.sql:2` | — | Continue with P2/P3 items below. |
 
 ## 🟡 High priority
 
 | # | Area | Bug | Evidence | File:Line | Severity | Recommended fix |
 |---|------|-----|----------|-----------|----------|-----------------|
-| 1 | Onboarding resilience | Refreshing mid-onboarding loses unsaved progress, and rebuild-agent provider failures are invisible because completion does not await the response. | Full run skipped refresh persistence and provider-failure feedback tests. | `e2e/onboarding.spec.ts:272`, `e2e/onboarding.spec.ts:276`, `src/pages/OnboardingPage.tsx:721` | P1 | Persist onboarding draft state or explicitly define it as disposable; await/enqueue rebuild with visible failure/retry state. |
+| — | — | No remaining P1 items after auth deep-link and onboarding resilience fixes. | Final full run passed: `npm run test:e2e` reported 60 passed, 5 skipped, 0 failed. | `e2e/auth.spec.ts:89`, `e2e/onboarding.spec.ts:274` | — | Continue with P2/P3 launch improvements below. |
 
 ## 🟢 Nice to have
 
@@ -32,7 +32,7 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 - Backend TypeScript build passed: `cd server && npm run build`.
 - E2E infrastructure preflight passed.
 - Auth redirects, login validation, magic-link state, real Supabase session creation, sign out, missing-session redirect, deep-link preservation, and external redirect rejection passed.
-- Onboarding access, required gating, step order, back/forward persistence, completion, Supabase `clients`/`business_config` persistence, and rebuild-agent request boundary passed.
+- Onboarding access, required gating, step order, back/forward persistence, refresh persistence, completion, Supabase `clients`/`business_config` persistence, rebuild-agent request boundary, and rebuild-agent failure retry passed.
 - Dashboard overview, KPI cards, recent calls, calls list, outcome filter, empty state, leads page, and 50+ loaded records passed.
 - Settings access, profile loading, profile save/reload persistence, after-hours message persistence, subscription payment warning, API error UI, and Google OAuth boundary passed.
 - Billing modal, plan choices, test Payment Links, live-link exclusion, and hosted Stripe boundary passed.
@@ -45,8 +45,6 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 
 | Flow | Reason | Required action |
 |---|---|---|
-| Onboarding refresh persistence | Unsaved onboarding state is React-only and resets on refresh. | Persist draft state or document product decision. |
-| Onboarding rebuild-agent failure feedback | Completion fires provider rebuild and navigates without awaiting/displaying failure. | Await/enqueue rebuild with visible status and retry path. |
 | Dashboard date filter | No date filter UI is implemented. | Add date filter if required. |
 | Dashboard call detail/transcript view | No call detail drawer/page exists. | Add detail view for transcript, recording, linked lead, and metadata. |
 | Dashboard pagination/load-more | Lists render directly without pagination/load-more. | Add pagination, load-more, or virtualization. |
@@ -56,7 +54,7 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 ## 📊 Coverage summary
 
 - Auth flows: 9/9 passing
-- Onboarding: 6/8 passing
+- Onboarding: 8/8 passing
 - Dashboard: 8/11 passing
 - Settings: 7/9 passing
 - Billing/Stripe: 10/10 passing
@@ -64,4 +62,4 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 - Mobile: 5/5 passing
 - Accessibility: 5/5 passing
 - Infrastructure smoke: 1/1 passing
-- Total E2E after auth deep-link fix: 58/65 passing, 7 skipped, 0 failed based on prior full run plus focused auth verification.
+- Total E2E final verification: 60/65 passing, 5 skipped, 0 failed on May 28, 2026.

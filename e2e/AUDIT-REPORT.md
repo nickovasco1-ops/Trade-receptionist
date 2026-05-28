@@ -154,19 +154,19 @@ Persistence paths:
 
 ## Final launch verification
 
-Generated: May 25, 2026
+Generated: May 28, 2026 10:23 BST
 
 | Command | Result | Notes |
 |---|---|---|
-| `npm run build` | Passed | Latest Vite production build completed in 11.56s after the P0 schema migration. |
+| `npm run build` | Passed | Vite production build completed successfully; 2098 modules transformed. |
 | `cd server && npm run build` | Passed | Server TypeScript build completed with `tsc`. |
-| `npm run test:e2e` | Passed with skips | Playwright 1.59.1 ran 62 tests: 49 passed, 13 skipped, 0 failed, duration 5.3m. |
-| `npx playwright test e2e/settings.spec.ts e2e/webhooks.retell.spec.ts` | Passed with skips | P0 focused rerun after migration: 12 passed, 3 skipped, 0 failed, duration 1.2m. |
+| `npm run test:e2e` | Passed with skips | Playwright 1.59.1 ran 65 tests: 60 passed, 5 skipped, 0 failed, duration 15.4m. |
+| `npx playwright test e2e/mobile.spec.ts --project=mobile` | Passed | Focused rerun after mobile helper alignment: 5 passed, 0 skipped, 0 failed, duration 1.6m. |
 
 | Area | Passing | Skipped/blocked | Notes |
 |---|---:|---:|---|
 | Auth | 9 | 0 | Deep-link destination preservation and external redirect rejection now pass. |
-| Onboarding | 6 | 2 | Refresh persistence and rebuild-agent failure feedback remain skipped/documented. |
+| Onboarding | 8 | 0 | Refresh persistence and rebuild-agent failure feedback now pass. |
 | Dashboard | 8 | 3 | Date filtering, detail view, and pagination/load-more are not implemented; canceled subscription warning now renders. |
 | Settings | 7 | 2 | After-hours persistence and payment-failed subscription warning now pass; calendar disconnect and billing portal remain missing. |
 | Billing/Stripe | 10 | 0 | Checkout provisioning and Stripe lifecycle events pass with E2E stubs. |
@@ -175,7 +175,7 @@ Generated: May 25, 2026
 | Accessibility | 5 | 0 | Axe-backed critical checks passed. |
 | Infrastructure | 1 | 0 | Env/API/Supabase smoke passed. |
 
-Launch readiness: **P0 schema blockers resolved in the connected test project**. Remaining blockers are P1 product gaps tracked in `BUGS.md`.
+Launch readiness: **launch-ready from the covered P0/P1 E2E perspective**. No P0 or P1 blockers remain in the final full run; remaining gaps are P2/P3 product improvements tracked in `BUGS.md`.
 
 ## P0 schema blocker follow-up
 
@@ -224,6 +224,17 @@ Generated: May 28, 2026
 | Login completion | `LoginPage` consumes `redirectTo` for existing sessions, magic-link redirects, and Google OAuth redirects; default remains `/dashboard`. |
 | Open redirect protection | Redirect targets are parsed against `window.location.origin`, must remain same-origin, must use an internal path, and `/login` falls back to `/dashboard`. External URLs fall back to `/dashboard`. |
 | Test state | `npx playwright test e2e/auth.spec.ts` passed 9/9 on May 28, 2026. `npm run build` also passed. |
+
+## Onboarding resilience follow-up
+
+Generated: May 28, 2026
+
+| Check | Result |
+|---|---|
+| Draft persistence | Onboarding now stores an in-browser draft at `trade-receptionist:onboarding-draft:<clientId>`, including the current step and form data. Drafts are loaded after client prefill and cleared after successful activation or when a completed client is redirected to dashboard. |
+| Stale state guard | Drafts are scoped by Supabase client id, so one client's unfinished setup cannot populate another client's onboarding flow. |
+| Rebuild-agent behavior | Completion now saves client/config data, awaits `/api/clients/rebuild-agent`, surfaces provider errors in the ready step, leaves onboarding incomplete on provider failure, and re-enables the activation button for retry. |
+| Test state | `npx playwright test e2e/onboarding.spec.ts` passed 8/8 on May 28, 2026. `npm run build` also passed. |
 
 ## Environment requirements
 

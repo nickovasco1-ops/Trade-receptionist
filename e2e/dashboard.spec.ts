@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { authenticate, cleanupAccount, seedClient, type TestAccount } from './utils/fixtures';
-import { restInsert, restPatch } from './utils/supabase-admin';
+import { restGet, restInsert, restPatch } from './utils/supabase-admin';
 import { uniqueEmail, uniqueId } from './utils/env';
 
 const primaryPhone = '+447700900301';
@@ -136,6 +136,11 @@ async function seedDashboardAccount(options: { withActivity?: boolean; manyCalls
         })
       )
     );
+
+    await expect.poll(async () => {
+      const rows = await restGet<{ id: string }>('calls', `client_id=eq.${account.clientId}&select=id`);
+      return rows.length;
+    }).toBe(53);
   }
 
   return account;
@@ -149,7 +154,7 @@ async function signInAndGo(page: Page, account: TestAccount, path: string) {
 test('unauthenticated user cannot access dashboard pages', async ({ page }) => {
   for (const path of ['/dashboard', '/dashboard/calls', '/dashboard/leads']) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(new RegExp(`/login\\?redirectTo=${encodeURIComponent(path)}$`));
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   }
 });
@@ -282,8 +287,8 @@ test('50 plus calls render in the calls page loaded dataset', async ({ page }) =
   try {
     await signInAndGo(page, account, '/dashboard/calls');
 
-    await expect(page.getByRole('main')).toContainText('53 in view');
-    await expect(page.getByText(`${overflowPhone}49`).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByRole('main')).toContainText('53 in view', { timeout: 45_000 });
+    await expect(page.getByText(`${overflowPhone}49`).filter({ visible: true }).first()).toBeVisible({ timeout: 45_000 });
   } finally {
     await cleanupAccount(account);
   }

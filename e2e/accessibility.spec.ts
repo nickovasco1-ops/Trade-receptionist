@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { authenticate, cleanupAccount, seedClient, type TestAccount } from './utils/fixtures';
 
+test.describe.configure({ timeout: 120_000 });
+
 async function expectNoCriticalAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

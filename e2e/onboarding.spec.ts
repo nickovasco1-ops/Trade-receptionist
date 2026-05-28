@@ -11,6 +11,8 @@ import { testPhone, uniqueId } from './utils/env';
 
 const stepOrder = ['receptionist', 'business', 'services', 'hours', 'contact', 'ready'] as const;
 
+test.describe.configure({ timeout: 120_000 });
+
 async function expectStep(page: Page, step: typeof stepOrder[number], index: number) {
   await expect(page.getByTestId(`onboarding-step-${step}`)).toBeVisible();
   await expect(page.getByRole('progressbar', { name: /onboarding progress/i })).toHaveAttribute(
@@ -84,7 +86,7 @@ async function completeToReadyStep(page: Page, businessName: string) {
 test('unauthenticated user visiting onboarding is redirected to login', async ({ page }) => {
   await page.goto('/onboarding');
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fonboarding$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 });
 
@@ -269,10 +271,90 @@ test('receptionist, business, services, hours, contact, and ready steps can be c
   }
 });
 
-test('refresh mid-onboarding preserves progress if supported', async () => {
-  test.skip(true, 'Unsaved onboarding step/form progress is kept only in React state and is reset on refresh; documented in e2e/BUGS.md.');
+test('refresh mid-onboarding preserves progress', async ({ page }) => {
+  const account = await seedOnboardingAccount();
+  const businessName = `Refresh ${uniqueId('biz').slice(-8)} Plumbing`;
+
+  try {
+    await openOnboarding(page, account);
+
+    await page.getByRole('button', { name: /^continue$/i }).click();
+    await fillBusinessStep(page, businessName);
+    await page.getByRole('button', { name: /^continue$/i }).click();
+
+    await fillServicesStep(page);
+    await page.getByRole('button', { name: /^continue$/i }).click();
+
+    await expectStep(page, 'hours', 3);
+    await fillHoursStep(page);
+    await expect(page.getByLabel(/start time/i)).toHaveValue('07:30');
+
+    await expect.poll(async () =>
+      page.evaluate((clientId) => {
+        const raw = window.localStorage.getItem(`trade-receptionist:onboarding-draft:${clientId}`);
+        return raw ? JSON.parse(raw).step : null;
+      }, account.clientId)
+    ).toBe('hours');
+
+    await page.reload();
+
+    await expectStep(page, 'hours', 3);
+    await expect(page.getByLabel(/start time/i)).toHaveValue('07:30');
+    await expect(page.getByLabel(/end time/i)).toHaveValue('17:30');
+
+    await page.getByRole('button', { name: /^back$/i }).click();
+    await expectStep(page, 'services', 2);
+    await expect(page.getByTestId('onboarding-step-services').getByText('Kitchen tap repair')).toBeVisible();
+
+    await page.getByRole('button', { name: /^back$/i }).click();
+    await expectStep(page, 'business', 1);
+    await expect(page.getByLabel(/business name/i)).toHaveValue(businessName);
+    await expect(page.getByLabel(/trade type/i)).toHaveValue('Plumber');
+    await expect(page.getByLabel(/city \/ area/i)).toHaveValue('South London');
+  } finally {
+    await cleanupAccount(account);
+  }
 });
 
-test('provider failure during rebuild-agent shows a user-facing error', async () => {
-  test.skip(true, 'Onboarding fires rebuild-agent without awaiting the response, then navigates to dashboard; documented in e2e/BUGS.md.');
+test('provider failure during rebuild-agent shows a user-facing error and retry path', async ({ page }) => {
+  const account = await seedOnboardingAccount();
+  const businessName = `Retry ${uniqueId('biz').slice(-8)} Plumbing`;
+  let attempts = 0;
+
+  try {
+    await page.route('**/api/clients/rebuild-agent', async (route) => {
+      attempts += 1;
+      await route.fulfill({
+        status: attempts === 1 ? 500 : 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          attempts === 1
+            ? { success: false, error: 'Retell update failed in E2E' }
+            : { success: true, data: { skipped: true, reason: 'e2e provider mock' } }
+        ),
+      });
+    });
+
+    await openOnboarding(page, account);
+    await completeToReadyStep(page, businessName);
+
+    await page.getByRole('button', { name: /activate trade receptionist/i }).click();
+    await expect(page.getByRole('alert')).toContainText(/retell update failed in e2e/i);
+    await expect(page).toHaveURL(/\/onboarding$/);
+    await expect(page.getByRole('button', { name: /activate trade receptionist/i })).toBeEnabled();
+
+    await expect.poll(async () => getClientByEmail(account.email)).toMatchObject({
+      onboarding_complete: false,
+    });
+
+    await page.getByRole('button', { name: /activate trade receptionist/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    expect(attempts).toBe(2);
+
+    await expect.poll(async () => getClientByEmail(account.email)).toMatchObject({
+      onboarding_complete: true,
+    });
+  } finally {
+    await cleanupAccount(account);
+  }
 });

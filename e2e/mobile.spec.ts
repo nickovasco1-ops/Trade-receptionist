@@ -9,6 +9,8 @@ import {
 import { testPhone, uniqueId } from './utils/env';
 import { interceptProviderSideEffects } from './utils/providers';
 
+test.describe.configure({ timeout: 120_000 });
+
 const mobileSteps = ['receptionist', 'business', 'services', 'hours', 'contact', 'ready'] as const;
 
 async function expectNoCriticalHorizontalOverflow(page: Page) {
@@ -21,8 +23,12 @@ async function expectNoCriticalHorizontalOverflow(page: Page) {
 }
 
 async function expectTapTarget(locator: Locator, label: string) {
-  await expect(locator).toBeVisible();
-  const box = await locator.boundingBox();
+  const target = locator.filter({ visible: true }).first();
+  await expect(target).toBeVisible();
+  await expect.poll(async () => target.boundingBox(), {
+    message: `${label} should have a measurable hit area`,
+  }).not.toBeNull();
+  const box = await target.boundingBox();
   expect(box, `${label} should have a measurable hit area`).not.toBeNull();
   expect(box!.width, `${label} should be at least 44px wide`).toBeGreaterThanOrEqual(44);
   expect(box!.height, `${label} should be at least 44px tall`).toBeGreaterThanOrEqual(44);
@@ -36,10 +42,14 @@ async function signInMobile(page: Page, account: TestAccount, path: string) {
 
 async function openMobileMenu(page: Page) {
   const openMenu = page.getByRole('button', { name: /open menu/i });
-  await expectTapTarget(openMenu, 'mobile open menu button');
-  await openMenu.click();
+  const drawer = page.getByRole('dialog', { name: /main navigation/i });
+  if (await openMenu.getAttribute('aria-expanded') !== 'true') {
+    await expectTapTarget(openMenu, 'mobile open menu button');
+    await openMenu.click();
+  }
   await expect(page.getByRole('dialog', { name: /main navigation/i })).toBeVisible();
-  return page.getByRole('dialog', { name: /main navigation/i });
+  await expect.poll(async () => drawer.evaluate((el) => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(-1);
+  return drawer;
 }
 
 async function expectMobileStep(page: Page, step: typeof mobileSteps[number]) {

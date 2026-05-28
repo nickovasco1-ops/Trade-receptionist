@@ -3,6 +3,8 @@ import { authenticate, cleanupAccount, seedClient } from './utils/fixtures';
 import { baseURL, uniqueEmail } from './utils/env';
 import { magicLinkFor } from './utils/supabase-admin';
 
+test.describe.configure({ timeout: 120_000 });
+
 test('unauthenticated dashboard redirects to login', async ({ page }) => {
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard$/);

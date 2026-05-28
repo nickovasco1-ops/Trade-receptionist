@@ -44,7 +44,7 @@ async function saveSettings(page: Page) {
 test('unauthenticated user visiting settings is redirected to login', async ({ page }) => {
   await page.goto('/settings');
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 });
 

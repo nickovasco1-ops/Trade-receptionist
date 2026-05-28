@@ -186,6 +186,64 @@ const FIELD_CLASS =
 const LABEL_CLASS =
   'mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/38';
 
+const DEFAULT_FORM: FormData = {
+  receptionist_name: DEFAULT_RECEPTIONIST_NAME,
+  receptionist_tone: 'friendly',
+  business_name: '',
+  trade_type: '',
+  city: '',
+  services: [],
+  work_start: '08:00',
+  work_end: '18:00',
+  working_days: [1, 2, 3, 4, 5],
+  owner_name: '',
+  owner_mobile: '',
+};
+
+interface OnboardingDraft {
+  step: Step;
+  form: FormData;
+}
+
+function draftKey(clientId: string) {
+  return `trade-receptionist:onboarding-draft:${clientId}`;
+}
+
+function readDraft(clientId: string): OnboardingDraft | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(draftKey(clientId));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<OnboardingDraft>;
+    const validStep = STEPS.some(item => item.key === parsed.step);
+    if (!validStep || !parsed.form || typeof parsed.form !== 'object') return null;
+
+    return {
+      step: parsed.step as Step,
+      form: {
+        ...DEFAULT_FORM,
+        ...parsed.form,
+        services: Array.isArray(parsed.form.services) ? parsed.form.services : [],
+        working_days: Array.isArray(parsed.form.working_days) ? parsed.form.working_days : DEFAULT_FORM.working_days,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(clientId: string, draft: OnboardingDraft) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(draftKey(clientId), JSON.stringify(draft));
+}
+
+function clearDraft(clientId: string) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(draftKey(clientId));
+}
+
 function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -630,24 +688,11 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(preview);
   const [customService, setCustomService] = useState('');
 
   const [form, setForm] = useState<FormData>({
-    ...(preview
-      ? PREVIEW_FORM
-      : {
-          receptionist_name: DEFAULT_RECEPTIONIST_NAME,
-          receptionist_tone: 'friendly',
-          business_name: '',
-          trade_type: '',
-          city: '',
-          services: [],
-          work_start: '08:00',
-          work_end: '18:00',
-          working_days: [1, 2, 3, 4, 5],
-          owner_name: '',
-          owner_mobile: '',
-        }),
+    ...(preview ? PREVIEW_FORM : DEFAULT_FORM),
   });
 
   useEffect(() => {
@@ -668,21 +713,32 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
       if (!client) return;
       if (client.onboarding_complete) {
+        clearDraft(client.id as string);
         navigate('/dashboard', { replace: true });
         return;
       }
 
+      const serverForm: FormData = {
+        ...DEFAULT_FORM,
+        owner_name: (client.owner_name as string) || DEFAULT_FORM.owner_name,
+        owner_mobile: (client.owner_mobile as string) || DEFAULT_FORM.owner_mobile,
+        business_name: (client.business_name as string) || DEFAULT_FORM.business_name,
+      };
+      const draft = readDraft(client.id as string);
+
       setClientId(client.id as string);
-      setForm(prev => ({
-        ...prev,
-        owner_name: (client.owner_name as string) || prev.owner_name,
-        owner_mobile: (client.owner_mobile as string) || prev.owner_mobile,
-        business_name: (client.business_name as string) || prev.business_name,
-      }));
+      setForm(draft?.form ?? serverForm);
+      if (draft) setStep(draft.step);
+      setDraftReady(true);
     }
 
     prefill();
   }, [navigate, preview]);
+
+  useEffect(() => {
+    if (preview || !clientId || !draftReady || saving) return;
+    writeDraft(clientId, { step, form });
+  }, [clientId, draftReady, form, preview, saving, step]);
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -738,7 +794,6 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
           business_name: form.business_name,
           owner_name: form.owner_name,
           owner_mobile: form.owner_mobile,
-          onboarding_complete: true,
           updated_at: new Date().toISOString(),
         })
         .eq('id', clientId);
@@ -760,12 +815,28 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
       if (configErr) throw new Error(configErr.message);
 
-      fetch('/api/clients/rebuild-agent', {
+      const rebuildResponse = await fetch('/api/clients/rebuild-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId }),
-      }).catch(() => {});
+      });
 
+      const rebuildPayload = await rebuildResponse.json().catch(() => null) as { success?: boolean; error?: string } | null;
+      if (!rebuildResponse.ok || rebuildPayload?.success === false) {
+        throw new Error(rebuildPayload?.error || 'We could not finish activating your AI receptionist. Please try again.');
+      }
+
+      const { error: completeErr } = await supabase
+        .from('clients')
+        .update({
+          onboarding_complete: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', clientId);
+
+      if (completeErr) throw new Error(completeErr.message);
+
+      clearDraft(clientId);
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — please try again.');
