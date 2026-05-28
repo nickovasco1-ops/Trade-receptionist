@@ -1,6 +1,6 @@
 # Pre-Launch Bug Report — Trade Receptionist
 
-Generated: May 26, 2026
+Generated: May 28, 2026
 Test runner: Playwright 1.59.1
 Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_API_BASE_URL=http://localhost:3001`, `E2E_TEST_MODE=true`, `VITE_STRIPE_MODE=test`, real Supabase test project, external providers stubbed in test mode.
 
@@ -14,8 +14,7 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 
 | # | Area | Bug | Evidence | File:Line | Severity | Recommended fix |
 |---|------|-----|----------|-----------|----------|-----------------|
-| 1 | Auth deep links | Auth-gated routes redirect to `/login` without preserving the originally requested destination. | Full run skipped deep-link preservation test. | `e2e/auth.spec.ts:88`, `src/pages/LoginPage.tsx:67` | P1 | Preserve requested route in auth redirect state/query and navigate there after session creation. |
-| 2 | Onboarding resilience | Refreshing mid-onboarding loses unsaved progress, and rebuild-agent provider failures are invisible because completion does not await the response. | Full run skipped refresh persistence and provider-failure feedback tests. | `e2e/onboarding.spec.ts:272`, `e2e/onboarding.spec.ts:276`, `src/pages/OnboardingPage.tsx:721` | P1 | Persist onboarding draft state or explicitly define it as disposable; await/enqueue rebuild with visible failure/retry state. |
+| 1 | Onboarding resilience | Refreshing mid-onboarding loses unsaved progress, and rebuild-agent provider failures are invisible because completion does not await the response. | Full run skipped refresh persistence and provider-failure feedback tests. | `e2e/onboarding.spec.ts:272`, `e2e/onboarding.spec.ts:276`, `src/pages/OnboardingPage.tsx:721` | P1 | Persist onboarding draft state or explicitly define it as disposable; await/enqueue rebuild with visible failure/retry state. |
 
 ## 🟢 Nice to have
 
@@ -32,7 +31,7 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 - Frontend production build passed: `npm run build`.
 - Backend TypeScript build passed: `cd server && npm run build`.
 - E2E infrastructure preflight passed.
-- Auth redirects, login validation, magic-link state, real Supabase session creation, sign out, and missing-session redirect passed.
+- Auth redirects, login validation, magic-link state, real Supabase session creation, sign out, missing-session redirect, deep-link preservation, and external redirect rejection passed.
 - Onboarding access, required gating, step order, back/forward persistence, completion, Supabase `clients`/`business_config` persistence, and rebuild-agent request boundary passed.
 - Dashboard overview, KPI cards, recent calls, calls list, outcome filter, empty state, leads page, and 50+ loaded records passed.
 - Settings access, profile loading, profile save/reload persistence, after-hours message persistence, subscription payment warning, API error UI, and Google OAuth boundary passed.
@@ -46,7 +45,6 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 
 | Flow | Reason | Required action |
 |---|---|---|
-| Auth deep-link destination after login | App does not preserve requested route when redirecting to `/login`. | Preserve route in auth redirect state/query and consume it after login. |
 | Onboarding refresh persistence | Unsaved onboarding state is React-only and resets on refresh. | Persist draft state or document product decision. |
 | Onboarding rebuild-agent failure feedback | Completion fires provider rebuild and navigates without awaiting/displaying failure. | Await/enqueue rebuild with visible status and retry path. |
 | Dashboard date filter | No date filter UI is implemented. | Add date filter if required. |
@@ -57,7 +55,7 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 
 ## 📊 Coverage summary
 
-- Auth flows: 7/8 passing
+- Auth flows: 9/9 passing
 - Onboarding: 6/8 passing
 - Dashboard: 8/11 passing
 - Settings: 7/9 passing
@@ -66,4 +64,4 @@ Environment: Local Playwright E2E, `TEST_BASE_URL=http://localhost:3000`, `TEST_
 - Mobile: 5/5 passing
 - Accessibility: 5/5 passing
 - Infrastructure smoke: 1/1 passing
-- Total E2E after subscription-status UI fix: 56/64 passing, 8 skipped, 0 failed based on prior full run plus focused verification.
+- Total E2E after auth deep-link fix: 58/65 passing, 7 skipped, 0 failed based on prior full run plus focused auth verification.

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CheckCircle,
@@ -39,8 +39,24 @@ function StatusDots() {
 const FIELD_CLASS =
   'w-full min-h-[50px] rounded-field bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-all duration-200 focus:ring-2 focus:ring-orange/40 focus:shadow-[0_0_0_1px_rgba(255,107,43,0.26),0_0_24px_rgba(255,107,43,0.12)]';
 
+function safeRedirectTarget(search: string) {
+  const requested = new URLSearchParams(search).get('redirectTo');
+  if (!requested) return '/dashboard';
+
+  try {
+    const parsed = new URL(requested, window.location.origin);
+    if (parsed.origin !== window.location.origin) return '/dashboard';
+    if (!parsed.pathname.startsWith('/') || parsed.pathname.startsWith('//')) return '/dashboard';
+    if (parsed.pathname === '/login') return '/dashboard';
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '/dashboard';
+  }
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -51,12 +67,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate('/dashboard', { replace: true });
+      if (data.session) navigate(safeRedirectTarget(location.search), { replace: true });
     });
 
     const timer = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [location.search, navigate]);
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
@@ -64,7 +80,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}${safeRedirectTarget(location.search)}`,
         scopes: 'https://www.googleapis.com/auth/calendar',
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
@@ -78,7 +94,7 @@ export default function LoginPage() {
 
     const { error: signInError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${window.location.origin}${safeRedirectTarget(location.search)}` },
     });
 
     setLoading(false);

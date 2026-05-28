@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import Lenis from 'lenis';
 import './index.css';
@@ -62,6 +62,7 @@ import { supabase } from './src/lib/supabase';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [ready, setReady] = React.useState(false);
   const [authed, setAuthed] = React.useState(false);
 
@@ -101,7 +102,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
   }, []);
 
   if (!ready) return null;
-  if (!authed) return <Navigate to="/login" replace />;
+  if (!authed) {
+    const redirectTo = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/login?redirectTo=${encodeURIComponent(redirectTo)}`} replace />;
+  }
   return <>{children}</>;
 }
 

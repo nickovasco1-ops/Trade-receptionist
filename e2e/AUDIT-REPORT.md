@@ -165,7 +165,7 @@ Generated: May 25, 2026
 
 | Area | Passing | Skipped/blocked | Notes |
 |---|---:|---:|---|
-| Auth | 7 | 1 | Deep-link destination preservation is not implemented. |
+| Auth | 9 | 0 | Deep-link destination preservation and external redirect rejection now pass. |
 | Onboarding | 6 | 2 | Refresh persistence and rebuild-agent failure feedback remain skipped/documented. |
 | Dashboard | 8 | 3 | Date filtering, detail view, and pagination/load-more are not implemented; canceled subscription warning now renders. |
 | Settings | 7 | 2 | After-hours persistence and payment-failed subscription warning now pass; calendar disconnect and billing portal remain missing. |
@@ -213,6 +213,17 @@ Generated: May 26, 2026
 | Idempotency | Lifecycle handlers find clients by Stripe subscription ID, customer ID, or checkout email, then update the same client row. E2E posts duplicate lifecycle events and verifies stable persisted state. |
 | Test state | `npx playwright test e2e/webhooks.stripe.spec.ts e2e/billing.spec.ts` passed 10/10 on May 26, 2026. |
 | UI state | Dashboard and settings now render `subscription-status-banner` for failed/past-due and canceled subscription states, with E2E assertions covering both surfaces. |
+
+## Auth deep-link preservation follow-up
+
+Generated: May 28, 2026
+
+| Check | Result |
+|---|---|
+| Redirect strategy | `RequireAuth` preserves the requested path, query string, and hash by redirecting unauthenticated users to `/login?redirectTo=<encoded internal destination>`. |
+| Login completion | `LoginPage` consumes `redirectTo` for existing sessions, magic-link redirects, and Google OAuth redirects; default remains `/dashboard`. |
+| Open redirect protection | Redirect targets are parsed against `window.location.origin`, must remain same-origin, must use an internal path, and `/login` falls back to `/dashboard`. External URLs fall back to `/dashboard`. |
+| Test state | `npx playwright test e2e/auth.spec.ts` passed 9/9 on May 28, 2026. `npm run build` also passed. |
 
 ## Environment requirements
 

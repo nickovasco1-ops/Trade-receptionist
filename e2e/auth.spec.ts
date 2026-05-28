@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { authenticate, cleanupAccount, seedClient } from './utils/fixtures';
-import { uniqueEmail } from './utils/env';
+import { baseURL, uniqueEmail } from './utils/env';
+import { magicLinkFor } from './utils/supabase-admin';
 
 test('unauthenticated dashboard redirects to login', async ({ page }) => {
   await page.goto('/dashboard');
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 });
 
@@ -71,22 +72,50 @@ test('sign out clears session and browser back does not restore dashboard', asyn
     await expect(page.getByRole('navigation').getByText(account.email).first()).toBeVisible();
 
     await page.getByRole('button', { name: /sign out/i }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login(?:\?redirectTo=%2Fdashboard)?$/);
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login(?:\?redirectTo=%2Fdashboard)?$/);
     await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard$/);
   } finally {
     await cleanupAccount(account);
   }
 });
 
-test('deep link to an auth-gated page preserves intended destination after login', async () => {
-  test.skip(true, 'RequireAuth redirects to /login without preserving the requested route; documented in e2e/BUGS.md.');
+test('deep link to an auth-gated page preserves intended destination after login', async ({ page }) => {
+  const account = await seedClient(undefined, { onboardingComplete: true });
+
+  try {
+    await page.goto('/settings?tab=billing');
+    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings%3Ftab%3Dbilling$/);
+
+    const redirectTo = new URL(page.url()).searchParams.get('redirectTo');
+    expect(redirectTo).toBe('/settings?tab=billing');
+
+    await page.goto(await magicLinkFor(account.email, `${baseURL}${redirectTo}`));
+    await expect(page).toHaveURL(/\/settings\?tab=billing#?$/);
+    await expect(page.getByRole('heading', { name: /aligned with how your business runs/i })).toBeVisible();
+  } finally {
+    await cleanupAccount(account);
+  }
+});
+
+test('login redirect target rejects external URLs for authenticated sessions', async ({ page }) => {
+  const account = await seedClient(undefined, { onboardingComplete: true });
+
+  try {
+    await page.goto(await magicLinkFor(account.email, `${baseURL}/dashboard`));
+    await expect(page).toHaveURL(/\/dashboard#?$/);
+
+    await page.goto('/login?redirectTo=https%3A%2F%2Fevil.example%2Fsteal');
+    await expect(page).toHaveURL(/\/dashboard#?$/);
+  } finally {
+    await cleanupAccount(account);
+  }
 });
 
 test('missing session redirects cleanly without white screen', async ({ page }) => {
@@ -99,7 +128,7 @@ test('missing session redirects cleanly without white screen', async ({ page }) 
 
   await page.goto('/settings');
 
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   await expect(page.locator('body')).toContainText(/send magic link/i);
 });
