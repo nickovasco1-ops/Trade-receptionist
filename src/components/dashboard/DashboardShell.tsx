@@ -320,7 +320,7 @@ export default function DashboardShell({
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto px-4 pb-6 pt-4 sm:px-6 sm:pb-8 lg:px-7 lg:pb-10 lg:pt-6 xl:px-8">
+          <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto px-4 pb-6 pt-4 sm:px-6 sm:pb-8 lg:px-7 lg:pb-10 lg:pt-6 xl:px-8">
             <div className="mx-auto w-full max-w-[1320px]">
               {children}
             </div>

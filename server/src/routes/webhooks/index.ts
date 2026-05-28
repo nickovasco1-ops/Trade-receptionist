@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../../services/supabase';
 import retellRouter from './retell';
 import stripeRouter from './stripe';
+import { errorMessage, logEvent, requestId } from '../../lib/observability';
 
 const router = Router();
 
@@ -21,14 +22,20 @@ router.post('/twilio', async (req: Request, res: Response) => {
   // Twilio expects 204 or 200 with empty TwiML body
   res.sendStatus(204);
 
-  if (!MessageSid || !MessageStatus) return;
+  if (!MessageSid || !MessageStatus) {
+    logEvent('warn', 'twilio.webhook.malformed_payload', { requestId: requestId(req) });
+    return;
+  }
 
   Promise.resolve(
     supabase
       .from('messages' as never)
       .update({ status: MessageStatus })
       .eq('twilio_sid', MessageSid)
-  ).catch((err: unknown) => console.error('[twilio] status update failed', err));
+  ).catch((err: unknown) => logEvent('error', 'twilio.webhook.db_persistence_failed', {
+    requestId: requestId(req),
+    error: errorMessage(err),
+  }));
 });
 
 export default router;

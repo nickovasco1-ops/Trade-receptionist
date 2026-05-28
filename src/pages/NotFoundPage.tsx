@@ -3,7 +3,7 @@ import { Logo } from '../../components/Logo';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 font-body bg-navy">
+    <main id="main-content" tabIndex={-1} className="min-h-screen flex flex-col items-center justify-center px-4 font-body bg-navy">
       <div
         className="fixed inset-0 pointer-events-none opacity-30"
         aria-hidden="true"
@@ -43,6 +43,6 @@ export default function NotFoundPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

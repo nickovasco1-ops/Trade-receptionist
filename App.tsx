@@ -1738,7 +1738,7 @@ const App: React.FC = () => {
       <div className="grain" aria-hidden="true" />
       <Header currentView={currentView} onViewChange={handleViewChange} onWaitlist={toggleStripe} />
 
-      <main className="pb-20 md:pb-0">
+      <main id="main-content" tabIndex={-1} className="pb-20 md:pb-0">
         {currentView === 'home' ? (
           <>
             <Hero onWaitlist={toggleStripe} />

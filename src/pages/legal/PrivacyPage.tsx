@@ -70,7 +70,7 @@ export default function PrivacyPage() {
       </header>
 
       {/* Document */}
-      <main className="max-w-3xl mx-auto px-6 py-16">
+      <main id="main-content" tabIndex={-1} className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-12">
           <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-orange-soft font-body mb-3">
             Legal

@@ -13,9 +13,32 @@ async function expectNoCriticalAxeViolations(page: Page) {
 }
 
 async function expectMainStructure(page: Page) {
-  const main = page.locator('main, [role="main"]').first();
+  const main = page.locator('#main-content');
   await expect(main).toBeVisible();
+  await expect(main).toHaveJSProperty('tagName', 'MAIN');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+}
+
+async function expectSkipLink(page: Page) {
+  const skipLink = page.getByRole('link', { name: /skip to content/i });
+  const main = page.locator('#main-content');
+
+  await expect.poll(async () => {
+    const box = await skipLink.boundingBox();
+    return Math.round(box?.y ?? 0);
+  }).toBeLessThan(0);
+
+  await page.keyboard.press('Tab');
+  await expect(skipLink).toBeFocused();
+  await expect(skipLink).toBeVisible();
+  await expect.poll(async () => {
+    const box = await skipLink.boundingBox();
+    return Math.round(box?.y ?? -1);
+  }).toBeGreaterThanOrEqual(0);
+  await expect(skipLink).toHaveAttribute('href', '#main-content');
+
+  await page.keyboard.press('Enter');
+  await expect(main).toBeFocused();
 }
 
 async function seedAccessibleAccount(options: { onboardingComplete?: boolean } = {}) {
@@ -39,6 +62,7 @@ test('login has no critical axe violations and supports labelled keyboard form a
   await expect(page.getByRole('button', { name: /continue with google/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /send magic link/i })).toBeDisabled();
   await expectNoCriticalAxeViolations(page);
+  await expectSkipLink(page);
 
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: /continue with google/i })).toBeFocused();

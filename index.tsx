@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Lenis from 'lenis';
 import './index.css';
 import App from './App';
+import SkipToContent from './src/components/SkipToContent';
 
 // ─── Sentry (initialise before any render) ────────────────────────────────────
 Sentry.init({
@@ -139,6 +140,7 @@ ReactDOM.createRoot(rootElement, {
 }).render(
   <React.StrictMode>
     <BrowserRouter>
+      <SkipToContent />
       <Routes>
         {/* ── Marketing homepage ─────────────────────────────── */}
         <Route path="/" element={<><LenisInit /><App /></>} />
