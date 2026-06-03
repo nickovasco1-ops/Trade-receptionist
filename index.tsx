@@ -77,9 +77,14 @@ function RequireAuth({ children }: { children: ReactNode }) {
       setAuthed(!!session);
 
       // Auto-connect Google Calendar when user signs in with Google and grants calendar access
+      // Auto-connect Google Calendar when user signs in with Google and grants calendar access.
+      // provider_refresh_token is only available on the initial SIGNED_IN after Google OAuth —
+      // never on subsequent getSession() calls — so we must capture it here.
+      // Note: app_metadata.provider stays as the *original* sign-up method (often 'email'),
+      // so we check the providers array, which lists every linked identity.
       if (
         _event === 'SIGNED_IN' &&
-        session?.user?.app_metadata?.provider === 'google' &&
+        (session?.user?.app_metadata?.providers as string[] | undefined)?.includes('google') &&
         session.access_token &&
         session.provider_refresh_token &&
         session.user.email
@@ -95,7 +100,19 @@ function RequireAuth({ children }: { children: ReactNode }) {
             providerToken:        session.provider_token ?? undefined,
             providerRefreshToken: session.provider_refresh_token,
           }),
-        }).catch(() => {});
+        })
+          .then(async (res) => {
+            if (res.status === 200) {
+              try { sessionStorage.setItem('calendarAutoConnected', '1'); } catch { /* storage unavailable */ }
+            } else if (res.status === 202) {
+              console.info('[auth] auto-connect: client row not yet created, calendar will connect after onboarding');
+            } else {
+              console.warn('[auth] auto-connect: save-calendar-token returned', res.status, await res.text().catch(() => ''));
+            }
+          })
+          .catch((err: unknown) => {
+            console.warn('[auth] auto-connect: network error', err);
+          });
       }
     });
 

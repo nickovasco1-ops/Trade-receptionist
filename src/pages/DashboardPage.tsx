@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertTriangle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Calendar, CheckCircle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
 import type { ElementType } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
@@ -114,6 +114,20 @@ export default function DashboardPage() {
   const [subscriptionAlert, setSubscriptionAlert] = useState<SubscriptionAlert | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [calBannerVisible, setCalBannerVisible] = useState(false);
+
+  // Show a banner when the Google Calendar was silently auto-connected during sign-in.
+  // index.tsx sets this sessionStorage flag after a successful save-calendar-token call.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('calendarAutoConnected') === '1') {
+        sessionStorage.removeItem('calendarAutoConnected');
+        setCalBannerVisible(true);
+        const timer = setTimeout(() => setCalBannerVisible(false), 7000);
+        return () => clearTimeout(timer);
+      }
+    } catch { /* storage unavailable in some environments */ }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -183,6 +197,25 @@ export default function DashboardPage() {
   return (
     <DashboardShell>
       <div ref={animRef} data-animate>
+        {calBannerVisible ? (
+          <div
+            data-testid="calendar-auto-connected-banner"
+            role="status"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(34,197,94,0.08)', boxShadow: '0 0 0 1px rgba(34,197,94,0.22)' }}
+          >
+            <div className="flex items-start gap-3">
+              <Calendar size={17} className="mt-0.5 text-status-success" aria-hidden="true" />
+              <div>
+                <p className="text-[14px] font-semibold text-offwhite">Google Calendar connected</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-offwhite/56">
+                  Your receptionist can now check your availability and book jobs straight into your diary.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {subscriptionAlert ? (
           <div
             data-testid="subscription-status-banner"

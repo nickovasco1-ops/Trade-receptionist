@@ -133,8 +133,22 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [calConnecting, setCalConnecting] = useState(false);
+  const [calJustConnected, setCalJustConnected] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Show a success banner after returning from the Google OAuth redirect
+  // (server redirects to /settings?connected=google&clientId=...).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === 'google') {
+      setCalJustConnected(true);
+      // Strip the query params so a refresh doesn't re-trigger the banner.
+      window.history.replaceState({}, '', window.location.pathname);
+      const timer = setTimeout(() => setCalJustConnected(false), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -381,6 +395,25 @@ export default function SettingsPage() {
               <div>
                 <p className="text-[14px] font-semibold text-offwhite">{subscriptionAlert.title}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">{subscriptionAlert.copy}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {calJustConnected ? (
+          <div
+            data-testid="calendar-connected-banner"
+            role="status"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(34,197,94,0.08)', boxShadow: '0 0 0 1px rgba(34,197,94,0.22)' }}
+          >
+            <div className="flex items-start gap-3">
+              <CheckCircle size={17} className="mt-0.5 text-status-success" aria-hidden="true" />
+              <div>
+                <p className="text-[14px] font-semibold text-offwhite">Google Calendar connected</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-offwhite/56">
+                  Your receptionist can now check availability and book work straight into your diary.
+                </p>
               </div>
             </div>
           </div>

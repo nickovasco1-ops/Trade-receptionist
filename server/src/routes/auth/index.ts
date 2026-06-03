@@ -204,6 +204,15 @@ router.post('/google/save-calendar-token', async (req: Request, res: Response) =
           })
         );
       }
+    } else {
+      // No client row exists for this email yet (user signed in with Google before
+      // completing onboarding). The token is valid but there's nowhere to store it yet.
+      // Respond 202 so the frontend knows this is expected, not an error.
+      res.status(202).json({
+        success: false,
+        error: 'No client account found for this email yet. Calendar will connect automatically once your account is set up.',
+      } satisfies ApiResponse);
+      return;
     }
 
     res.json({ success: true } satisfies ApiResponse);
