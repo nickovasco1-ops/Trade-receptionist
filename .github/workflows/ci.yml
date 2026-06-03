@@ -58,6 +58,25 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      # .env.test is gitignored — reconstruct it from repo secrets for the run.
+      # Stripe test-card fixtures are public Stripe values, kept inline.
+      - name: Write .env.test from secrets
+        run: |
+          cat > .env.test <<EOF
+          TEST_BASE_URL=http://localhost:3000
+          TEST_EMAIL=${{ secrets.TEST_EMAIL }}
+          TEST_PHONE=${{ secrets.TEST_PHONE }}
+          TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
+          STRIPE_TEST_CARD=4242424242424242
+          STRIPE_DECLINED_CARD=4000000000000002
+          STRIPE_EXPIRY=12/34
+          STRIPE_CVC=123
+          STRIPE_ZIP=SW1A1AA
+          SUPABASE_URL=${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+          EOF
+
       # CI=true (set automatically by GitHub Actions) makes the Playwright
       # webServer start fresh web + API processes instead of reusing one.
       - name: Accessibility checks
