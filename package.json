@@ -1,30 +1,61 @@
 {
-  "name": "trade-receptionist-video",
-  "version": "0.0.1",
-  "description": "Branded video compositions for Trade Receptionist",
+  "name": "trade-receptionist",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
-    "start": "remotion studio",
-    "dev": "remotion studio",
-    "build": "remotion render",
-    "upgrade": "remotion upgrade"
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "vite",
+    "dev:api": "cd server && npm run dev",
+    "build": "vite build",
+    "build:api": "cd server && npm run build",
+    "preview": "vite preview",
+    "generate:call-flow-assets": "node scripts/generate-call-flow-assets.mjs --all",
+    "generate:call-flow-asset": "node scripts/generate-call-flow-assets.mjs",
+    "generate:call-flow-placeholders": "node scripts/create-call-flow-placeholders.mjs",
+    "generate:demo-audio": "node scripts/generate-sample-call.mjs",
+    "generate:landing-asset": "node scripts/generate-landing-asset.mjs",
+    "reference:call-flow-layout": "node scripts/reference-call-flow-layout.mjs",
+    "visual-skill:build": "tsc -p trade-receptionist-visual-skill/tsconfig.json",
+    "visual-skill": "npm run visual-skill:build --silent && node trade-receptionist-visual-skill/dist/cli.js",
+    "visual-skill:dry-run": "npm run visual-skill -- dry-run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:smoke": "playwright test -c playwright.smoke.config.ts",
+    "test:release-smoke": "npm run test:smoke",
+    "validate:env": "node scripts/validate-env.mjs"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.290",
-    "@remotion/tailwind": "4.0.290",
-    "remotion": "4.0.290",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "@sentry/react": "^10.50.0",
+    "@sentry/vite-plugin": "^5.2.0",
+    "@supabase/supabase-js": "^2.104.0",
+    "@vercel/analytics": "^2.0.1",
+    "lenis": "^1.3.23",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
-    "@types/react": "18.3.3",
-    "@types/react-dom": "18.3.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
-    "typescript": "5.4.5"
-  },
-  "remotion": {
-    "entryPoint": "src/index.ts"
+    "@axe-core/playwright": "^4.11.3",
+    "@google/genai": "^1.52.0",
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.5.0",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }
