@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (web + server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Build server (tsc)
+        run: npm run build:api
+
+      # Sentry source-map upload is gated on SENTRY_AUTH_TOKEN in vite.config.ts;
+      # it is absent here, so the build runs without uploading.
+      - name: Build web (vite)
+        run: npm run build
+
+  e2e:
+    name: E2E (accessibility + release smoke)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # CI=true (set automatically by GitHub Actions) makes the Playwright
+      # webServer start fresh web + API processes instead of reusing one.
+      - name: Accessibility checks
+        run: npx playwright test e2e/accessibility.spec.ts
+
+      - name: Release smoke checks
+        run: npm run test:smoke
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
