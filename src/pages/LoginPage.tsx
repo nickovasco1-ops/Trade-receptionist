@@ -124,13 +124,13 @@ export default function LoginPage() {
       >
         <div className="mb-8 flex items-center justify-between gap-4">
           <div
-            className="rounded-[20px] px-5 py-4"
+            className="rounded-[22px] px-5 py-4"
             style={{
               background: 'rgba(255,255,255,0.06)',
               boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.22)',
             }}
           >
-            <Logo height={48} />
+            <Logo height={64} />
           </div>
           <div
             className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"

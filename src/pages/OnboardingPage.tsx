@@ -863,13 +863,13 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
         <div className="mb-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
-              className="rounded-[20px] px-5 py-4"
+              className="rounded-[22px] px-5 py-4"
               style={{
                 background: 'rgba(255,255,255,0.06)',
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.22)',
               }}
             >
-              <Logo height={48} />
+              <Logo height={64} />
             </div>
             <div className="hidden sm:block">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Trade Receptionist setup</p>

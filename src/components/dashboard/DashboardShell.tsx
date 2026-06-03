@@ -114,19 +114,16 @@ export default function DashboardShell({
   const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
     <nav className={['flex h-full flex-col', mobile ? 'p-6' : 'p-5'].join(' ')}>
       {/* Logo */}
-      <div className="mb-8 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3.5">
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Link to="/" className="flex-1 min-w-0" aria-label="Trade Receptionist — home">
           <div
-            className="rounded-[20px] px-5 py-4"
+            className="flex items-center justify-center rounded-[24px] px-6 py-6"
             style={{
               background: 'rgba(255,255,255,0.06)',
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
             }}
           >
-            <Logo className="h-14 w-auto" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Operations</p>
+            <Logo className="h-28 w-auto" />
           </div>
         </Link>
         {mobile && (
@@ -314,7 +311,7 @@ export default function DashboardShell({
               >
                 <Menu size={20} aria-hidden="true" />
               </button>
-              <Logo className="h-10 w-auto" />
+              <Logo className="h-12 w-auto" />
               <span className="text-[13px] font-semibold text-offwhite/60">{pageTitle}</span>
             </div>
           </header>
