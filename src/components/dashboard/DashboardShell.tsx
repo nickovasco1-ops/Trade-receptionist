@@ -115,19 +115,18 @@ export default function DashboardShell({
     <nav className={['flex h-full flex-col', mobile ? 'p-6' : 'p-5'].join(' ')}>
       {/* Logo */}
       <div className="mb-8 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3.5">
           <div
-            className="rounded-[16px] px-3 py-2"
+            className="rounded-[20px] px-5 py-4"
             style={{
               background: 'rgba(255,255,255,0.06)',
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
             }}
           >
-            <Logo className="h-6 w-auto" />
+            <Logo className="h-14 w-auto" />
           </div>
           <div className="min-w-0">
             <p className="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Operations</p>
-            <p className="truncate text-[12px] text-offwhite/42">Trade Receptionist</p>
           </div>
         </Link>
         {mobile && (
@@ -315,7 +314,7 @@ export default function DashboardShell({
               >
                 <Menu size={20} aria-hidden="true" />
               </button>
-              <Logo className="h-6 w-auto" />
+              <Logo className="h-10 w-auto" />
               <span className="text-[13px] font-semibold text-offwhite/60">{pageTitle}</span>
             </div>
           </header>
