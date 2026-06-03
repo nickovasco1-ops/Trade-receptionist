@@ -1,5 +1,10 @@
+// Initialise Sentry before any other import so the SDK can auto-instrument.
+import './instrument';
+
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import * as Sentry from '@sentry/node';
 import { createServer } from 'http';
 import rateLimit from 'express-rate-limit';
 
@@ -51,6 +56,16 @@ function getClientIdentifier(request: express.Request): string {
 const rateLimitKeyGenerator = (request: express.Request) => getClientIdentifier(request);
 
 app.set('trust proxy', Number.isNaN(TRUST_PROXY_HOPS) ? 0 : Math.max(TRUST_PROXY_HOPS, 0));
+
+// ── Security headers ────────────────────────────────────────────────────────────
+// API serves JSON to a cross-origin SPA, not HTML documents — disable the document
+// CSP (the frontend CSP lives in vercel.json) and allow cross-origin resource use.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',');
@@ -139,6 +154,9 @@ app.use('/retell-tools', retellToolsRouter);
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: 'Not found' });
 });
+
+// Sentry error handler — must be registered after routes. No-ops without SENTRY_DSN.
+Sentry.setupExpressErrorHandler(app);
 
 // ── Startup validation ────────────────────────────────────────────────────────
 applyE2ETestProviderEnv();

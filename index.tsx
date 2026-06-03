@@ -7,6 +7,7 @@ import Lenis from 'lenis';
 import './index.css';
 import App from './App';
 import SkipToContent from './src/components/SkipToContent';
+import ErrorFallback from './src/components/ErrorFallback';
 
 // ─── Sentry (initialise before any render) ────────────────────────────────────
 Sentry.init({
@@ -156,6 +157,7 @@ ReactDOM.createRoot(rootElement, {
   onRecoverableError: Sentry.reactErrorHandler(),
 }).render(
   <React.StrictMode>
+    <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback onReset={resetError} />}>
     <BrowserRouter>
       <SkipToContent />
       <Routes>
@@ -261,5 +263,6 @@ ReactDOM.createRoot(rootElement, {
       {/* Vercel Analytics — auto-tracks page views across all routes */}
       <Analytics />
     </BrowserRouter>
+    </Sentry.ErrorBoundary>
   </React.StrictMode>
 );
