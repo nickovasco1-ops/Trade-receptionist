@@ -311,7 +311,7 @@ export default function DashboardShell({
               >
                 <Menu size={20} aria-hidden="true" />
               </button>
-              <Logo className="h-12 w-auto" />
+              <Logo variant="mark" className="h-9 w-auto" />
               <span className="text-[13px] font-semibold text-offwhite/60">{pageTitle}</span>
             </div>
           </header>

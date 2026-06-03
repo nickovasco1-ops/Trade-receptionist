@@ -869,10 +869,10 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.10), 0 10px 24px rgba(2,13,24,0.22)',
               }}
             >
-              <Logo height={64} />
+              <Logo height={72} />
             </div>
             <div className="hidden sm:block">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Trade Receptionist setup</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Account setup</p>
               <p className="mt-1 text-[13px] text-offwhite/44">Built for UK tradespeople who need every call covered.</p>
             </div>
           </div>
