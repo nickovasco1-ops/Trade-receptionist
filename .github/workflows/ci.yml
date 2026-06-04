@@ -60,10 +60,21 @@ jobs:
       # NOTE: no --with-deps. That flag runs apt-get, which deadlocks on the
       # runner's dpkg lock (held by unattended-upgrades) and hangs the job.
       # ubuntu-latest already ships Chromium's system libraries, so we install
-      # the browser binary only.
+      # the browser binary only. The CDN download occasionally stalls mid-fetch,
+      # so each attempt is killed after 180s and retried up to 3 times.
       - name: Install Playwright browser
-        timeout-minutes: 5
-        run: npx playwright install chromium
+        timeout-minutes: 12
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::playwright install (attempt $attempt)"
+            if timeout 180 npx playwright install chromium; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "attempt $attempt stalled or failed; retrying" && echo "::endgroup::"
+          done
+          echo "playwright install failed after 3 attempts" >&2
+          exit 1
 
       # .env.test is gitignored — reconstruct it from repo secrets for the run.
       # Stripe test-card fixtures are public Stripe values, kept inline.
