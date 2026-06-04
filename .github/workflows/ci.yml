@@ -57,9 +57,13 @@ jobs:
       - name: Install server dependencies
         run: npm ci --prefix server
 
+      # NOTE: no --with-deps. That flag runs apt-get, which deadlocks on the
+      # runner's dpkg lock (held by unattended-upgrades) and hangs the job.
+      # ubuntu-latest already ships Chromium's system libraries, so we install
+      # the browser binary only.
       - name: Install Playwright browser
-        timeout-minutes: 8
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 5
+        run: npx playwright install chromium
 
       # .env.test is gitignored — reconstruct it from repo secrets for the run.
       # Stripe test-card fixtures are public Stripe values, kept inline.
