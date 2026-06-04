@@ -30,7 +30,9 @@ Sentry.init({
   // 10 % of sessions recorded; 100 % on errors
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  sendDefaultPii: true,
+  // Never attach PII (IP address, headers, cookies). Matches the backend
+  // (server/src/instrument.ts) and the anonymised-data promise on the Privacy page.
+  sendDefaultPii: false,
   enableLogs: true,
 });
 
