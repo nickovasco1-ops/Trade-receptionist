@@ -333,7 +333,12 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   const customerId = stripeId(session['customer']);
   const subscriptionId = stripeId(session['subscription']);
 
-  const ownerEmail  = details?.['email'];
+  // Normalise email to lowercase: Supabase/GoTrue stores the auth email lowercased,
+  // and the clients RLS policy matches owner_email against the JWT email verbatim.
+  // Storing the raw (possibly capitalised) checkout email would lock the owner out of
+  // their own row. Lowercasing here also keeps the idempotency lookup below consistent.
+  const ownerEmailRaw = details?.['email'];
+  const ownerEmail  = typeof ownerEmailRaw === 'string' ? ownerEmailRaw.trim().toLowerCase() : ownerEmailRaw;
   const ownerName   = details?.['name'] ?? 'New Customer';
   const ownerMobile = details?.['phone'] ?? null;
   const firstName   = ownerName.split(' ')[0] ?? ownerName;

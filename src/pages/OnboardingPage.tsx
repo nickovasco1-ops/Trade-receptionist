@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { syncGoogleCalendarToken } from '../lib/calendar';
 import { Logo } from '../../components/Logo';
 import type { ReceptionistTone } from '../../shared/types';
 
@@ -704,6 +705,10 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
     async function prefill() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) return;
+
+      // If the user just signed in with Google, capture the calendar refresh token
+      // (present only on this first post-OAuth load) so their diary connects.
+      await syncGoogleCalendarToken();
 
       const { data: client } = await supabase
         .from('clients')

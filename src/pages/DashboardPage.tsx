@@ -8,6 +8,7 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import StatusBadge from '../components/dashboard/ui/StatusBadge';
 import EmptyState from '../components/dashboard/ui/EmptyState';
 import { supabase } from '../lib/supabase';
+import { syncGoogleCalendarToken } from '../lib/calendar';
 import type { Call } from '../../shared/types';
 
 interface Stats {
@@ -133,6 +134,10 @@ export default function DashboardPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Capture the Google Calendar refresh token if the user just signed in with
+      // Google and landed here (token is only present on this first post-OAuth load).
+      await syncGoogleCalendarToken();
 
       const { data: clientRow } = await supabase
         .from('clients')

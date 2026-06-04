@@ -427,7 +427,7 @@ router.post('/provision', async (req: Request, res: Response) => {
 
   const { data: clientRow, error: clientErr } = await supabase
     .from('clients')
-    .insert({ business_name, owner_name, owner_email, owner_mobile, own_number: own_number ?? null, plan })
+    .insert({ business_name, owner_name, owner_email: owner_email.toLowerCase(), owner_mobile, own_number: own_number ?? null, plan })
     .select()
     .single();
 
