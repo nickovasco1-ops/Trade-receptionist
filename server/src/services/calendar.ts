@@ -330,7 +330,10 @@ export async function getAvailableSlots(opts: SlotOptions): Promise<Date[]> {
 
   const [sh, sm] = startHour.split(':').map(Number);
   const [eh, em] = endHour.split(':').map(Number);
-  const endMinutes = eh * 60 + em;
+  // Treat "00:00" (or any end <= start) as midnight / end-of-day, so businesses that
+  // close at or after midnight still produce slots instead of an empty window.
+  let endMinutes = eh * 60 + em;
+  if (endMinutes <= sh * 60 + sm) endMinutes = 24 * 60;
 
   for (let d = 0; d < days && slots.length < maxSlots; d++) {
     const dayUtc = new Date(fromDate.getTime() + d * 86_400_000);
@@ -387,7 +390,9 @@ export async function isSlotAvailable(opts: SlotAvailabilityOptions): Promise<bo
   const slotStartMinutes = localMinutesInTz(startTime, timezone);
   const slotEndMinutes = localMinutesInTz(slotEnd, timezone);
   const startWindowMinutes = (sh * 60) + sm;
-  const endWindowMinutes = (eh * 60) + em;
+  // Treat "00:00" (or any end <= start) as midnight / end-of-day (matches getAvailableSlots).
+  let endWindowMinutes = (eh * 60) + em;
+  if (endWindowMinutes <= startWindowMinutes) endWindowMinutes = 24 * 60;
 
   if (slotStartMinutes < startWindowMinutes || slotEndMinutes > endWindowMinutes) {
     return false;
