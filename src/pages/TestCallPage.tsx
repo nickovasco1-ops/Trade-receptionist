@@ -16,7 +16,9 @@ interface TranscriptLine {
 }
 
 const AGENT_ID = 'agent_b102cf665d4476eabb24764bf8';
-const API_BASE = import.meta.env.VITE_API_URL ?? 'https://trade-receptionist-production.up.railway.app';
+// Use the Vercel /api proxy rewrite so the request is same-origin — no CORS needed.
+// In local dev (localhost:3000) the dev server proxies /api to Railway the same way.
+const API_BASE = '/api';
 
 export default function TestCallPage() {
   const [state, setState] = useState<CallState>('idle');
