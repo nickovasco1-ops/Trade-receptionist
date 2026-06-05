@@ -148,6 +148,56 @@ export async function buyUkNumber(phoneNumber: string): Promise<PurchasedNumber>
   };
 }
 
+/**
+ * Attach a purchased number to the Elastic SIP Trunk.
+ *
+ * This is what routes INBOUND PSTN calls into Retell: the trunk's origination
+ * points at Retell, so any number on the trunk reaches the agent bound to it in
+ * Retell. Without this step a freshly-bought number has no inbound route and
+ * callers hear "you have dialled an incorrect number".
+ *
+ * Requires TWILIO_SIP_TRUNK_SID (the `trade-receptionist-production` trunk).
+ */
+export async function attachNumberToTrunk(phoneNumberSid: string): Promise<void> {
+  if (isE2ETestMode()) {
+    return;
+  }
+
+  const trunkSid = process.env.TWILIO_SIP_TRUNK_SID;
+  if (!trunkSid) throw new Error('TWILIO_SIP_TRUNK_SID must be set');
+
+  const params = new URLSearchParams({ PhoneNumberSid: phoneNumberSid });
+  const res = await fetch(`https://trunking.twilio.com/v1/Trunks/${trunkSid}/PhoneNumbers`, {
+    method:  'POST',
+    headers: formHeader(),
+    body:    params.toString(),
+  });
+  // 201 = attached, 409 = already on the trunk — both acceptable.
+  if (!res.ok && res.status !== 409) {
+    throw new Error(`Twilio trunk attach failed: ${await res.text()}`);
+  }
+}
+
+/**
+ * Look up a purchased number's SID by its E.164 address.
+ * Used by the backfill route to repair numbers provisioned before the trunk
+ * attach existed (we only have the E.164 string stored on the client).
+ */
+export async function findNumberSid(phoneNumber: string): Promise<string | null> {
+  if (isE2ETestMode()) {
+    return `PN_e2e_${phoneNumber.replace(/\D/g, '').slice(-10)}`;
+  }
+
+  const params = new URLSearchParams({ PhoneNumber: phoneNumber });
+  const res = await fetch(`${baseUrl()}/IncomingPhoneNumbers.json?${params}`, {
+    headers: authHeader(),
+  });
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as { incoming_phone_numbers?: Array<{ sid: string }> };
+  return data.incoming_phone_numbers?.[0]?.sid ?? null;
+}
+
 /** Release a purchased number by its SID. Used during provisioning rollback. */
 export async function releaseNumber(phoneNumberSid: string): Promise<void> {
   if (isE2ETestMode()) {

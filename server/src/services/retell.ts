@@ -343,9 +343,21 @@ export async function deleteRetellAgent(agentId: string): Promise<void> {
 // ── Phone Number Management (v2) ──────────────────────────────────────────────
 
 /**
- * Import a Twilio-owned phone number into Retell.
- * Retell will automatically configure the Twilio number's webhook so calls
- * are routed through the Retell platform.
+ * Register a Twilio-owned phone number with Retell as a custom SIP number and
+ * bind it to the agent for inbound calls.
+ *
+ * IMPORTANT: this is only half of connecting a number. Inbound routing is owned
+ * by Twilio — the number must also be attached to the Elastic SIP Trunk (see
+ * attachNumberToTrunk in services/twilio.ts) whose origination points at Retell.
+ * This call tells Retell which agent answers the number and which trunk to use
+ * for outbound dialling (termination_uri).
+ *
+ * Requires RETELL_SIP_TERMINATION_URI (the trunk's termination domain, e.g.
+ * `trade-receptionist-production.pstn.twilio.com`).
+ *
+ * The legacy implementation POSTed to /create-phone-number with twilio creds +
+ * `agent_id` — fields Retell's current API rejects — so every import failed
+ * silently and numbers never reached Retell.
  */
 export async function importTwilioNumber(
   phoneNumber: string,
@@ -355,21 +367,18 @@ export async function importTwilioNumber(
     return;
   }
 
-  const twSid   = process.env.TWILIO_ACCOUNT_SID;
-  const twToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!twSid || !twToken) {
-    throw new Error('TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN required for number import');
+  const terminationUri = process.env.RETELL_SIP_TERMINATION_URI;
+  if (!terminationUri) {
+    throw new Error('RETELL_SIP_TERMINATION_URI required for number import');
   }
 
-  const res = await fetch(`${BASE_URL}/create-phone-number`, {
+  const res = await fetch(`${BASE_URL}/import-phone-number`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify({
-      phone_number:       phoneNumber,
-      type:               'twilio',
-      twilio_account_sid: twSid,
-      twilio_auth_token:  twToken,
-      agent_id:           agentId,
+      phone_number:     phoneNumber,
+      termination_uri:  terminationUri,
+      inbound_agent_id: agentId,
     }),
   });
   if (!res.ok) throw new Error(`Retell importPhoneNumber failed: ${await res.text()}`);

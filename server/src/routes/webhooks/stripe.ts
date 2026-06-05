@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabase';
 import { sendEmail } from '../../services/resend';
 import { buildSystemPrompt } from '../../lib/prompt-builder';
 import { createRetellAgent, importTwilioNumber } from '../../services/retell';
-import { searchUkNumbers, buyUkNumber } from '../../services/twilio';
+import { searchUkNumbers, buyUkNumber, attachNumberToTrunk } from '../../services/twilio';
 import { logSubscriber } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
@@ -498,6 +498,10 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
         });
 
         try {
+          // Attach the number to the SIP trunk (inbound routing) before telling
+          // Retell about it (agent binding + outbound). Both are required for the
+          // number to actually answer calls.
+          await attachNumberToTrunk(purchased.sid);
           await importTwilioNumber(phoneNumber, agentId);
           logEvent('info', 'stripe.webhook.retell_number_imported', {
             eventType: 'checkout.session.completed',

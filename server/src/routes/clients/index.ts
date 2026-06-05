@@ -14,6 +14,8 @@ import {
   searchUkNumbers,
   buyUkNumber,
   releaseNumber,
+  attachNumberToTrunk,
+  findNumberSid,
 } from '../../services/twilio';
 import type {
   ApiResponse,
@@ -514,6 +516,7 @@ router.post('/provision', async (req: Request, res: Response) => {
       phoneNumber      = purchased.phoneNumber;
       state.twilioSid  = purchased.sid;
 
+      await attachNumberToTrunk(purchased.sid);
       await importTwilioNumber(phoneNumber, agentIds.agentId);
       state.retellNumber = phoneNumber;
     }
@@ -627,6 +630,7 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
   }
 
   try {
+    await attachNumberToTrunk(twilioSid);
     await importTwilioNumber(phoneNumber, client.retell_agent_id);
   } catch (err: unknown) {
     await releaseNumber(twilioSid).catch(() => null);
@@ -749,6 +753,65 @@ router.post('/rebuild-agent', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Retell update failed',
+    } satisfies ApiResponse);
+  }
+});
+
+// ── POST /clients/connect-number ──────────────────────────────────────────────
+// Backfill / repair: connect a client's existing Twilio number to the SIP trunk
+// and import it into Retell. Use for numbers provisioned before the trunk-attach
+// step existed (their inbound calls fail with "incorrect number"). Idempotent —
+// the trunk attach treats "already attached" as success.
+
+router.post('/connect-number', async (req: Request, res: Response) => {
+  const { clientId } = req.body as { clientId?: string };
+  if (!clientId) {
+    res.status(400).json({ success: false, error: 'clientId required' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: client } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', clientId)
+    .single();
+
+  if (!client) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+  if (!client.twilio_number) {
+    res.status(400).json({ success: false, error: 'Client has no Twilio number to connect' } satisfies ApiResponse);
+    return;
+  }
+  if (!client.retell_agent_id) {
+    res.status(400).json({ success: false, error: 'Client has no Retell agent — run /provision first' } satisfies ApiResponse);
+    return;
+  }
+
+  try {
+    const numberSid = await findNumberSid(client.twilio_number as string);
+    if (!numberSid) {
+      res.status(404).json({
+        success: false,
+        error: `Twilio does not own ${client.twilio_number} on this account`,
+      } satisfies ApiResponse);
+      return;
+    }
+
+    await attachNumberToTrunk(numberSid);
+    await importTwilioNumber(client.twilio_number as string, client.retell_agent_id as string);
+
+    console.log(`[clients] connect-number repaired ${client.twilio_number} -> ${client.retell_agent_id} (${client.id})`);
+    res.json({
+      success: true,
+      data: { phoneNumber: client.twilio_number, agentId: client.retell_agent_id },
+    } satisfies ApiResponse<{ phoneNumber: string; agentId: string }>);
+  } catch (err: unknown) {
+    console.error('[clients] connect-number failed', err);
+    res.status(502).json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to connect number',
     } satisfies ApiResponse);
   }
 });
