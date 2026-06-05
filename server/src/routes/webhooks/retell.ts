@@ -401,7 +401,14 @@ router.post('/', async (req: Request, res: Response) => {
 
   let event: RetellWebhookEvent;
   try {
-    event = JSON.parse(rawBody.toString('utf8')) as RetellWebhookEvent;
+    const raw = JSON.parse(rawBody.toString('utf8')) as Record<string, unknown>;
+    // Retell v2 nests the call fields under `call` ({ event, call: { agent_id, ... } }).
+    // The handlers (and our types) read them flat, so flatten the call object up to the
+    // top level. Falls back to the raw payload if it is already flat (defensive).
+    const call = raw['call'];
+    event = (call && typeof call === 'object')
+      ? ({ event: raw['event'], ...(call as Record<string, unknown>) } as unknown as RetellWebhookEvent)
+      : (raw as unknown as RetellWebhookEvent);
   } catch (err) {
     logEvent('error', 'retell.webhook.malformed_payload', { requestId: reqId, error: errorMessage(err) });
     return;
