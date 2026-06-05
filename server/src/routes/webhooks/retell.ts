@@ -70,7 +70,19 @@ function extractLeadData(
   };
 }
 
-function deriveOutcome(summary: string): CallOutcome {
+const VALID_OUTCOMES: CallOutcome[] = [
+  'booked', 'lead_captured', 'enquiry', 'spam', 'voicemail', 'emergency', 'transferred', 'no_answer',
+];
+
+function deriveOutcome(summary: string, customData?: Record<string, unknown>): CallOutcome {
+  // Prefer the structured call_outcome from Retell's post-call analysis.
+  const fromAnalysis = customData?.['call_outcome'];
+  if (typeof fromAnalysis === 'string') {
+    const v = fromAnalysis.trim().toLowerCase() as CallOutcome;
+    if (VALID_OUTCOMES.includes(v)) return v;
+  }
+
+  // Fallback: parse a leading status word from the freeform summary.
   const first = summary.trim().split(/[\s|:\n]/)[0]?.toUpperCase() ?? '';
   const map: Record<string, CallOutcome> = {
     BOOKED:        'booked',
@@ -141,7 +153,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   const client = clientRow as Client;
   const transcript = event.transcript ?? '';
   const summary    = event.call_analysis?.call_summary ?? '';
-  const outcome    = deriveOutcome(summary);
+  const outcome    = deriveOutcome(summary, event.call_analysis?.custom_analysis_data);
   const isEmergency = outcome === 'emergency' || detectEmergency(transcript);
 
   const durationSecs = Math.round((event.duration_ms ?? 0) / 1000);

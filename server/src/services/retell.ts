@@ -9,6 +9,28 @@ const BASE_URL = 'https://api.retellai.com';
 
 const CHARLOTTE_VOICE_ID = 'retell-Willa';
 
+/**
+ * Post-call analysis fields. Retell extracts these after each call and returns them
+ * in call_analysis.custom_analysis_data, which the Retell webhook reads to populate
+ * the dashboard lead (name/number/job/postcode/urgency/notes) and the call outcome.
+ * Field names MUST match what the webhook's extractLeadData/deriveOutcome expect.
+ */
+export const POST_CALL_ANALYSIS_DATA: Record<string, unknown>[] = [
+  { type: 'string', name: 'caller_name', description: "The caller's full name. Empty string if not given." },
+  { type: 'string', name: 'caller_number', description: "The caller's phone number in UK format. Empty string if not given." },
+  { type: 'string', name: 'caller_email', description: "The caller's email address. Empty string if not given." },
+  { type: 'string', name: 'postcode', description: 'The UK postcode of the job. Empty string if not given.' },
+  { type: 'string', name: 'job_type', description: 'A short description of the job or reason for the call.' },
+  { type: 'enum', name: 'urgency', description: 'How urgent the job is.', choices: ['routine', 'urgent', 'emergency'] },
+  { type: 'string', name: 'notes', description: 'Useful notes for the tradesperson: access details, preferences, timing, anything important.' },
+  {
+    type: 'enum',
+    name: 'call_outcome',
+    description: 'The overall outcome of the call. booked = a slot was confirmed in the diary; lead_captured = full details taken, no booking; enquiry = info only; spam = sales/robocall; voicemail = message left, no engagement; emergency = urgent danger; transferred = put through to the owner; no_answer = silence or disconnected.',
+    choices: ['booked', 'lead_captured', 'enquiry', 'spam', 'voicemail', 'emergency', 'transferred', 'no_answer'],
+  },
+];
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 function headers() {
@@ -306,6 +328,7 @@ export async function createRetellAgent(
     interruption_sensitivity:   0.9,
     end_call_after_silence_ms:  10000,
     max_call_duration_ms:       600000,
+    post_call_analysis_data:    POST_CALL_ANALYSIS_DATA,
   };
 
   if (webhookUrl) agentBody.webhook_url = webhookUrl;
