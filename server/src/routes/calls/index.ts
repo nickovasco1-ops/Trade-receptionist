@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../../services/supabase';
 import { getCall, postCallWorkflow } from '../../services/retell';
 import type { ApiResponse, Call, Client, LeadInsert } from '../../../../shared/types';
+import { logEvent } from '../../lib/observability';
 
 const router = Router();
 
@@ -183,6 +184,46 @@ router.post('/backfill/:retell_call_id', async (req: Request, res: Response) => 
 
   console.log(`[backfill] processed call_id=${retell_call_id}  outcome=${outcome}`);
   res.json({ success: true, data: call } satisfies ApiResponse<Call>);
+});
+
+// ── Web call proxy (for browser-based agent testing without a phone) ──────────
+router.post('/create-web-call', async (req: Request, res: Response) => {
+  const retellApiKey = process.env.RETELL_API_KEY;
+  if (!retellApiKey) {
+    res.status(500).json({ error: 'RETELL_API_KEY not configured' });
+    return;
+  }
+
+  const { agent_id } = req.body as { agent_id?: string };
+  if (!agent_id) {
+    res.status(400).json({ error: 'agent_id is required' });
+    return;
+  }
+
+  try {
+    const retellRes = await fetch('https://api.retellai.com/v2/create-web-call', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${retellApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ agent_id }),
+    });
+
+    const data = await retellRes.json() as Record<string, unknown>;
+
+    if (!retellRes.ok) {
+      logEvent('error', 'calls.create_web_call.failed', { status: retellRes.status, detail: JSON.stringify(data).slice(0, 200) });
+      res.status(retellRes.status).json({ error: (data['message'] as string) ?? 'Failed to create web call' });
+      return;
+    }
+
+    logEvent('info', 'calls.create_web_call.created', { call_id: String(data['call_id'] ?? '') });
+    res.json({ access_token: data['access_token'], call_id: data['call_id'] });
+  } catch (err) {
+    logEvent('error', 'calls.create_web_call.exception', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: 'Failed to create web call' });
+  }
 });
 
 export default router;

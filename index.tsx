@@ -59,6 +59,7 @@ const DashboardPreviewSettingsPage = React.lazy(() =>
   import('./src/pages/DashboardPreviewPage').then(module => ({ default: module.DashboardPreviewSettingsPage }))
 );
 const WelcomePage    = React.lazy(() => import('./src/pages/WelcomePage'));
+const TestCallPage   = React.lazy(() => import('./src/pages/TestCallPage'));
 const NotFoundPage   = React.lazy(() => import('./src/pages/NotFoundPage'));
 
 // Auth guard — simple: checks Supabase session cookie presence via storage
@@ -252,6 +253,15 @@ ReactDOM.createRoot(rootElement, {
           <React.Suspense fallback={null}>
             <PrivacyPage />
           </React.Suspense>
+        } />
+
+        {/* ── Agent test console (auth-gated, not linked publicly) ── */}
+        <Route path="/test-call" element={
+          <RequireAuth>
+            <React.Suspense fallback={null}>
+              <TestCallPage />
+            </React.Suspense>
+          </RequireAuth>
         } />
 
         {/* ── 404 catch-all ───────────────────────────────────── */}
