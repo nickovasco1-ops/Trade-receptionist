@@ -8,6 +8,7 @@ import './index.css';
 import App from './App';
 import SkipToContent from './src/components/SkipToContent';
 import ErrorFallback from './src/components/ErrorFallback';
+import CrispChat from './components/CrispChat';
 
 // ─── Sentry (initialise before any render) ────────────────────────────────────
 Sentry.init({
@@ -276,6 +277,9 @@ ReactDOM.createRoot(rootElement, {
 
       {/* Vercel Analytics — auto-tracks page views across all routes */}
       <Analytics />
+
+      {/* Crisp live chat widget — set VITE_CRISP_WEBSITE_ID in .env to activate */}
+      <CrispChat />
     </BrowserRouter>
     </Sentry.ErrorBoundary>
   </React.StrictMode>

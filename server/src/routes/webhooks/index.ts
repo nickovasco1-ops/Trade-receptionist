@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../../services/supabase';
 import retellRouter from './retell';
 import stripeRouter from './stripe';
+import improvmxRouter from './improvmx';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
 
 const router = Router();
@@ -11,6 +12,9 @@ router.use('/retell', retellRouter);
 
 // Stripe webhook — checkout.session.completed → auto-provision client
 router.use('/stripe', stripeRouter);
+
+// ImprovMX inbound email webhook — auto-reply to hello@tradereceptionist.com
+router.use('/improvmx', improvmxRouter);
 
 // Twilio delivery receipts (SMS / WhatsApp status callbacks)
 router.post('/twilio', async (req: Request, res: Response) => {
