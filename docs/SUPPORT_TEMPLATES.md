@@ -242,7 +242,7 @@ Trade Receptionist Support
 2. Add customer's name where `[Name]` appears
 3. Add specific details (call ID, time, etc.) where `[DETAILS]` appears
 4. Personalize tone if needed — these are formal but friendly
-5. Send from `nick@autonosphere.co.uk` or your support address
+5. Send from `hello@tradereceptionist.com` or your support address
 
 ---
 

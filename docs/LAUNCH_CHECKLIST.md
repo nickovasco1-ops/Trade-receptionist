@@ -51,7 +51,7 @@
   - Includes: 5-minute quick start, step-by-step setup
   
 - [ ] **Support email staffed**
-  - Email: `nick@autonosphere.co.uk`
+  - Email: `hello@tradereceptionist.com`
   - Auto-responder: Set up (see `SUPPORT_TEMPLATES.md`)
   - Response templates: Saved and ready to use
   

@@ -122,7 +122,7 @@ Your AI receptionist is now answering every call, 24/7.
 - Dial it again — make sure it's exact: `**004*YOUR_NUMBER#`
 - Try from a different network (some MVNOs don't support it)
 - Restart your phone and try again
-- If still stuck, [email support](mailto:nick@autonosphere.co.uk)
+- If still stuck, [email support](mailto:hello@tradereceptionist.com)
 
 ### The agent can't see my calendar
 
@@ -165,7 +165,7 @@ See [pricing](https://tradereceptionist.com/pricing) to upgrade anytime.
 ### Get help
 
 - [FAQ & Troubleshooting](./FAQ.md)
-- **Email:** nick@autonosphere.co.uk
+- **Email:** hello@tradereceptionist.com
 - **Response:** Usually within 24 hours
 
 ---
@@ -179,4 +179,4 @@ Enjoy the free trial. We're excited to help you never lose another call. 🎉
 ---
 
 **Questions?**  
-Email [nick@autonosphere.co.uk](mailto:nick@autonosphere.co.uk) anytime.
+Email [hello@tradereceptionist.com](mailto:hello@tradereceptionist.com) anytime.

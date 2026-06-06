@@ -1,7 +1,7 @@
 # Trade Receptionist — FAQ & Troubleshooting
 
 **Last updated:** June 2026  
-**Support:** nick@autonosphere.co.uk
+**Support:** hello@tradereceptionist.com
 
 ---
 
@@ -240,7 +240,7 @@ Go to **Settings** → **Test Agent** for a free browser-based call. No phone ne
 
 ### Support
 
-**Email:** nick@autonosphere.co.uk  
+**Email:** hello@tradereceptionist.com  
 **Response time:** 24 hours (usually faster)
 
 **What to include:**
