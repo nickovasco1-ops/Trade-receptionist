@@ -319,7 +319,7 @@ export default function LeadsPage() {
 
   return (
     <DashboardShell>
-      <div ref={animRef} data-animate>
+      <div ref={animRef}>
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <article
             className="rounded-[30px] px-6 py-6 sm:px-7 sm:py-7"

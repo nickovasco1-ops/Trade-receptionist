@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
-      <div ref={animRef} data-animate>
+      <div ref={animRef}>
         {calBannerVisible ? (
           <div
             data-testid="calendar-auto-connected-banner"

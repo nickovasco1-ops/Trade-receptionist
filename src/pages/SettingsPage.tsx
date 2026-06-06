@@ -349,7 +349,7 @@ export default function SettingsPage() {
 
   return (
     <DashboardShell>
-      <div ref={animRef} data-animate>
+      <div ref={animRef}>
         <article
           className="mb-5 overflow-hidden rounded-[32px] px-6 py-6 sm:px-7 sm:py-7"
           style={{
