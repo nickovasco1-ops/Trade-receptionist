@@ -116,7 +116,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     }
 
     // Redirect to a success page or return JSON depending on the integration
-    const successUrl = process.env.GOOGLE_OAUTH_SUCCESS_URL ?? '/';
+    const successUrl = process.env.GOOGLE_OAUTH_SUCCESS_URL ?? '/dashboard/settings';
     res.redirect(`${successUrl}?connected=google&clientId=${clientId}`);
   } catch (err: unknown) {
     logEvent('error', 'google.oauth.provider_failure', {

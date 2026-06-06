@@ -37,7 +37,6 @@ export default function DashboardShell({
   };
   const navHref = (suffix: string) => {
     if (!suffix) return navBase;
-    if (suffix === '/settings' && navBase === '/dashboard') return '/settings';
     return `${navBase}${suffix}`;
   };
   const activeSuffix = NAV.find(n => {

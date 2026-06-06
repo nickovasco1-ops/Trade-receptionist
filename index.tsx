@@ -196,13 +196,15 @@ ReactDOM.createRoot(rootElement, {
             </React.Suspense>
           </RequireAuth>
         } />
-        <Route path="/settings" element={
+        <Route path="/dashboard/settings" element={
           <RequireAuth>
             <React.Suspense fallback={null}>
               <SettingsPage />
             </React.Suspense>
           </RequireAuth>
         } />
+        {/* Legacy redirect — keep old /settings URL working */}
+        <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
         <Route path="/onboarding" element={
           <RequireAuth>
             <React.Suspense fallback={null}>
