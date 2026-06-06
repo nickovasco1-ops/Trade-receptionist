@@ -160,6 +160,62 @@ const SERVICES_BY_TRADE: Record<string, string[]> = {
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
 
+const ALL_DAYS = [1, 2, 3, 4, 5, 6, 0];
+const WEEKDAYS  = [1, 2, 3, 4, 5];
+
+interface SchedulePreset {
+  id: string;
+  label: string;
+  sublabel: string;
+  working_days: number[];
+  work_start: string;
+  work_end: string;
+}
+
+const SCHEDULE_PRESETS: SchedulePreset[] = [
+  {
+    id:           '24-7',
+    label:        '24 / 7',
+    sublabel:     'Every day, all hours',
+    working_days: ALL_DAYS,
+    work_start:   '00:00',
+    work_end:     '00:00',
+  },
+  {
+    id:           'weekdays-24hr',
+    label:        'Weekdays',
+    sublabel:     'Mon – Fri, all hours',
+    working_days: WEEKDAYS,
+    work_start:   '00:00',
+    work_end:     '00:00',
+  },
+  {
+    id:           'weekdays-8-6',
+    label:        'Mon – Fri',
+    sublabel:     '8 am – 6 pm',
+    working_days: WEEKDAYS,
+    work_start:   '08:00',
+    work_end:     '18:00',
+  },
+];
+
+function arraysEqual(a: number[], b: number[]) {
+  return a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]);
+}
+
+function detectPreset(working_days: number[], work_start: string, work_end: string): string | null {
+  return SCHEDULE_PRESETS.find(p =>
+    arraysEqual(p.working_days, working_days) &&
+    p.work_start === work_start &&
+    p.work_end === work_end
+  )?.id ?? null;
+}
+
+function formatHoursLabel(work_start: string, work_end: string): string {
+  if (work_start === '00:00' && work_end === '00:00') return 'All hours (24 hr)';
+  return `${work_start} – ${work_end}`;
+}
+
 const TONE_OPTIONS: { value: ReceptionistTone; label: string; description: string; example: string }[] = [
   {
     value: 'friendly',
@@ -194,9 +250,9 @@ const DEFAULT_FORM: FormData = {
   trade_type: '',
   city: '',
   services: [],
-  work_start: '08:00',
-  work_end: '18:00',
-  working_days: [1, 2, 3, 4, 5],
+  work_start: '00:00',
+  work_end: '00:00',
+  working_days: ALL_DAYS,
   owner_name: '',
   owner_mobile: '',
 };
@@ -647,7 +703,7 @@ function SupportPanel({ step, form }: { step: Step; form: FormData }) {
           {[
             { label: 'Call handling', value: selectedTone },
             { label: 'Trade & area', value: `${form.trade_type || 'Trade pending'}${form.city ? ` · ${form.city}` : ''}` },
-            { label: 'Working hours', value: `${form.work_start} - ${form.work_end}` },
+            { label: 'Working hours', value: formatHoursLabel(form.work_start, form.work_end) },
             { label: 'SMS alerts', value: form.owner_mobile || 'Mobile pending' },
           ].map(item => (
             <div
@@ -1249,6 +1305,55 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                   {step === 'hours' && (
                     <StepPane stepKey="hours">
                       <div className="space-y-6">
+
+                        {/* ── Quick-select presets ─────────────────────────── */}
+                        <div>
+                          <p className={LABEL_CLASS}>Quick select</p>
+                          <div className="grid grid-cols-3 gap-2.5 mt-2">
+                            {SCHEDULE_PRESETS.map(preset => {
+                              const active = detectPreset(form.working_days, form.work_start, form.work_end) === preset.id;
+                              return (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  onClick={() => setForm(prev => ({
+                                    ...prev,
+                                    working_days: preset.working_days,
+                                    work_start:   preset.work_start,
+                                    work_end:     preset.work_end,
+                                  }))}
+                                  aria-pressed={active}
+                                  className="flex flex-col items-center gap-1 rounded-[18px] px-3 py-4 text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                                  style={{
+                                    background: active
+                                      ? 'linear-gradient(135deg, rgba(255,107,43,0.16) 0%, rgba(255,107,43,0.08) 100%)'
+                                      : 'rgba(255,255,255,0.04)',
+                                    boxShadow: active
+                                      ? '0 0 0 1.5px rgba(255,107,43,0.40), 0 12px 28px rgba(255,107,43,0.12)'
+                                      : '0 0 0 1px rgba(255,255,255,0.08)',
+                                  }}
+                                >
+                                  <span
+                                    className="text-[15px] font-bold tracking-[-0.01em]"
+                                    style={{ color: active ? '#ffb59a' : 'rgba(240,244,248,0.82)' }}
+                                  >
+                                    {preset.label}
+                                  </span>
+                                  <span
+                                    className="text-[11px] leading-snug"
+                                    style={{ color: active ? 'rgba(255,181,154,0.72)' : 'rgba(240,244,248,0.36)' }}
+                                  >
+                                    {preset.sublabel}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-2.5 text-[12px] text-offwhite/34">
+                            Or fine-tune below — your receptionist answers all calls regardless.
+                          </p>
+                        </div>
+
                         <fieldset>
                           <legend className={LABEL_CLASS}>Working days</legend>
                           <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-7 sm:overflow-visible no-scrollbar">
@@ -1307,7 +1412,9 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           style={{ background: 'rgba(153,203,255,0.05)', boxShadow: '0 0 0 1px rgba(153,203,255,0.10)' }}
                         >
                           <p className="text-[13px] leading-relaxed text-accent/74">
-                            Outside these hours, your AI receptionist can still capture the full enquiry, explain your availability properly, and set the right callback expectation for the next working day.
+                            {detectPreset(form.working_days, form.work_start, form.work_end) === '24-7'
+                              ? 'Your receptionist answers every call at any time — nights, weekends, bank holidays. Callers can book straight into your diary whenever a slot is free.'
+                              : 'Outside these hours, your AI receptionist still captures the full enquiry, explains your availability, and sets the right callback expectation for the next working day.'}
                           </p>
                         </div>
 
