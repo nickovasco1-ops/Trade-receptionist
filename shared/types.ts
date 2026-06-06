@@ -3,7 +3,7 @@
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
-export type Plan = 'starter' | 'pro' | 'agency';
+export type Plan = 'starter' | 'pro' | 'business' | 'agency';
 export type CallDirection = 'inbound' | 'outbound';
 export type CallOutcome =
   | 'booked'

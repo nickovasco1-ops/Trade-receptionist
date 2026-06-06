@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertTriangle, Calendar, CheckCircle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, AlertTriangle, BarChart2, Calendar, CheckCircle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
 import type { ElementType } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
@@ -9,7 +9,8 @@ import StatusBadge from '../components/dashboard/ui/StatusBadge';
 import EmptyState from '../components/dashboard/ui/EmptyState';
 import { supabase } from '../lib/supabase';
 import { syncGoogleCalendarToken } from '../lib/calendar';
-import type { Call } from '../../shared/types';
+import { PLAN_BY_KEY } from '../lib/plans';
+import type { Call, Plan } from '../../shared/types';
 
 interface Stats {
   totalCalls: number;
@@ -23,6 +24,13 @@ type CallRow = Pick<Call, 'id' | 'outcome' | 'is_emergency' | 'started_at' | 'ca
 interface SubscriptionAlert {
   title: string;
   copy: string;
+}
+
+interface QuotaAlert {
+  used: number;
+  limit: number;
+  pct: number;
+  urgent: boolean;
 }
 
 interface StatCardProps {
@@ -113,6 +121,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
   const [subscriptionAlert, setSubscriptionAlert] = useState<SubscriptionAlert | null>(null);
+  const [quotaAlert, setQuotaAlert] = useState<QuotaAlert | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
   const [calBannerVisible, setCalBannerVisible] = useState(false);
@@ -141,7 +150,7 @@ export default function DashboardPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id, onboarding_complete, subscription_status, payment_status')
+        .select('id, onboarding_complete, subscription_status, payment_status, plan')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -152,7 +161,10 @@ export default function DashboardPage() {
 
       setSubscriptionAlert(subscriptionMessage(clientRow.subscription_status, clientRow.payment_status));
 
-      const [callsRes, leadsRes] = await Promise.all([
+      // Rolling 30-day window for quota calculation
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [callsRes, leadsRes, quotaRes] = await Promise.all([
         supabase
           .from('calls')
           .select('id, outcome, is_emergency, started_at, caller_number, duration_secs')
@@ -163,10 +175,16 @@ export default function DashboardPage() {
           .from('leads')
           .select('id, status')
           .eq('client_id', clientRow.id),
+        supabase
+          .from('calls')
+          .select('id', { count: 'exact', head: true })
+          .eq('client_id', clientRow.id)
+          .gte('started_at', thirtyDaysAgo),
       ]);
 
       const calls = (callsRes.data ?? []) as CallRow[];
       const leads = leadsRes.data ?? [];
+      const callCount30d = quotaRes.count ?? 0;
 
       setStats({
         totalCalls: calls.length,
@@ -174,6 +192,21 @@ export default function DashboardPage() {
         bookedJobs: leads.filter(lead => lead.status === 'booked').length,
         emergencies: calls.filter(call => call.is_emergency).length,
       });
+
+      // Quota banner: show at >= 80% of plan limit
+      const planKey = (clientRow.plan ?? 'starter') as Plan;
+      const planConfig = PLAN_BY_KEY[planKey];
+      if (planConfig) {
+        const pct = planConfig.callLimit > 0 ? (callCount30d / planConfig.callLimit) * 100 : 0;
+        if (pct >= 80) {
+          setQuotaAlert({
+            used: callCount30d,
+            limit: planConfig.callLimit,
+            pct: Math.round(pct),
+            urgent: pct >= 100,
+          });
+        }
+      }
 
       setRecentCalls(calls.slice(0, 5));
       setLoading(false);
@@ -234,6 +267,52 @@ export default function DashboardPage() {
                 <p className="text-[14px] font-semibold text-offwhite">{subscriptionAlert.title}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">{subscriptionAlert.copy}</p>
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {quotaAlert ? (
+          <div
+            data-testid="quota-banner"
+            role="alert"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={
+              quotaAlert.urgent
+                ? { background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }
+                : { background: 'rgba(153,203,255,0.07)', boxShadow: '0 0 0 1px rgba(153,203,255,0.18)' }
+            }
+          >
+            <div className="flex items-start gap-3">
+              <BarChart2
+                size={17}
+                className={`mt-0.5 ${quotaAlert.urgent ? 'text-orange-soft' : 'text-accent'}`}
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-offwhite">
+                  {quotaAlert.urgent
+                    ? 'Monthly call limit reached'
+                    : `You've used ${quotaAlert.pct}% of your monthly calls`}
+                </p>
+                <p className={`mt-1 text-[12px] leading-relaxed ${quotaAlert.urgent ? 'text-orange-soft/88' : 'text-accent/80'}`}>
+                  {quotaAlert.used.toLocaleString('en-GB')} of {quotaAlert.limit.toLocaleString('en-GB')} calls in the last 30 days.
+                  {' '}
+                  {quotaAlert.urgent
+                    ? 'Upgrade your plan to keep your receptionist running without interruption.'
+                    : 'Consider upgrading before you hit the limit.'}
+                </p>
+              </div>
+              <Link
+                to="/settings"
+                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                style={
+                  quotaAlert.urgent
+                    ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)', color: '#ffb59a' }
+                    : { background: 'rgba(153,203,255,0.10)', boxShadow: '0 0 0 1px rgba(153,203,255,0.20)', color: '#99cbff' }
+                }
+              >
+                Upgrade
+              </Link>
             </div>
           </div>
         ) : null}

@@ -41,7 +41,7 @@ const createSchema = z.object({
   owner_email:   z.string().email(),
   owner_mobile:  z.string().optional(),
   own_number:    z.string().optional(),
-  plan:          z.enum(['starter', 'pro', 'agency']).default('starter'),
+  plan:          z.enum(['starter', 'pro', 'business', 'agency']).default('starter'),
 });
 
 const updateSchema = createSchema.partial().extend({
@@ -54,10 +54,19 @@ const updateSchema = createSchema.partial().extend({
 });
 
 const settingsSchema = z.object({
+  // Client fields
   business_name:        z.string().min(1),
   owner_name:           z.string().min(1),
   owner_mobile:         z.string().nullable().optional(),
-  after_hours_message:  z.string().trim().max(240).nullable().optional(),
+  // Business config fields — previously locked post-onboarding, now editable
+  after_hours_message:  z.string().trim().max(500).nullable().optional(),
+  receptionist_name:    z.string().min(1).optional(),
+  receptionist_tone:    z.enum(['friendly', 'professional', 'efficient']).optional(),
+  services:             z.array(z.string()).optional(),
+  service_areas:        z.array(z.string()).optional(),
+  business_hours_start: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  business_hours_end:   z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  working_days:         z.array(z.number().int().min(0).max(6)).optional(),
 });
 
 const configSchema = z.object({
@@ -76,7 +85,7 @@ const configSchema = z.object({
 
 const provisionSchema = createSchema
   .omit({ plan: true })
-  .extend({ plan: z.enum(['starter', 'pro', 'agency']).default('starter') })
+  .extend({ plan: z.enum(['starter', 'pro', 'business', 'agency']).default('starter') })
   .merge(configSchema);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -244,7 +253,12 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   }
 
   const clientId = req.params.id;
-  const { business_name, owner_name, owner_mobile, after_hours_message } = parsed.data;
+  const {
+    business_name, owner_name, owner_mobile,
+    // Config fields
+    after_hours_message, receptionist_name, receptionist_tone,
+    services, service_areas, business_hours_start, business_hours_end, working_days,
+  } = parsed.data;
 
   const token = bearerToken(req);
   if (!token) {
@@ -279,10 +293,24 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
 
   const previousClient = existingClient as Client;
   const previousConfig = existingConfig as BusinessConfig | null;
-  if (after_hours_message !== undefined && !previousConfig) {
+
+  // Determine which config fields are being updated
+  const configFieldsPatch: Partial<BusinessConfig> = {};
+  if (after_hours_message !== undefined)   configFieldsPatch.after_hours_message   = after_hours_message;
+  if (receptionist_name   !== undefined)   configFieldsPatch.receptionist_name     = receptionist_name;
+  if (receptionist_tone   !== undefined)   configFieldsPatch.receptionist_tone     = receptionist_tone;
+  if (services            !== undefined)   configFieldsPatch.services              = services;
+  if (service_areas       !== undefined)   configFieldsPatch.service_areas         = service_areas;
+  if (business_hours_start !== undefined)  configFieldsPatch.business_hours_start  = business_hours_start;
+  if (business_hours_end  !== undefined)   configFieldsPatch.business_hours_end    = business_hours_end;
+  if (working_days        !== undefined)   configFieldsPatch.working_days          = working_days;
+
+  const hasConfigUpdate = Object.keys(configFieldsPatch).length > 0;
+
+  if (hasConfigUpdate && !previousConfig) {
     res.status(409).json({
       success: false,
-      error: 'After-hours settings are not available for this account yet.',
+      error: 'Receptionist settings are not available for this account yet.',
     } satisfies ApiResponse);
     return;
   }
@@ -298,11 +326,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
 
   const nextClient = { ...previousClient, ...clientPatch } as Client;
   const nextConfig = previousConfig
-    ? ({
-        ...previousConfig,
-        ...(after_hours_message !== undefined ? { after_hours_message } : {}),
-        updated_at: timestamp,
-      } as BusinessConfig)
+    ? ({ ...previousConfig, ...configFieldsPatch, updated_at: timestamp } as BusinessConfig)
     : null;
 
   const rollbackSettings = async () => {
@@ -313,9 +337,9 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
       updated_at: previousClient.updated_at,
     }).eq('id', clientId);
 
-    if (previousConfig && after_hours_message !== undefined) {
+    if (previousConfig && hasConfigUpdate) {
       await supabase.from('business_config').update({
-        after_hours_message: previousConfig.after_hours_message,
+        ...previousConfig,
         updated_at: previousConfig.updated_at,
       }).eq('client_id', clientId);
     }
@@ -331,13 +355,10 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
     return;
   }
 
-  if (after_hours_message !== undefined && previousConfig) {
+  if (hasConfigUpdate && previousConfig) {
     const { error: configUpdateError } = await supabase
       .from('business_config')
-      .update({
-        after_hours_message,
-        updated_at: timestamp,
-      })
+      .update({ ...configFieldsPatch, updated_at: timestamp })
       .eq('client_id', clientId);
 
     if (configUpdateError) {
@@ -346,7 +367,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
       );
       res.status(500).json({
         success: false,
-        error: 'Could not save your after-hours settings. No changes were applied.',
+        error: 'Could not save your receptionist settings. No changes were applied.',
       } satisfies ApiResponse);
       return;
     }

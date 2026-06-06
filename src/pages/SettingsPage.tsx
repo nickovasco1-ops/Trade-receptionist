@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { ElementType, FormEvent, ReactNode } from 'react';
-import { AlertCircle, Bell, Calendar, CheckCircle, Key, Phone, Save, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, Bell, Bot, Calendar, CheckCircle, CreditCard, Key, Phone, Save, ShieldCheck, User, Wrench } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
 import { supabase } from '../lib/supabase';
+import type { ReceptionistTone } from '../../shared/types';
 
 interface ClientSettings {
   business_name: string;
@@ -18,6 +19,16 @@ interface ClientSettings {
   after_hours_message: string | null;
   google_cal_id: string | null;
   google_cal_connected: boolean;
+  // Receptionist profile
+  receptionist_name: string;
+  receptionist_tone: ReceptionistTone;
+  // Services and coverage
+  services: string[];
+  service_areas: string[];
+  // Working hours
+  business_hours_start: string | null;
+  business_hours_end: string | null;
+  working_days: number[];
 }
 
 function buildActivationCode(twilioNumber: string) {
@@ -134,6 +145,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [calConnecting, setCalConnecting] = useState(false);
   const [calJustConnected, setCalJustConnected] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -188,7 +200,7 @@ export default function SettingsPage() {
 
       const { data: configData, error: configError } = await supabase
         .from('business_config')
-        .select('after_hours_message')
+        .select('after_hours_message, receptionist_name, receptionist_tone, services, service_areas, business_hours_start, business_hours_end, working_days')
         .eq('client_id', data.id)
         .maybeSingle();
 
@@ -205,6 +217,13 @@ export default function SettingsPage() {
         after_hours_message: configData?.after_hours_message ?? '',
         google_cal_id: data.google_cal_id ?? '',
         google_cal_connected: !!data.google_cal_id,
+        receptionist_name: configData?.receptionist_name ?? '',
+        receptionist_tone: (configData?.receptionist_tone as ReceptionistTone | undefined) ?? 'friendly',
+        services: configData?.services ?? [],
+        service_areas: configData?.service_areas ?? [],
+        business_hours_start: configData?.business_hours_start ?? null,
+        business_hours_end: configData?.business_hours_end ?? null,
+        working_days: configData?.working_days ?? [1, 2, 3, 4, 5],
       });
       setConfigLoaded(!configError && !!configData);
 
@@ -246,7 +265,16 @@ export default function SettingsPage() {
           business_name: form.business_name ?? '',
           owner_name: form.owner_name ?? '',
           owner_mobile: form.owner_mobile || null,
-          ...(configLoaded ? { after_hours_message: form.after_hours_message || null } : {}),
+          ...(configLoaded ? {
+            after_hours_message: form.after_hours_message || null,
+            receptionist_name: form.receptionist_name || undefined,
+            receptionist_tone: form.receptionist_tone,
+            services: form.services,
+            service_areas: form.service_areas,
+            business_hours_start: form.business_hours_start || null,
+            business_hours_end: form.business_hours_end || null,
+            working_days: form.working_days,
+          } : {}),
         }),
       });
 
@@ -298,6 +326,36 @@ export default function SettingsPage() {
     } catch {
       setActionError('Could not reach the calendar connection service. Please try again.');
       setCalConnecting(false);
+    }
+  }
+
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    setActionError(null);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        setActionError('Your session has expired. Please sign in again before accessing billing.');
+        setPortalLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/billing/portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json().catch(() => ({ success: false, error: 'Could not open billing portal.' }));
+
+      if (!res.ok || !json.success) {
+        setActionError(json.error ?? 'Could not open the billing portal. Please try again.');
+        setPortalLoading(false);
+        return;
+      }
+
+      window.location.href = json.data.url;
+    } catch {
+      setActionError('Could not reach the billing service. Please try again.');
+      setPortalLoading(false);
     }
   }
 
@@ -525,6 +583,159 @@ export default function SettingsPage() {
               </SettingsSection>
 
               <SettingsSection
+                title="Receptionist profile"
+                icon={Bot}
+                description="Personalise how your AI receptionist introduces itself and communicates with callers."
+              >
+                <div className="grid gap-4">
+                  <LabeledField
+                    label="Receptionist name"
+                    name="receptionist_name"
+                    value={form.receptionist_name ?? ''}
+                    onChange={value => set('receptionist_name', value)}
+                    placeholder="Alex"
+                    hint="The name your receptionist uses when answering calls. Keep it short and professional."
+                  />
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Tone of voice</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['friendly', 'professional', 'efficient'] as ReceptionistTone[]).map(tone => (
+                        <button
+                          key={tone}
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, receptionist_tone: tone }))}
+                          aria-pressed={form.receptionist_tone === tone}
+                          className="min-h-[44px] rounded-[16px] px-3 py-2.5 text-[13px] font-semibold capitalize transition-all duration-200"
+                          style={
+                            form.receptionist_tone === tone
+                              ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40)', color: '#ffb59a' }
+                              : { background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', color: 'rgba(240,244,248,0.52)' }
+                          }
+                        >
+                          {tone}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">
+                      {form.receptionist_tone === 'friendly' && 'Warm and conversational — great for domestic trades and repeat customers.'}
+                      {form.receptionist_tone === 'professional' && 'Measured and formal — well suited to commercial clients and larger projects.'}
+                      {form.receptionist_tone === 'efficient' && 'Direct and focused — captures the job details fast so you can call back quickly.'}
+                    </p>
+                  </div>
+                </div>
+              </SettingsSection>
+
+              <SettingsSection
+                title="Services and coverage"
+                icon={Wrench}
+                description="Tell your receptionist exactly what work you take on and where you cover, so it only accepts relevant enquiries."
+              >
+                <div className="grid gap-4">
+                  <div>
+                    <label htmlFor="services" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                      Services offered
+                    </label>
+                    <textarea
+                      id="services"
+                      value={(form.services ?? []).join('\n')}
+                      onChange={event => setForm(prev => ({ ...prev, services: event.target.value.split('\n').map(s => s.trim()).filter(Boolean) }))}
+                      disabled={!configLoaded}
+                      rows={4}
+                      placeholder={"Boiler servicing and repairs\nCentral heating installation\nEmergency call-outs\nLandlord gas safety checks"}
+                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                      style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                    />
+                    <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">One service per line. Your receptionist uses this list to qualify enquiries.</p>
+                  </div>
+                  <div>
+                    <label htmlFor="service_areas" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                      Areas covered
+                    </label>
+                    <textarea
+                      id="service_areas"
+                      value={(form.service_areas ?? []).join('\n')}
+                      onChange={event => setForm(prev => ({ ...prev, service_areas: event.target.value.split('\n').map(s => s.trim()).filter(Boolean) }))}
+                      disabled={!configLoaded}
+                      rows={3}
+                      placeholder={"Birmingham\nCoventry\nSolihull"}
+                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                      style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                    />
+                    <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">One town or postcode area per line.</p>
+                  </div>
+                </div>
+              </SettingsSection>
+
+              <SettingsSection
+                title="Working hours"
+                icon={Bell}
+                description="Set your opening times and working days so your receptionist knows when to treat calls as after-hours."
+              >
+                <div className="grid gap-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="business_hours_start" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                        Opens
+                      </label>
+                      <input
+                        id="business_hours_start"
+                        type="time"
+                        value={form.business_hours_start ?? ''}
+                        onChange={event => setForm(prev => ({ ...prev, business_hours_start: event.target.value || null }))}
+                        disabled={!configLoaded}
+                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                        style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', colorScheme: 'dark' }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="business_hours_end" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                        Closes
+                      </label>
+                      <input
+                        id="business_hours_end"
+                        type="time"
+                        value={form.business_hours_end ?? ''}
+                        onChange={event => setForm(prev => ({ ...prev, business_hours_end: event.target.value || null }))}
+                        disabled={!configLoaded}
+                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                        style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', colorScheme: 'dark' }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Working days</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                        const active = (form.working_days ?? []).includes(index);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => setForm(prev => {
+                              const days = prev.working_days ?? [];
+                              return {
+                                ...prev,
+                                working_days: active ? days.filter(d => d !== index) : [...days, index].sort((a, b) => a - b),
+                              };
+                            })}
+                            className="min-h-[44px] w-[52px] rounded-[14px] text-[13px] font-semibold transition-all duration-200"
+                            style={
+                              active
+                                ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40)', color: '#ffb59a' }
+                                : { background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', color: 'rgba(240,244,248,0.40)' }
+                            }
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </SettingsSection>
+
+              <SettingsSection
                 title="Google Calendar"
                 icon={Calendar}
                 description="Give Trade Receptionist live diary awareness so it can check availability and help move callers into real appointments."
@@ -596,7 +807,32 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          <aside className="xl:sticky xl:top-6 xl:self-start">
+          <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
+            <div
+              className="rounded-[30px] px-6 py-6 sm:px-7 sm:py-7"
+              style={{
+                background: 'linear-gradient(180deg, rgba(17,31,53,0.88) 0%, rgba(10,23,39,0.94) 100%)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
+              }}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Billing</p>
+              <h2 className="mt-3 font-display text-[22px] font-bold tracking-[-0.04em] text-offwhite">Manage your plan</h2>
+              <p className="mt-3 text-[13px] leading-relaxed text-offwhite/46">
+                Update your payment method, download invoices, or change your plan — all from the Stripe billing portal.
+              </p>
+              <div className="mt-5">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleManageBilling}
+                  disabled={portalLoading}
+                >
+                  <CreditCard size={14} aria-hidden="true" />
+                  {portalLoading ? 'Opening portal…' : 'Manage billing'}
+                </Button>
+              </div>
+            </div>
+
             <div
               className="rounded-[30px] px-6 py-6 sm:px-7 sm:py-7"
               style={{

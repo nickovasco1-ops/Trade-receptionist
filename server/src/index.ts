@@ -15,6 +15,7 @@ import callsRouter    from './routes/calls';
 import authRouter     from './routes/auth';
 import bookingsRouter from './routes/bookings';
 import retellToolsRouter from './routes/retell-tools';
+import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 
 const app  = express();
@@ -117,6 +118,7 @@ const webhookLimiter = rateLimit({
 
 app.use('/clients',           defaultLimiter);
 app.use('/calls',             defaultLimiter);
+app.use('/billing',           writeLimiter);
 app.use('/bookings',          defaultLimiter, (req, res, next) => {
   if (req.method === 'POST') {
     return writeLimiter(req, res, next);
@@ -142,12 +144,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/health',   healthRouter);
-app.use('/webhooks', webhooksRouter);
-app.use('/clients',  clientsRouter);
-app.use('/calls',    callsRouter);
-app.use('/bookings', bookingsRouter);
-app.use('/auth',     authRouter);
+app.use('/health',       healthRouter);
+app.use('/webhooks',     webhooksRouter);
+app.use('/clients',      clientsRouter);
+app.use('/calls',        callsRouter);
+app.use('/bookings',     bookingsRouter);
+app.use('/auth',         authRouter);
+app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
 
 // 404 fallback

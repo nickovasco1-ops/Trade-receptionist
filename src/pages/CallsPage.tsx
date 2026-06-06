@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Filter, Phone, Play, Siren, Timer } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Filter, Phone, Play, Siren, Timer } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
@@ -41,6 +41,7 @@ export default function CallsPage() {
   const [loading, setLoading] = useState(true);
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
   const [visible, setVisible] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -226,59 +227,93 @@ export default function CallsPage() {
         ) : (
           <>
             <div className="mt-6 space-y-3 lg:hidden">
-              {filtered.map(call => (
-                <article
-                  key={call.id}
-                  className="rounded-[24px] px-5 py-5"
-                  style={{
-                    background: 'linear-gradient(180deg, rgba(17,31,53,0.88) 0%, rgba(10,23,39,0.94) 100%)',
-                    boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 38px rgba(2,13,24,0.22)',
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                          boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
-                        }}
-                      >
-                        <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+              {filtered.map(call => {
+                const isOpen = expandedId === call.id;
+                const summary = call.transcripts?.[0]?.summary ?? null;
+                return (
+                  <article
+                    key={call.id}
+                    className="overflow-hidden rounded-[24px]"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(17,31,53,0.88) 0%, rgba(10,23,39,0.94) 100%)',
+                      boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 18px 38px rgba(2,13,24,0.22)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="w-full px-5 py-5 text-left"
+                      onClick={() => setExpandedId(isOpen ? null : call.id)}
+                      aria-expanded={isOpen}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                            style={{
+                              background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
+                              boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                            }}
+                          >
+                            <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-[15px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
+                            <p className="mt-1 text-[12px] text-offwhite/38">{formatDate(call.started_at)}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-shrink-0 items-center gap-2">
+                          <StatusBadge outcome={call.outcome} />
+                          {isOpen ? <ChevronUp size={14} className="text-offwhite/30" aria-hidden="true" /> : <ChevronDown size={14} className="text-offwhite/30" aria-hidden="true" />}
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
-                        <p className="mt-1 text-[12px] text-offwhite/38">{formatDate(call.started_at)}</p>
-                      </div>
-                    </div>
-                    <StatusBadge outcome={call.outcome} className="flex-shrink-0" />
-                  </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[12px] text-offwhite/56 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                      <Timer size={12} aria-hidden="true" />
-                      {formatDuration(call.duration_secs)}
-                    </span>
-                    {call.is_emergency ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-orange/[0.10] px-3 py-1.5 text-[12px] text-orange-soft shadow-[inset_0_0_0_1px_rgba(255,107,43,0.16)]">
-                        <Siren size={12} aria-hidden="true" />
-                        Emergency
-                      </span>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[12px] text-offwhite/56 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                          <Timer size={12} aria-hidden="true" />
+                          {formatDuration(call.duration_secs)}
+                        </span>
+                        {call.is_emergency ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange/[0.10] px-3 py-1.5 text-[12px] text-orange-soft shadow-[inset_0_0_0_1px_rgba(255,107,43,0.16)]">
+                            <Siren size={12} aria-hidden="true" />
+                            Emergency
+                          </span>
+                        ) : null}
+                        {call.recording_url ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[12px] text-accent shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                            <Play size={11} aria-hidden="true" />
+                            Recording
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+
+                    {isOpen ? (
+                      <div className="px-5 pb-5 pt-0">
+                        <div className="rounded-[18px] bg-white/[0.03] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                          {summary ? (
+                            <>
+                              <div className="mb-3 flex items-center gap-2">
+                                <FileText size={13} className="text-accent/70" aria-hidden="true" />
+                                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Call summary</span>
+                              </div>
+                              <p className="text-[13px] leading-relaxed text-offwhite/62">{summary}</p>
+                            </>
+                          ) : (
+                            <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
+                          )}
+                          {call.recording_url ? (
+                            <div className="mt-4">
+                              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Recording</p>
+                              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                              <audio controls src={call.recording_url} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
                     ) : null}
-                    {call.recording_url ? (
-                      <a
-                        href={call.recording_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1.5 text-[12px] text-accent shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
-                      >
-                        <Play size={11} aria-hidden="true" />
-                        Recording
-                      </a>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
             <article
@@ -288,54 +323,91 @@ export default function CallsPage() {
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
               }}
             >
-              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30" style={{background:'rgba(255,255,255,0.025)'}}>
+              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30" style={{background:'rgba(255,255,255,0.025)'}}>
                 <span>Caller</span>
                 <span>Date</span>
                 <span>Duration</span>
                 <span>Outcome</span>
                 <span>Recording</span>
+                <span />
               </div>
 
-              <div className="space-y-px">
-                {filtered.map(call => (
-                  <div key={call.id} className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/[0.025]">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                          boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
-                        }}
+              <div>
+                {filtered.map(call => {
+                  const isOpen = expandedId === call.id;
+                  const summary = call.transcripts?.[0]?.summary ?? null;
+                  return (
+                    <div key={call.id}>
+                      <button
+                        type="button"
+                        className="grid w-full grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-4 text-left transition-colors duration-150 hover:bg-white/[0.025]"
+                        onClick={() => setExpandedId(isOpen ? null : call.id)}
+                        aria-expanded={isOpen}
                       >
-                        <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
-                        <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
-                      </div>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                            style={{
+                              background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
+                              boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                            }}
+                          >
+                            <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
+                            <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
+                          </div>
+                        </div>
+                        <span className="self-center text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
+                        <span className="self-center text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
+                        <div className="self-center pt-0.5">
+                          <StatusBadge outcome={call.outcome} />
+                        </div>
+                        <div className="self-center pt-0.5">
+                          {call.recording_url ? (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent">
+                              <Play size={11} aria-hidden="true" />
+                              Recording
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-offwhite/24">—</span>
+                          )}
+                        </div>
+                        <div className="self-center">
+                          {isOpen ? <ChevronUp size={14} className="text-offwhite/30" aria-hidden="true" /> : <ChevronDown size={14} className="text-offwhite/30" aria-hidden="true" />}
+                        </div>
+                      </button>
+
+                      {isOpen ? (
+                        <div className="px-6 pb-5">
+                          <div className="rounded-[18px] bg-white/[0.03] px-5 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+                              <div>
+                                <div className="mb-3 flex items-center gap-2">
+                                  <FileText size={13} className="text-accent/70" aria-hidden="true" />
+                                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Call summary</span>
+                                </div>
+                                {summary ? (
+                                  <p className="text-[13px] leading-relaxed text-offwhite/62">{summary}</p>
+                                ) : (
+                                  <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
+                                )}
+                              </div>
+                              {call.recording_url ? (
+                                <div>
+                                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Recording</p>
+                                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                                  <audio controls src={call.recording_url} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
-                    <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
-                    <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
-                    <div className="pt-0.5">
-                      <StatusBadge outcome={call.outcome} />
-                    </div>
-                    <div className="pt-0.5">
-                      {call.recording_url ? (
-                        <a
-                          href={call.recording_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent transition-colors duration-200 hover:text-accent-glow"
-                        >
-                          <Play size={11} aria-hidden="true" />
-                          Play
-                        </a>
-                      ) : (
-                        <span className="text-[12px] text-offwhite/24">—</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </article>
           </>
