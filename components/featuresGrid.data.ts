@@ -64,7 +64,7 @@ const ASSET_REGISTRY = {
   },
   whatsappSummaryBubble: {
     src: '/assets/marketing/call-flow/icons/whatsapp-summary-bubble.png',
-    alt: 'Soft-shaded 3D icon of a green message bubble and summary card showing a WhatsApp-style job handoff.',
+    alt: 'Soft-shaded 3D icon of a message bubble and summary card showing a text message job handoff.',
     kind: 'icon',
     aspect: 'square',
     width: 1024,
@@ -112,7 +112,7 @@ const ASSET_REGISTRY = {
   },
   customerCallWorkflow: {
     src: '/assets/marketing/call-flow/panels/customer-call-workflow.png',
-    alt: 'Wide workflow illustration showing a customer call turning into captured details, a WhatsApp-style summary, and a booked diary slot for a UK trade business.',
+    alt: 'Wide workflow illustration showing a customer call turning into captured details, a text summary, and a booked diary slot for a UK trade business.',
     kind: 'panel',
     aspect: 'landscape',
     width: 1536,
@@ -138,7 +138,7 @@ export const CALL_FLOW_TIMELINE_STEPS: TimelineStepItem[] = [
   },
   {
     title: 'You get the summary',
-    description: 'The full enquiry lands in WhatsApp so you can scan it in seconds.',
+    description: 'The full enquiry lands as a text message so you can scan it in seconds.',
     asset: ASSET_REGISTRY.whatsappSummaryBubble,
   },
   {
@@ -155,8 +155,8 @@ export const CALL_FLOW_FEATURE_CARDS: FeatureCardItem[] = [
     asset: ASSET_REGISTRY.phoneClock247,
   },
   {
-    title: 'Sends WhatsApp job summaries',
-    description: 'Every real enquiry lands back in WhatsApp with the details you need.',
+    title: 'Sends text job summaries',
+    description: 'Every real enquiry lands as a text message with the details you need.',
     asset: ASSET_REGISTRY.whatsappSummaryBubble,
   },
   {
@@ -203,7 +203,7 @@ export const CALL_FLOW_PROOF_STRIP: ProofStripItem[] = [
   {
     step: '04',
     label: 'Summary sent',
-    sub: 'Full details straight to your WhatsApp',
+    sub: 'Full details straight to your phone',
     asset: ASSET_REGISTRY.whatsappSummaryBubble,
   },
 ];
@@ -216,13 +216,13 @@ export const CALL_FLOW_PROOF_PANEL = {
   badge: '8 second workflow preview',
   supportingPoints: [
     'Customer call captured with urgency and contact details',
-    'WhatsApp-style summary ready for a ten-second scan',
+    'Text summary ready for a ten-second scan',
     'Booked-job outcome that feels credible for a UK trade business',
   ],
   media: {
     videoSrc: '/assets/marketing/call-flow/panels/customer-call-workflow.web.mp4',
     posterSrc: ASSET_REGISTRY.customerCallWorkflow.src,
-    alt: 'Short workflow video showing a customer call turning into captured details, a WhatsApp-style summary, and a booked diary-ready job handoff.',
+    alt: 'Short workflow video showing a customer call turning into captured details, a text summary, and a booked diary-ready job handoff.',
     width: 1600,
     height: 900,
   } satisfies ProofPanelMedia,

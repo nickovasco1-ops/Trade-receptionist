@@ -384,7 +384,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
             </h1>
 
             <p className="hero-fade mt-6 max-w-[33rem] text-[clamp(1.05rem,1.8vw,1.25rem)] leading-[1.6] text-offwhite/72 font-body" style={{ animationDelay: '140ms' }}>
-              Trade Receptionist answers when you can&apos;t, captures the customer&apos;s details, filters time-wasters, and sends the job straight to WhatsApp or your diary.
+              Trade Receptionist answers when you can&apos;t, captures the customer&apos;s details, filters time-wasters, and sends the job straight to your phone as a text or into your diary.
             </p>
 
             <p className="hero-fade mt-4 max-w-[34rem] text-[15px] leading-relaxed text-offwhite/48 font-body" style={{ animationDelay: '180ms' }}>
@@ -739,7 +739,7 @@ const HOW_STEPS = [
     label: 'Focus',
     icon: MessageSquare,
     title: 'Focus on the Job',
-    desc: 'Get on with the work. Your AI receptionist handles every call, books every appointment, and sends you a WhatsApp summary.',
+    desc: 'Get on with the work. Your AI receptionist handles every call, books every appointment, and sends you an instant text summary.',
     image: '/assets/generated/how-it-works/step-3.webp',
   },
 ];
@@ -946,7 +946,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </p>
 
         <div className="mb-8 flex flex-wrap gap-3">
-          {['Custom voice and greeting', 'Captures the job', 'WhatsApp summary back'].map((item) => (
+          {['Custom voice and greeting', 'Captures the job', 'Text summary back'].map((item) => (
             <span
               key={item}
               className="rounded-full px-4 py-2 text-[12px] font-semibold tracking-[0.02em] text-offwhite/72"
@@ -1071,29 +1071,38 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
   const plans: PricingTier[] = [
     {
       name: 'Starter',
-      price: billing === 'monthly' ? '£29' : '£24',
+      price: billing === 'monthly' ? '£49' : '£39',
       period: 'per month (+VAT)',
       description: 'Solo traders',
-      features: ['Up to 100 calls/month', '24/7 answering', 'WhatsApp job summaries', 'Google Calendar sync'],
+      features: ['Up to 50 calls/month', '24/7 answering', 'SMS + email summaries', 'Google Calendar sync'],
       buttonText: 'Start Free Trial',
       planKey: 'starter',
     },
     {
       name: 'Pro',
-      price: billing === 'monthly' ? '£59' : '£49',
+      price: billing === 'monthly' ? '£89' : '£74',
       period: 'per month (+VAT)',
       description: 'Busy professionals',
       isPopular: true,
-      features: ['Up to 300 calls/month', 'Everything in Starter', 'Call transfer logic', 'Calendar booking', 'Priority support'],
+      features: ['Up to 150 calls/month', 'Everything in Starter', 'Call transfer logic', 'Calendar booking', 'Priority support'],
       buttonText: 'Start Free Trial',
       planKey: 'pro',
     },
     {
-      name: 'Agency',
-      price: billing === 'monthly' ? '£119' : '£99',
+      name: 'Business',
+      price: billing === 'monthly' ? '£159' : '£132',
       period: 'per month (+VAT)',
       description: 'Growing teams',
-      features: ['Unlimited calls', 'Everything in Pro', 'Multiple departments', 'Shared team access', 'Dedicated account manager'],
+      features: ['Up to 350 calls/month', 'Everything in Pro', 'Multiple phone numbers', 'Shared team access', 'Advanced reporting'],
+      buttonText: 'Start Free Trial',
+      planKey: 'business',
+    },
+    {
+      name: 'Agency',
+      price: billing === 'monthly' ? '£249' : '£207',
+      period: 'per month (+VAT)',
+      description: 'Multi-van operators',
+      features: ['Up to 600 calls/month', 'Everything in Business', 'Multiple departments', 'Dedicated account manager', 'Custom integrations'],
       buttonText: 'Start Free Trial',
       planKey: 'agency',
     },
@@ -1157,7 +1166,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
         ))}
       </div>
 
-      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pb-6 md:pb-0 px-4 md:px-0 -mx-4 md:mx-0 no-scrollbar pt-10 md:pt-12">
+      <div className="flex lg:grid lg:grid-cols-4 md:grid-cols-2 gap-6 overflow-x-auto lg:overflow-visible snap-x snap-mandatory pb-6 lg:pb-0 px-4 lg:px-0 -mx-4 lg:mx-0 no-scrollbar pt-10 lg:pt-12">
         {plans.map((plan, i) => (
           <div
             key={i}
@@ -1200,7 +1209,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
 
             <h3 className="font-display text-2xl font-bold text-offwhite mb-1">{plan.name}</h3>
             <p className="text-[13px] text-offwhite/40 mb-7 leading-relaxed">
-              {plan.isPopular ? 'The best balance of speed, reliability, and automation for growing trades businesses.' : plan.name === 'Starter' ? 'A fast, professional front desk for solo operators who want every enquiry captured.' : 'A heavier-duty setup for teams running multiple vans, departments, or brands.'}
+              {plan.isPopular ? 'The best balance of speed, reliability, and automation for growing trades businesses.' : plan.name === 'Starter' ? 'A fast, professional front desk for sole traders who want every enquiry captured.' : plan.name === 'Business' ? 'For growing teams who need multiple numbers and shared access across the business.' : 'Full-scale cover for multi-van operators running multiple departments or brands.'}
             </p>
 
             <div className="flex items-baseline gap-1.5 mb-7">
@@ -1212,7 +1221,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
 
             {billing === 'yearly' && (
               <p className="text-[12px] font-bold text-orange-soft mb-4 -mt-3">
-                Save £{plan.name === 'Starter' ? '60' : plan.name === 'Pro' ? '120' : '240'}/year
+                Save £{plan.name === 'Starter' ? '120' : plan.name === 'Pro' ? '180' : plan.name === 'Business' ? '324' : '504'}/year
               </p>
             )}
 

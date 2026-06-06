@@ -465,9 +465,10 @@ interface StatusGaugeProps {
 
 ### 6.3 Pricing rules
 
-- Starter £29/mo (≤100 calls/mo)
-- Pro £59/mo (≤300 calls/mo) — **Most Popular**, scaled card, orange glow
-- Agency £119/mo (unlimited)
+- Starter £49/mo (≤50 calls/mo)
+- Pro £89/mo (≤150 calls/mo) — **Most Popular**, scaled card, orange glow
+- Business £159/mo (≤350 calls/mo)
+- Agency £249/mo (≤600 calls/mo)
 - Monthly/annual toggle (annual = 2 months free, savings shown in £)
 - Per card: "14-day free trial. No setup fees. Cancel anytime."
 - Per-card CTA: "Start Free Trial"
@@ -695,6 +696,7 @@ Lazy-load below-fold components (`AudioPlayer`, `Calculator`, `Testimonials`, `B
 | Supabase migrations | Append-only. | Never edit a committed migration. Add a new one. |
 | Lenis | Initialised once in `index.tsx`. | Don't re-initialise per page. Don't replace with native scroll. |
 | Float animation tax | `animate-float-*` runs forever. | Cap at 3 floating elements per section. Never on the dashboard. |
+| Stripe live key not in Railway | `STRIPE_SECRET_KEY_LIVE` is in `.env` locally but Railway still uses the old key. | Add `STRIPE_SECRET_KEY=sk_live_...` to Railway environment variables so production payments go live. |
 
 ---
 
@@ -828,7 +830,7 @@ npm run build:api    # tsc for server
 | Currency | £ |
 | Phone format | UK |
 | Trial length | 14 days, no card required |
-| Pricing | Starter £29 / Pro £59 / Agency £119 (monthly; annual = 2 months free) |
+| Pricing | Starter £49 / Pro £89 / Business £159 / Agency £249 (monthly; annual = −20%, approx 2.4 months free) |
 | Reduced-motion fallback | Mandatory |
 | Touch-target floor | 48×48px |
 | Focus outline | `2px solid #FF6B2B`, offset 3px |

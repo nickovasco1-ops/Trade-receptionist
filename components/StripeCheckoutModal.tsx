@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ArrowRight, ShieldCheck, Phone, Zap } from 'lucide-react';
+import { X, ArrowRight, ShieldCheck, Phone, Zap, Building2 } from 'lucide-react';
 import { PLANS } from '../src/lib/plans';
 import type { PlanConfig } from '../src/lib/plans';
 
@@ -13,15 +13,17 @@ export interface StripeCheckoutModalProps {
 }
 
 const PLAN_ICONS: Record<string, React.ElementType> = {
-  starter: Phone,
-  pro: Zap,
-  agency: ShieldCheck,
+  starter:  Phone,
+  pro:      Zap,
+  business: Building2,
+  agency:   ShieldCheck,
 };
 
 const PLAN_TAGLINE: Record<string, string> = {
-  starter: 'For solo traders who want every call captured while they work.',
-  pro: 'The best balance of automation and control for busy trades businesses.',
-  agency: 'Built for teams running multiple vans, departments, or brands.',
+  starter:  'For solo traders who want every call captured while they work.',
+  pro:      'The best balance of automation and control for busy trades businesses.',
+  business: 'For growing teams running multiple numbers or job types.',
+  agency:   'Built for multi-van operators running multiple departments or brands.',
 };
 
 function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => void }) {

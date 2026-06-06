@@ -28,8 +28,8 @@ const FEATURES: Feature[] = [
   {
     num: '02',
     icon: MessageSquare,
-    title: 'Instant WhatsApp Summaries',
-    desc: 'Get a WhatsApp message after every call: who called, what they need, what was said. Check it in 10 seconds between jobs — the full picture, instantly.',
+    title: 'Instant Text Summaries',
+    desc: 'Get a text after every call: who rang, what they need, what was said. Check it in 10 seconds between jobs — the full picture, instantly.',
     outcome: "So you're always in the loop, even on the tools",
   },
   {
@@ -136,7 +136,7 @@ const CallScreen = () => (
   </div>
 );
 
-const WhatsAppScreen = () => (
+const TextSummaryScreen = () => (
   <div className="flex flex-col h-full">
     <div className="px-4 pt-6 pb-3 flex items-center gap-3 border-b border-white/[0.06]">
       <div
@@ -147,7 +147,7 @@ const WhatsAppScreen = () => (
       </div>
       <div>
         <p className="text-[13px] font-semibold text-[#F0F4F8] font-display">Trade Receptionist</p>
-        <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.35)' }}>New job summary</p>
+        <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.35)' }}>Text message received</p>
       </div>
     </div>
 
@@ -329,7 +329,7 @@ const DiaryScreen = () => (
   </div>
 );
 
-const SCREENS = [CallScreen, WhatsAppScreen, SpamScreen, DiaryScreen];
+const SCREENS = [CallScreen, TextSummaryScreen, SpamScreen, DiaryScreen];
 
 // ─── Phone Preview Panel ──────────────────────────────────────────────────────
 
