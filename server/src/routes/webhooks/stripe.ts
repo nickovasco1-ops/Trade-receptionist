@@ -14,13 +14,16 @@ const router = Router();
 // ── Plan detection ────────────────────────────────────────────────────────────
 
 const PRODUCT_TO_PLAN: Record<string, Plan> = {
-  // Live-mode products
-  'prod_UOE4uHDjaA2p2A': 'starter',  // £29/mo
-  'prod_UOE4eMY23okJjd': 'pro',      // £59/mo
-  'prod_UOE5UUmEp0cXnD': 'agency',   // £119/mo
-  // Test-mode products (created 2026-04-30)
+  // Live-mode products — get IDs from Stripe dashboard → Products
+  'prod_UOE4uHDjaA2p2A': 'starter',  // £49/mo
+  'prod_UOE4eMY23okJjd': 'pro',      // £89/mo
+  // TODO: add live Business product ID here (£159/mo)
+  // Find it: Stripe dashboard → Products → Business plan → copy prod_xxx ID
+  'prod_UOE5UUmEp0cXnD': 'agency',   // £249/mo
+  // Test-mode products
   'prod_UQeX2QnK9ev3bK': 'starter',
   'prod_UQeX0UFytNZhFH': 'pro',
+  // TODO: add test Business product ID here
   'prod_UQeXswCVtfNvZq': 'agency',
 };
 

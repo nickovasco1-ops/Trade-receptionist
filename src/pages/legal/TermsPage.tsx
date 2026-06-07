@@ -98,11 +98,12 @@ export default function TermsPage() {
         </Section>
 
         <Section title="4. Subscription Plans and Billing">
-          <P>We currently offer three monthly subscription plans:</P>
+          <P>We currently offer four monthly subscription plans:</P>
           <Ul items={[
-            'Starter — £29/month (up to 100 calls/month)',
-            'Pro — £59/month (up to 300 calls/month)',
-            'Agency — £119/month (unlimited calls)',
+            'Starter — £49/month (up to 50 calls/month)',
+            'Pro — £89/month (up to 150 calls/month)',
+            'Business — £159/month (up to 350 calls/month)',
+            'Agency — £249/month (up to 600 calls/month)',
           ]} />
           <P>
             Annual billing is available at a discount equivalent to two months free. Prices are
