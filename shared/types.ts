@@ -65,6 +65,7 @@ export interface BusinessConfig {
   working_days: number[];              // 0 = Sun … 6 = Sat
   timezone: string;
   system_prompt_override: string | null;
+  avg_job_value: number | null;           // £ used for missed revenue estimate
   created_at: string;
   updated_at: string;
 }

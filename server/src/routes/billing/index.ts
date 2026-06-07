@@ -66,7 +66,7 @@ router.post('/portal-session', async (req: Request, res: Response) => {
   const origin = typeof req.headers.origin === 'string' && req.headers.origin
     ? req.headers.origin
     : 'https://app.tradereceptionist.com';
-  const returnUrl = `${origin}/settings`;
+  const returnUrl = `${origin}/dashboard/settings`;
 
   try {
     const stripeRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {

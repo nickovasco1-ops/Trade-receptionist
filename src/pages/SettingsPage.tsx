@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { ElementType, FormEvent, ReactNode } from 'react';
-import { AlertCircle, Bell, Bot, Calendar, CheckCircle, CreditCard, Key, Phone, Save, ShieldCheck, User, Wrench } from 'lucide-react';
+import type { ElementType, FormEvent, HTMLAttributes, ReactNode } from 'react';
+import { AlertCircle, Bell, Bot, Calendar, CheckCircle, Clock, CreditCard, Key, Phone, Save, ShieldCheck, User, Wrench } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
@@ -29,6 +29,8 @@ interface ClientSettings {
   business_hours_start: string | null;
   business_hours_end: string | null;
   working_days: number[];
+  // Revenue estimate
+  avg_job_value: string; // stored as string in form, coerced on save
 }
 
 function buildActivationCode(twilioNumber: string) {
@@ -79,6 +81,7 @@ interface LabeledFieldProps {
   value: string;
   onChange?: (value: string) => void;
   type?: string;
+  inputMode?: HTMLAttributes<HTMLInputElement>['inputMode'];
   placeholder?: string;
   readOnly?: boolean;
   hint?: string;
@@ -90,6 +93,7 @@ function LabeledField({
   value,
   onChange,
   type = 'text',
+  inputMode,
   placeholder = '',
   readOnly = false,
   hint,
@@ -102,6 +106,7 @@ function LabeledField({
       <input
         id={name}
         type={type}
+        inputMode={inputMode}
         name={name}
         value={value}
         readOnly={readOnly}
@@ -148,6 +153,9 @@ export default function SettingsPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Raw textarea state — avoids filter(Boolean) stripping blank lines mid-type
+  const [servicesRaw, setServicesRaw] = useState('');
+  const [serviceAreasRaw, setServiceAreasRaw] = useState('');
 
   // Show a success banner after returning from the Google OAuth redirect
   // (server redirects to /settings?connected=google&clientId=...).
@@ -200,7 +208,7 @@ export default function SettingsPage() {
 
       const { data: configData, error: configError } = await supabase
         .from('business_config')
-        .select('after_hours_message, receptionist_name, receptionist_tone, services, service_areas, business_hours_start, business_hours_end, working_days')
+        .select('after_hours_message, receptionist_name, receptionist_tone, services, service_areas, business_hours_start, business_hours_end, working_days, avg_job_value')
         .eq('client_id', data.id)
         .maybeSingle();
 
@@ -224,11 +232,15 @@ export default function SettingsPage() {
         business_hours_start: configData?.business_hours_start ?? null,
         business_hours_end: configData?.business_hours_end ?? null,
         working_days: configData?.working_days ?? [1, 2, 3, 4, 5],
+        avg_job_value: String(configData?.avg_job_value ?? 250),
       });
+      // Initialise raw textarea strings from loaded arrays
+      setServicesRaw((configData?.services ?? []).join('\n'));
+      setServiceAreasRaw((configData?.service_areas ?? []).join('\n'));
       setConfigLoaded(!configError && !!configData);
 
       if (configError) {
-        setLoadError('Your main settings loaded, but the after-hours message could not be loaded.');
+        setLoadError('Your main settings loaded, but receptionist configuration could not be loaded. Some fields will be read-only.');
       }
 
       setLoading(false);
@@ -269,11 +281,12 @@ export default function SettingsPage() {
             after_hours_message: form.after_hours_message || null,
             receptionist_name: form.receptionist_name || undefined,
             receptionist_tone: form.receptionist_tone,
-            services: form.services,
-            service_areas: form.service_areas,
+            services: servicesRaw.split('\n').map(s => s.trim()).filter(Boolean),
+            service_areas: serviceAreasRaw.split('\n').map(s => s.trim()).filter(Boolean),
             business_hours_start: form.business_hours_start || null,
             business_hours_end: form.business_hours_end || null,
             working_days: form.working_days,
+            avg_job_value: form.avg_job_value ? parseInt(form.avg_job_value, 10) || null : null,
           } : {}),
         }),
       });
@@ -432,7 +445,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            {['Business identity', 'Phone & SMS routing', 'Diary connection'].map(item => (
+            {['Business identity', 'Receptionist profile', 'Services & hours', 'Diary connection'].map(item => (
               <span key={item} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
                 <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
                 {item}
@@ -594,7 +607,7 @@ export default function SettingsPage() {
                     value={form.receptionist_name ?? ''}
                     onChange={value => set('receptionist_name', value)}
                     placeholder="Alex"
-                    hint="The name your receptionist uses when answering calls. Keep it short and professional."
+                    hint="The name callers hear when they ring. Leave blank to keep the current name."
                   />
                   <div>
                     <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Tone of voice</p>
@@ -637,8 +650,8 @@ export default function SettingsPage() {
                     </label>
                     <textarea
                       id="services"
-                      value={(form.services ?? []).join('\n')}
-                      onChange={event => setForm(prev => ({ ...prev, services: event.target.value.split('\n').map(s => s.trim()).filter(Boolean) }))}
+                      value={servicesRaw}
+                      onChange={event => setServicesRaw(event.target.value)}
                       disabled={!configLoaded}
                       rows={4}
                       placeholder={"Boiler servicing and repairs\nCentral heating installation\nEmergency call-outs\nLandlord gas safety checks"}
@@ -653,8 +666,8 @@ export default function SettingsPage() {
                     </label>
                     <textarea
                       id="service_areas"
-                      value={(form.service_areas ?? []).join('\n')}
-                      onChange={event => setForm(prev => ({ ...prev, service_areas: event.target.value.split('\n').map(s => s.trim()).filter(Boolean) }))}
+                      value={serviceAreasRaw}
+                      onChange={event => setServiceAreasRaw(event.target.value)}
                       disabled={!configLoaded}
                       rows={3}
                       placeholder={"Birmingham\nCoventry\nSolihull"}
@@ -663,12 +676,22 @@ export default function SettingsPage() {
                     />
                     <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">One town or postcode area per line.</p>
                   </div>
+                  <LabeledField
+                    label="Average job value (£)"
+                    name="avg_job_value"
+                    value={form.avg_job_value ?? '250'}
+                    onChange={value => set('avg_job_value', value.replace(/[^0-9]/g, ''))}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="250"
+                    hint="Used to calculate estimated missed revenue on your dashboard. Set to your typical job value in £."
+                  />
                 </div>
               </SettingsSection>
 
               <SettingsSection
                 title="Working hours"
-                icon={Bell}
+                icon={Clock}
                 description="Set your opening times and working days so your receptionist knows when to treat calls as after-hours."
               >
                 <div className="grid gap-4">

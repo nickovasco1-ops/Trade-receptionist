@@ -117,6 +117,17 @@ export function callSummaryHtml(data: CallEmailData): string {
   const urgencyLabel  = data.urgency ?? 'routine';
   const urgencyColour = URGENCY_COLOURS[urgencyLabel] ?? '#6B7280';
 
+  const isMissed = data.outcome === 'no_answer' || data.outcome === 'voicemail';
+
+  const callBackBlock = isMissed && data.callerNumber && data.callerNumber !== 'Unknown number'
+    ? `<div style="margin:20px 0">
+        <a href="tel:${data.callerNumber}"
+           style="display:inline-block;padding:10px 20px;background:#FF6B2B;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;font-family:sans-serif;margin-right:12px">
+          &#128222; Call Back ${data.callerNumber}
+        </a>
+      </div>`
+    : '';
+
   const recordingBlock = data.recordingUrl
     ? `<div style="margin:24px 0">
         <a href="${data.recordingUrl}"
@@ -187,6 +198,7 @@ export function callSummaryHtml(data: CallEmailData): string {
       </td>
     </tr>
 
+    ${callBackBlock ? `<tr><td style="padding:0 24px">${callBackBlock}</td></tr>` : ''}
     ${recordingBlock ? `<tr><td style="padding:0 24px">${recordingBlock}</td></tr>` : ''}
 
     ${transcriptBlock ? `<tr><td style="padding:0 24px 0">${transcriptBlock}</td></tr>` : ''}

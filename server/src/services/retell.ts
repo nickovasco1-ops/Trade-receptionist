@@ -529,6 +529,7 @@ export interface PostCallExtra {
   postcode?:     string | null;
   urgency?:      string | null;
   transcript?:   string | null;
+  leadId?:       string | null; // used to build dashboard deep-link in owner SMS
 }
 
 /**
@@ -546,6 +547,11 @@ export async function postCallWorkflow(
   const outcome      = call.outcome ?? 'enquiry';
   const fromNumber   = client.twilio_number ?? undefined;
 
+  // Build a deep-link to the lead in the dashboard, if a lead was created.
+  const leadUrl = extra.leadId
+    ? `https://app.tradereceptionist.com/dashboard/leads?leadId=${extra.leadId}`
+    : null;
+
   const tasks: Promise<unknown>[] = [];
 
   // Owner: SMS
@@ -561,6 +567,7 @@ export async function postCallWorkflow(
         postcode:     extra.postcode,
         urgency:      extra.urgency,
         businessName: client.business_name,
+        leadUrl,
       }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
         clientId: client.id,
         provider: 'twilio',

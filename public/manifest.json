@@ -1,0 +1,24 @@
+{
+  "name": "Trade Receptionist",
+  "short_name": "Trade Rec.",
+  "description": "AI receptionist for UK tradespeople — never miss a call.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#051426",
+  "theme_color": "#051426",
+  "icons": [
+    {
+      "src": "/assets/logo-mark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-mark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -226,6 +226,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   // Extract and persist lead for outcomes worth following up
   const leadOutcomes: CallOutcome[] = ['booked', 'lead_captured', 'enquiry', 'emergency'];
+  let insertedLeadId: string | null = null;
   if (leadOutcomes.includes(outcome)) {
     const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
     const lead: LeadInsert = {
@@ -257,6 +258,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
         error: leadErr.message,
       });
     } else if (insertedLead) {
+      insertedLeadId = insertedLead.id;
       logEvent('info', 'retell.webhook.lead_upserted', {
         eventType: 'call_ended',
         clientId: client.id,
@@ -306,6 +308,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       postcode:    leadData.postcode     ?? null,
       urgency:     leadData.urgency      ?? null,
       transcript:  transcript            || null,
+      leadId:      insertedLeadId,
     });
   } catch (err: unknown) {
     logEvent('error', 'retell.webhook.provider_failure', {

@@ -62,11 +62,22 @@ const settingsSchema = z.object({
   after_hours_message:  z.string().trim().max(500).nullable().optional(),
   receptionist_name:    z.string().min(1).optional(),
   receptionist_tone:    z.enum(['friendly', 'professional', 'efficient']).optional(),
-  services:             z.array(z.string()).optional(),
-  service_areas:        z.array(z.string()).optional(),
+  services:             z.array(z.string().trim().max(150)).max(50).optional(),
+  service_areas:        z.array(z.string().trim().max(100)).max(50).optional(),
   business_hours_start: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   business_hours_end:   z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   working_days:         z.array(z.number().int().min(0).max(6)).optional(),
+  avg_job_value:        z.number().int().min(0).max(100000).nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.business_hours_start && data.business_hours_end) {
+    if (data.business_hours_end <= data.business_hours_start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['business_hours_end'],
+        message: 'Closing time must be after opening time.',
+      });
+    }
+  }
 });
 
 const configSchema = z.object({
@@ -258,6 +269,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
     // Config fields
     after_hours_message, receptionist_name, receptionist_tone,
     services, service_areas, business_hours_start, business_hours_end, working_days,
+    avg_job_value,
   } = parsed.data;
 
   const token = bearerToken(req);
@@ -304,6 +316,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   if (business_hours_start !== undefined)  configFieldsPatch.business_hours_start  = business_hours_start;
   if (business_hours_end  !== undefined)   configFieldsPatch.business_hours_end    = business_hours_end;
   if (working_days        !== undefined)   configFieldsPatch.working_days          = working_days;
+  if (avg_job_value       !== undefined)   configFieldsPatch.avg_job_value         = avg_job_value;
 
   const hasConfigUpdate = Object.keys(configFieldsPatch).length > 0;
 

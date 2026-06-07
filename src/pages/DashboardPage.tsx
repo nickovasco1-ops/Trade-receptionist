@@ -33,6 +33,12 @@ interface QuotaAlert {
   urgent: boolean;
 }
 
+interface MissedRevenueData {
+  missedCalls: number;
+  avgJobValue: number;
+  estimatedValue: number;
+}
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -122,6 +128,7 @@ export default function DashboardPage() {
   const [recentCalls, setRecentCalls] = useState<CallRow[]>([]);
   const [subscriptionAlert, setSubscriptionAlert] = useState<SubscriptionAlert | null>(null);
   const [quotaAlert, setQuotaAlert] = useState<QuotaAlert | null>(null);
+  const [missedRevenue, setMissedRevenue] = useState<MissedRevenueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
   const [calBannerVisible, setCalBannerVisible] = useState(false);
@@ -164,7 +171,7 @@ export default function DashboardPage() {
       // Rolling 30-day window for quota calculation
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [callsRes, leadsRes, quotaRes] = await Promise.all([
+      const [callsRes, leadsRes, quotaRes, missedRes, configRes] = await Promise.all([
         supabase
           .from('calls')
           .select('id, outcome, is_emergency, started_at, caller_number, duration_secs')
@@ -180,11 +187,24 @@ export default function DashboardPage() {
           .select('id', { count: 'exact', head: true })
           .eq('client_id', clientRow.id)
           .gte('started_at', thirtyDaysAgo),
+        supabase
+          .from('calls')
+          .select('id', { count: 'exact', head: true })
+          .eq('client_id', clientRow.id)
+          .in('outcome', ['no_answer', 'voicemail'])
+          .gte('started_at', thirtyDaysAgo),
+        supabase
+          .from('business_config')
+          .select('avg_job_value')
+          .eq('client_id', clientRow.id)
+          .maybeSingle(),
       ]);
 
       const calls = (callsRes.data ?? []) as CallRow[];
       const leads = leadsRes.data ?? [];
       const callCount30d = quotaRes.count ?? 0;
+      const missedCount30d = missedRes.count ?? 0;
+      const avgJobValue = (configRes.data?.avg_job_value as number | null | undefined) ?? 250;
 
       setStats({
         totalCalls: calls.length,
@@ -206,6 +226,15 @@ export default function DashboardPage() {
             urgent: pct >= 100,
           });
         }
+      }
+
+      // Missed revenue card: only show when there are missed calls to action
+      if (missedCount30d > 0) {
+        setMissedRevenue({
+          missedCalls: missedCount30d,
+          avgJobValue,
+          estimatedValue: missedCount30d * avgJobValue,
+        });
       }
 
       setRecentCalls(calls.slice(0, 5));
@@ -312,6 +341,38 @@ export default function DashboardPage() {
                 }
               >
                 Upgrade
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {missedRevenue ? (
+          <div
+            data-testid="missed-revenue-card"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(153,203,255,0.07)', boxShadow: '0 0 0 1px rgba(153,203,255,0.16)' }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <TrendingUp size={17} className="mt-0.5 text-accent" aria-hidden="true" />
+                <div>
+                  <p className="text-[14px] font-semibold text-offwhite">
+                    Estimated missed value this month
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-accent/80">
+                    {missedRevenue.missedCalls} unanswered {missedRevenue.missedCalls === 1 ? 'call' : 'calls'} in the last 30 days
+                    {' '}× £{missedRevenue.avgJobValue.toLocaleString('en-GB')} avg job value
+                    {' '}= <strong className="text-offwhite">£{missedRevenue.estimatedValue.toLocaleString('en-GB')}</strong> estimate.{' '}
+                    This is an estimate only — actual value may vary.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/leads"
+                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                style={{ background: 'rgba(153,203,255,0.10)', boxShadow: '0 0 0 1px rgba(153,203,255,0.20)', color: '#99cbff' }}
+              >
+                View leads
               </Link>
             </div>
           </div>

@@ -241,17 +241,37 @@ export async function sendOwnerSms(opts: {
   postcode?:    string | null;
   urgency?:     string | null;
   businessName: string;
+  leadUrl?:     string | null; // deep-link to the lead in the dashboard
 }): Promise<string> {
-  const lines = [
-    `Trade Receptionist: ${OUTCOME_SHORT[opts.outcome] ?? opts.outcome}`,
-    `From: ${opts.callerNumber}`,
-  ];
-  if (opts.callerName) lines.push(`Name: ${opts.callerName}`);
-  if (opts.jobType)    lines.push(`Job: ${opts.jobType}${opts.postcode ? `, ${opts.postcode}` : ''}`);
-  if (opts.urgency && opts.urgency !== 'routine') lines.push(`Urgency: ${opts.urgency.toUpperCase()}`);
-  lines.push(`— ${opts.businessName}`);
+  const isMissed = opts.outcome === 'no_answer' || opts.outcome === 'voicemail';
 
-  return sendSms(opts.to, lines.join('\n'), opts.from);
+  let body: string;
+
+  if (isMissed) {
+    // Actionable missed-call format: caller number prominent, callback link first
+    const callerDisplay = opts.callerNumber !== 'Unknown number' ? opts.callerNumber : 'withheld number';
+    const lines = [
+      `⚠️ Missed call from ${callerDisplay}`,
+    ];
+    if (opts.outcome === 'voicemail') lines.push('They left a voicemail — follow up when you can.');
+    if (opts.callerNumber !== 'Unknown number') lines.push(`Call back: ${opts.callerNumber}`);
+    if (opts.leadUrl) lines.push(`View lead: ${opts.leadUrl}`);
+    lines.push(`— ${opts.businessName}`);
+    body = lines.join('\n');
+  } else {
+    const lines = [
+      `Trade Receptionist: ${OUTCOME_SHORT[opts.outcome] ?? opts.outcome}`,
+      `From: ${opts.callerNumber}`,
+    ];
+    if (opts.callerName) lines.push(`Name: ${opts.callerName}`);
+    if (opts.jobType)    lines.push(`Job: ${opts.jobType}${opts.postcode ? `, ${opts.postcode}` : ''}`);
+    if (opts.urgency && opts.urgency !== 'routine') lines.push(`Urgency: ${opts.urgency.toUpperCase()}`);
+    if (opts.leadUrl) lines.push(`View lead: ${opts.leadUrl}`);
+    lines.push(`— ${opts.businessName}`);
+    body = lines.join('\n');
+  }
+
+  return sendSms(opts.to, body, opts.from);
 }
 
 /**

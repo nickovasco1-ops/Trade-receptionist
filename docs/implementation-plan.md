@@ -217,14 +217,36 @@ No new dependencies. No schema migrations.
 
 ```
 server/src/services/retell.ts         — missed call SMS branch, deep-link in SMS
+server/src/services/resend.ts         — call-back button in missed call email
+server/src/services/twilio.ts         — extended sendOwnerSms with leadUrl, missed branch
+server/src/routes/webhooks/retell.ts  — insertedLeadId capture, passed to postCallWorkflow
+server/src/routes/billing/index.ts    — return_url fixed to /dashboard/settings
+server/src/routes/clients/index.ts    — avg_job_value in settingsSchema + superRefine hours
 src/pages/DashboardPage.tsx           — missed revenue card
-src/pages/LeadsPage.tsx               — URL-based lead selection, call-back buttons
-src/pages/CallsPage.tsx               — repeat caller badge
-src/pages/SettingsPage.tsx            — avg_job_value field
+src/pages/LeadsPage.tsx               — URL-based lead selection, call-back + SMS buttons, deep-link scroll
+src/pages/CallsPage.tsx               — repeat caller badge (callerFrequency useMemo)
+src/pages/SettingsPage.tsx            — avg_job_value field, raw textarea state fix
+shared/types.ts                       — avg_job_value on BusinessConfig
 public/manifest.json                  — new: PWA manifest
-vite.config.ts                        — vite-plugin-pwa
-supabase/migrations/                  — avg_job_value column on business_config
+index.html                            — PWA meta tags + manifest link
+supabase/migrations/013_business_config_avg_job_value.sql — new column
 ```
+
+### Phase 2 — Completion Status
+
+| Item | Status | Completed |
+|------|--------|-----------|
+| 2.1 Missed call alert (differentiated SMS + email) | ✅ DONE | 2026-06-07 |
+| 2.2 In-product missed revenue card | ✅ DONE | 2026-06-07 |
+| 2.3 Mobile PWA + deep-link SMS → Lead | ✅ DONE | 2026-06-07 |
+| 2.4 Repeat caller recognition badge | ✅ DONE | 2026-06-07 |
+
+**Build results (2026-06-07):**
+- Frontend: ✅ `npm run build` clean (35.2s, Sentry upload succeeded)
+- Server: ✅ `npm run build:api` clean (tsc, no errors)
+
+**Pending (manual):**
+- Apply Supabase migration: `supabase/migrations/013_business_config_avg_job_value.sql`
 
 ---
 
@@ -354,4 +376,4 @@ These four items share the same branch. They are all changes to files the team a
 
 ---
 
-*Last updated: 2026-06-06*
+*Last updated: 2026-06-07*

@@ -81,6 +81,7 @@ export default function CallsPage() {
 
   useEffect(() => {
     setFiltered(outcomeFilter === 'all' ? calls : calls.filter(call => call.outcome === outcomeFilter));
+    setExpandedId(null);
   }, [outcomeFilter, calls]);
 
   const filterLabel = outcomeFilter === 'all'
@@ -100,6 +101,17 @@ export default function CallsPage() {
   const totalCallsDisplay = useCounter({ target: calls.length, shouldStart: visible });
   const emergencyDisplay = useCounter({ target: summary.emergencyCount, shouldStart: visible });
   const recordedDisplay = useCounter({ target: summary.recordedCount, shouldStart: visible });
+
+  // Repeat caller detection — frequency map across all loaded calls
+  const callerFrequency = useMemo(() => {
+    const freq = new Map<string, number>();
+    for (const call of calls) {
+      if (call.caller_number) {
+        freq.set(call.caller_number, (freq.get(call.caller_number) ?? 0) + 1);
+      }
+    }
+    return freq;
+  }, [calls]);
 
   return (
     <DashboardShell>
@@ -229,7 +241,8 @@ export default function CallsPage() {
             <div className="mt-6 space-y-3 lg:hidden">
               {filtered.map(call => {
                 const isOpen = expandedId === call.id;
-                const summary = call.transcripts?.[0]?.summary ?? null;
+                const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
+                const panelId = `call-detail-mobile-${call.id}`;
                 return (
                   <article
                     key={call.id}
@@ -244,6 +257,7 @@ export default function CallsPage() {
                       className="w-full px-5 py-5 text-left"
                       onClick={() => setExpandedId(isOpen ? null : call.id)}
                       aria-expanded={isOpen}
+                      aria-controls={panelId}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
@@ -284,19 +298,24 @@ export default function CallsPage() {
                             Recording
                           </span>
                         ) : null}
+                        {call.caller_number && (callerFrequency.get(call.caller_number) ?? 0) > 1 ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/[0.08] px-3 py-1.5 text-[12px] text-accent shadow-[inset_0_0_0_1px_rgba(153,203,255,0.14)]">
+                            Returning
+                          </span>
+                        ) : null}
                       </div>
                     </button>
 
                     {isOpen ? (
-                      <div className="px-5 pb-5 pt-0">
+                      <div id={panelId} className="px-5 pb-5 pt-0">
                         <div className="rounded-[18px] bg-white/[0.03] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                          {summary ? (
+                          {transcriptSummary ? (
                             <>
                               <div className="mb-3 flex items-center gap-2">
                                 <FileText size={13} className="text-accent/70" aria-hidden="true" />
                                 <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Call summary</span>
                               </div>
-                              <p className="text-[13px] leading-relaxed text-offwhite/62">{summary}</p>
+                              <p className="text-[13px] leading-relaxed text-offwhite/62">{transcriptSummary}</p>
                             </>
                           ) : (
                             <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
@@ -335,7 +354,8 @@ export default function CallsPage() {
               <div>
                 {filtered.map(call => {
                   const isOpen = expandedId === call.id;
-                  const summary = call.transcripts?.[0]?.summary ?? null;
+                  const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
+                  const panelId = `call-detail-desktop-${call.id}`;
                   return (
                     <div key={call.id}>
                       <button
@@ -343,6 +363,7 @@ export default function CallsPage() {
                         className="grid w-full grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-4 text-left transition-colors duration-150 hover:bg-white/[0.025]"
                         onClick={() => setExpandedId(isOpen ? null : call.id)}
                         aria-expanded={isOpen}
+                        aria-controls={panelId}
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <div
@@ -355,7 +376,14 @@ export default function CallsPage() {
                             <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
+                              {call.caller_number && (callerFrequency.get(call.caller_number) ?? 0) > 1 ? (
+                                <span className="inline-flex shrink-0 items-center rounded-full bg-accent/[0.08] px-2 py-0.5 text-[11px] font-semibold text-accent shadow-[inset_0_0_0_1px_rgba(153,203,255,0.14)]">
+                                  Returning
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
                           </div>
                         </div>
@@ -380,7 +408,7 @@ export default function CallsPage() {
                       </button>
 
                       {isOpen ? (
-                        <div className="px-6 pb-5">
+                        <div id={panelId} className="px-6 pb-5">
                           <div className="rounded-[18px] bg-white/[0.03] px-5 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                               <div>
@@ -388,8 +416,8 @@ export default function CallsPage() {
                                   <FileText size={13} className="text-accent/70" aria-hidden="true" />
                                   <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Call summary</span>
                                 </div>
-                                {summary ? (
-                                  <p className="text-[13px] leading-relaxed text-offwhite/62">{summary}</p>
+                                {transcriptSummary ? (
+                                  <p className="text-[13px] leading-relaxed text-offwhite/62">{transcriptSummary}</p>
                                 ) : (
                                   <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
                                 )}

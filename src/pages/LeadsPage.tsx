@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Briefcase, Calendar, Mail, MapPin, Phone, Users } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { AlertTriangle, Briefcase, Calendar, Mail, MapPin, MessageSquare, Phone, Users } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
@@ -78,6 +79,7 @@ async function accessToken(): Promise<string | null> {
 export default function LeadsPage() {
   const animRef = useScrollAnimation();
   const availabilityRequestRef = useRef(0);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [calendarConnected, setCalendarConnected] = useState(false);
@@ -85,6 +87,8 @@ export default function LeadsPage() {
   const [composer, setComposer] = useState<BookingComposerState>(INITIAL_COMPOSER);
   const [visible, setVisible] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // URL-based lead highlight — set by deep-link from SMS (e.g. ?leadId=xxx)
+  const deepLinkedLeadId = searchParams.get('leadId');
 
   useEffect(() => {
     async function load() {
@@ -139,7 +143,21 @@ export default function LeadsPage() {
     }
 
     load();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll to and highlight a lead when arriving via deep-link (e.g. SMS tap)
+  useEffect(() => {
+    if (!deepLinkedLeadId || loading) return;
+    const el = document.getElementById(`lead-${deepLinkedLeadId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Clear the param after 5s so refreshing the page doesn't re-highlight
+    const timer = setTimeout(() => {
+      setSearchParams(prev => { prev.delete('leadId'); return prev; }, { replace: true });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [deepLinkedLeadId, loading, setSearchParams]);
 
   async function updateStatus(id: string, status: LeadStatus) {
     await supabase.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
@@ -437,18 +455,22 @@ export default function LeadsPage() {
               const isEmergency = urgency === 'emergency';
               const scheduledBooking = bookedByLead.get(lead.id);
               const bookingOpen = composer.leadId === lead.id;
+              const isDeepLinked = deepLinkedLeadId === lead.id;
 
               return (
                 <article
                   key={lead.id}
+                  id={`lead-${lead.id}`}
                   className="relative rounded-[28px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
                   style={{
                     background: isEmergency
                       ? 'linear-gradient(180deg, rgba(255,107,43,0.08) 0%, rgba(10,23,39,0.96) 100%)'
                       : 'linear-gradient(180deg, rgba(17,31,53,0.88) 0%, rgba(10,23,39,0.94) 100%)',
-                    boxShadow: isEmergency
-                      ? '0 0 0 1px rgba(255,107,43,0.18), 0 22px 50px rgba(2,13,24,0.26)'
-                      : '0 0 0 1px rgba(255,255,255,0.08), 0 22px 50px rgba(2,13,24,0.24)',
+                    boxShadow: isDeepLinked
+                      ? '0 0 0 2px rgba(153,203,255,0.50), 0 22px 50px rgba(2,13,24,0.26)'
+                      : isEmergency
+                        ? '0 0 0 1px rgba(255,107,43,0.18), 0 22px 50px rgba(2,13,24,0.26)'
+                        : '0 0 0 1px rgba(255,255,255,0.08), 0 22px 50px rgba(2,13,24,0.24)',
                   }}
                 >
                   {savedId === lead.id && (
@@ -509,6 +531,27 @@ export default function LeadsPage() {
                       </div>
                     ) : null}
                   </div>
+
+                  {lead.caller_number ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <a
+                        href={`tel:${lead.caller_number}`}
+                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-all duration-200 hover:-translate-y-0.5"
+                        style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }}
+                      >
+                        <Phone size={13} aria-hidden="true" />
+                        Call back
+                      </a>
+                      <a
+                        href={`sms:${lead.caller_number}?body=Hi%2C%20it%27s%20${encodeURIComponent(lead.caller_name ? `${lead.caller_name} from ` : '')}${encodeURIComponent('your receptionist service')}%20returning%20your%20call.`}
+                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-all duration-200 hover:-translate-y-0.5"
+                        style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.10)' }}
+                      >
+                        <MessageSquare size={13} aria-hidden="true" />
+                        Send message
+                      </a>
+                    </div>
+                  ) : null}
 
                   {lead.notes ? (
                     <div className="mt-4 rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
