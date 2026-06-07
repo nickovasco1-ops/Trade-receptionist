@@ -5,7 +5,7 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
 import { supabase } from '../lib/supabase';
-import type { ReceptionistTone } from '../../shared/types';
+import type { ReceptionistTone, Plan } from '../../shared/types';
 
 interface ClientSettings {
   business_name: string;
@@ -31,6 +31,9 @@ interface ClientSettings {
   working_days: number[];
   // Revenue estimate
   avg_job_value: string; // stored as string in form, coerced on save
+  // Advanced
+  plan: Plan;
+  system_prompt_override: string;
 }
 
 function buildActivationCode(twilioNumber: string) {
@@ -190,7 +193,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('clients')
-        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id, subscription_status, payment_status')
+        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id, subscription_status, payment_status, plan')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -208,7 +211,7 @@ export default function SettingsPage() {
 
       const { data: configData, error: configError } = await supabase
         .from('business_config')
-        .select('after_hours_message, receptionist_name, receptionist_tone, services, service_areas, business_hours_start, business_hours_end, working_days, avg_job_value')
+        .select('after_hours_message, receptionist_name, receptionist_tone, services, service_areas, business_hours_start, business_hours_end, working_days, avg_job_value, system_prompt_override')
         .eq('client_id', data.id)
         .maybeSingle();
 
@@ -233,6 +236,8 @@ export default function SettingsPage() {
         business_hours_end: configData?.business_hours_end ?? null,
         working_days: configData?.working_days ?? [1, 2, 3, 4, 5],
         avg_job_value: String(configData?.avg_job_value ?? 250),
+        plan: (data.plan as Plan) ?? 'starter',
+        system_prompt_override: configData?.system_prompt_override ?? '',
       });
       // Initialise raw textarea strings from loaded arrays
       setServicesRaw((configData?.services ?? []).join('\n'));
@@ -287,6 +292,7 @@ export default function SettingsPage() {
             business_hours_end: form.business_hours_end || null,
             working_days: form.working_days,
             avg_job_value: form.avg_job_value ? parseInt(form.avg_job_value, 10) || null : null,
+            system_prompt_override: form.system_prompt_override.trim() || null,
           } : {}),
         }),
       });
@@ -688,6 +694,38 @@ export default function SettingsPage() {
                   />
                 </div>
               </SettingsSection>
+
+              {(form.plan === 'business' || form.plan === 'agency') && (
+                <SettingsSection
+                  title="Advanced instructions"
+                  icon={Key}
+                  description="Add extra instructions that are appended to the end of your receptionist's prompt. Use this to handle edge cases specific to your business."
+                >
+                  <div>
+                    <label htmlFor="system_prompt_override" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                      Custom instructions
+                    </label>
+                    <textarea
+                      id="system_prompt_override"
+                      rows={6}
+                      maxLength={2000}
+                      value={form.system_prompt_override}
+                      onChange={event => set('system_prompt_override', event.target.value)}
+                      placeholder={"Example: If a caller mentions they're an existing customer, skip asking for their number and just confirm the job details."}
+                      className="w-full resize-y rounded-[16px] px-4 py-3 text-[14px] leading-relaxed text-offwhite/80 placeholder:text-offwhite/22 focus:outline-none focus:ring-1 focus:ring-orange/40 min-h-[44px]"
+                      style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                    />
+                    <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">
+                      These instructions are appended after the core prompt. Maximum 2,000 characters.{' '}
+                      {form.system_prompt_override.length > 0 && (
+                        <span className={form.system_prompt_override.length > 1800 ? 'text-orange-soft' : ''}>
+                          {form.system_prompt_override.length}/2000
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </SettingsSection>
+              )}
 
               <SettingsSection
                 title="Working hours"

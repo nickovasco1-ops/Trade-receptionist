@@ -58,7 +58,7 @@ function toneInstructions(tone: string | undefined): string {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function buildSystemPrompt(client: Client, config: BusinessConfig): string {
+export function buildSystemPrompt(client: Client, config: BusinessConfig, availableSlots: string[] = []): string {
   const businessName     = client.business_name;
   const ownerName        = client.owner_name;
   const receptionistName = config.receptionist_name?.trim() || RECEPTIONIST_LABEL;
@@ -72,8 +72,12 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig): strin
   const hasCalendar      = !!client.google_cal_id;
   const tone             = toneInstructions(config.receptionist_tone);
 
+  const slotHint = hasCalendar && availableSlots.length > 0
+    ? `\n- CURRENT AVAILABILITY (as of this call): ${availableSlots.join(' / ')}. Lead with these when a caller asks what's free — then confirm with check_calendar_availability before booking.`
+    : '';
+
   const bookingSection = hasCalendar
-    ? `# BOOKING INTO THE DIARY (tools)
+    ? `# BOOKING INTO THE DIARY (tools)${slotHint}
 - When the caller wants a specific time, or asks what's available, CALL check_calendar_availability — pass their preferred date or time-of-day if they gave one. Wait for the result.
 - Offer the real slots it returns, in plain spoken language, at most two at a time: "I've got Thursday afternoon or Friday morning — which suits you better?"
 - NEVER invent availability or promise a slot you haven't checked. If the tool returns no slots, say the diary's a bit tight just now and offer a callback to arrange a time.

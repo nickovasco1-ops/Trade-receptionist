@@ -17,6 +17,7 @@ import bookingsRouter from './routes/bookings';
 import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
+import { runLeadFollowUp } from './services/lead-followup';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -152,6 +153,21 @@ app.use('/bookings',     bookingsRouter);
 app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
+
+// ── Admin endpoints (internal cron targets) ───────────────────────────────────
+app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+  try {
+    const result = await runLeadFollowUp();
+    res.json({ success: true, data: result });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
 
 // 404 fallback
 app.use((_req, res) => {

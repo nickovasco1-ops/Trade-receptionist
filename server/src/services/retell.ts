@@ -1,6 +1,7 @@
 import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt } from '../lib/prompt-builder';
+import { getNextAvailableSlots } from './slot-cache';
 import { isE2ETestMode } from '../config/e2e';
 import { errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
@@ -489,7 +490,8 @@ export async function updateAgentConfiguration(
 ): Promise<void> {
   if (!client.retell_agent_id) return;
 
-  const prompt = buildSystemPrompt(client, config);
+  const slots  = await getNextAvailableSlots(client, config);
+  const prompt = buildSystemPrompt(client, config, slots);
 
   const agentRes = await fetch(`${BASE_URL}/get-agent/${client.retell_agent_id}`, { headers: headers() });
   if (agentRes.ok) {

@@ -68,6 +68,7 @@ const settingsSchema = z.object({
   business_hours_end:   z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   working_days:         z.array(z.number().int().min(0).max(6)).optional(),
   avg_job_value:        z.number().int().min(0).max(100000).nullable().optional(),
+  system_prompt_override: z.string().trim().max(2000).nullable().optional(),
 }).superRefine((data, ctx) => {
   if (data.business_hours_start && data.business_hours_end) {
     if (data.business_hours_end <= data.business_hours_start) {
@@ -269,7 +270,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
     // Config fields
     after_hours_message, receptionist_name, receptionist_tone,
     services, service_areas, business_hours_start, business_hours_end, working_days,
-    avg_job_value,
+    avg_job_value, system_prompt_override,
   } = parsed.data;
 
   const token = bearerToken(req);
@@ -317,6 +318,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   if (business_hours_end  !== undefined)   configFieldsPatch.business_hours_end    = business_hours_end;
   if (working_days        !== undefined)   configFieldsPatch.working_days          = working_days;
   if (avg_job_value       !== undefined)   configFieldsPatch.avg_job_value         = avg_job_value;
+  if (system_prompt_override !== undefined) configFieldsPatch.system_prompt_override = system_prompt_override;
 
   const hasConfigUpdate = Object.keys(configFieldsPatch).length > 0;
 
