@@ -2,7 +2,28 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../../services/supabase';
 import { getCall, postCallWorkflow } from '../../services/retell';
 import type { ApiResponse, Call, Client, LeadInsert } from '../../../../shared/types';
-import { logEvent } from '../../lib/observability';
+import { logEvent, errorMessage } from '../../lib/observability';
+
+function bearerToken(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  return auth.slice('Bearer '.length).trim() || null;
+}
+
+async function getOwnerEmail(req: Request, res: Response): Promise<string | null> {
+  const token = bearerToken(req);
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Missing authentication token' } satisfies ApiResponse);
+    return null;
+  }
+  const { data: authData, error } = await supabase.auth.getUser(token);
+  const ownerEmail = authData.user?.email;
+  if (error || !ownerEmail) {
+    res.status(401).json({ success: false, error: 'Invalid authentication token' } satisfies ApiResponse);
+    return null;
+  }
+  return ownerEmail;
+}
 
 const router = Router();
 
@@ -173,7 +194,7 @@ router.post('/backfill/:retell_call_id', async (req: Request, res: Response) => 
       status:        outcome === 'booked' ? 'booked' : 'new',
     };
     await supabase.from('leads').insert(lead).then(({ error: e }) => {
-      if (e) console.error('[backfill] lead insert failed', e);
+      if (e) logEvent('error', 'calls.backfill.lead_insert_failed', { retell_call_id, error: errorMessage(e) });
     });
   }
 
@@ -182,12 +203,16 @@ router.post('/backfill/:retell_call_id', async (req: Request, res: Response) => 
     callerName: null, jobType: null, postcode: null, urgency: null, transcript: transcript || null,
   });
 
-  console.log(`[backfill] processed call_id=${retell_call_id}  outcome=${outcome}`);
+  logEvent('info', 'calls.backfill.processed', { retell_call_id, outcome });
   res.json({ success: true, data: call } satisfies ApiResponse<Call>);
 });
 
 // ── Web call proxy (for browser-based agent testing without a phone) ──────────
 router.post('/create-web-call', async (req: Request, res: Response) => {
+  // Require a valid Supabase session — prevents unauthenticated Retell credit drain.
+  const ownerEmail = await getOwnerEmail(req, res);
+  if (!ownerEmail) return;
+
   const retellApiKey = process.env.RETELL_API_KEY;
   if (!retellApiKey) {
     res.status(500).json({ error: 'RETELL_API_KEY not configured' });
@@ -197,6 +222,19 @@ router.post('/create-web-call', async (req: Request, res: Response) => {
   const { agent_id } = req.body as { agent_id?: string };
   if (!agent_id) {
     res.status(400).json({ error: 'agent_id is required' });
+    return;
+  }
+
+  // Verify the caller owns the agent they're requesting (prevent cross-tenant test calls).
+  const { data: clientRow } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('retell_agent_id', agent_id)
+    .eq('owner_email', ownerEmail)
+    .maybeSingle();
+
+  if (!clientRow) {
+    res.status(403).json({ error: 'Agent not found or not accessible' });
     return;
   }
 
