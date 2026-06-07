@@ -225,7 +225,11 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   }
 
   // Extract and persist lead for outcomes worth following up
-  const leadOutcomes: CallOutcome[] = ['booked', 'lead_captured', 'enquiry', 'emergency'];
+  // Include no_answer and voicemail so missed calls create a lead record.
+  // This is required for the deep-link SMS → lead flow (Phase 2.3): without a
+  // lead row there is no leadId, leadUrl stays null, and the "View lead:" line
+  // never appears in the owner SMS.
+  const leadOutcomes: CallOutcome[] = ['booked', 'lead_captured', 'enquiry', 'emergency', 'no_answer', 'voicemail'];
   let insertedLeadId: string | null = null;
   if (leadOutcomes.includes(outcome)) {
     const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);

@@ -148,8 +148,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
+      try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
 
       // Capture the Google Calendar refresh token if the user just signed in with
       // Google and landed here (token is only present on this first post-OAuth load).
@@ -240,6 +241,10 @@ export default function DashboardPage() {
       setRecentCalls(calls.slice(0, 5));
       setLoading(false);
       setStatsVisible(true);
+      } catch {
+        // Network error, auth error, or unexpected Supabase shape — stop the skeleton
+        setLoading(false);
+      }
     }
 
     load();
@@ -349,6 +354,7 @@ export default function DashboardPage() {
         {missedRevenue ? (
           <div
             data-testid="missed-revenue-card"
+            role="status"
             className="mb-5 rounded-[24px] px-5 py-4"
             style={{ background: 'rgba(153,203,255,0.07)', boxShadow: '0 0 0 1px rgba(153,203,255,0.16)' }}
           >
@@ -368,7 +374,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Link
-                to="/leads"
+                to="/dashboard/leads"
                 className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
                 style={{ background: 'rgba(153,203,255,0.10)', boxShadow: '0 0 0 1px rgba(153,203,255,0.20)', color: '#99cbff' }}
               >

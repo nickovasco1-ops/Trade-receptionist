@@ -543,7 +543,7 @@ export default function LeadsPage() {
                         Call back
                       </a>
                       <a
-                        href={`sms:${lead.caller_number}?body=Hi%2C%20it%27s%20${encodeURIComponent(lead.caller_name ? `${lead.caller_name} from ` : '')}${encodeURIComponent('your receptionist service')}%20returning%20your%20call.`}
+                        href={`sms:${lead.caller_number}?body=${encodeURIComponent('Hi, just returning your call. Please ring me back when you get a chance.')}`}
                         className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-all duration-200 hover:-translate-y-0.5"
                         style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.10)' }}
                       >

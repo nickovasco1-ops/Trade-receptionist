@@ -111,19 +111,31 @@ function row(label: string, value: string | null | undefined): string {
     </tr>`;
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function callSummaryHtml(data: CallEmailData): string {
   const outcomeLabel  = OUTCOME_LABELS[data.outcome]  ?? data.outcome;
   const outcomeColour = OUTCOME_COLOURS[data.outcome] ?? '#6B7280';
   const urgencyLabel  = data.urgency ?? 'routine';
   const urgencyColour = URGENCY_COLOURS[urgencyLabel] ?? '#6B7280';
 
+  // Escape caller number before embedding in HTML to prevent injection
+  const safeCallerNumber = escapeHtml(data.callerNumber);
+
   const isMissed = data.outcome === 'no_answer' || data.outcome === 'voicemail';
 
   const callBackBlock = isMissed && data.callerNumber && data.callerNumber !== 'Unknown number'
     ? `<div style="margin:20px 0">
-        <a href="tel:${data.callerNumber}"
+        <a href="tel:${safeCallerNumber}"
            style="display:inline-block;padding:10px 20px;background:#FF6B2B;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;font-family:sans-serif;margin-right:12px">
-          &#128222; Call Back ${data.callerNumber}
+          &#128222; Call Back ${safeCallerNumber}
         </a>
       </div>`
     : '';
@@ -189,7 +201,7 @@ export function callSummaryHtml(data: CallEmailData): string {
           <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6B7280;letter-spacing:0.08em;text-transform:uppercase;font-family:sans-serif">Lead Details</p>
           <table cellpadding="0" cellspacing="0" width="100%">
             ${row('Caller',   data.callerName)}
-            ${row('Number',   data.callerNumber)}
+            ${row('Number',   safeCallerNumber)}
             ${row('Job',      data.jobType)}
             ${row('Postcode', data.postcode)}
             ${row('Urgency',  urgencyLabel.charAt(0).toUpperCase() + urgencyLabel.slice(1))}

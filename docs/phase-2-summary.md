@@ -116,6 +116,32 @@
 
 ---
 
+## Phase 2 Hardening Review (post-merge)
+
+**Verdict: HARDEN → PASS after fixes**
+
+### Issues found and fixed
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| C1 | 🔴 Critical | `no_answer`/`voicemail` absent from `leadOutcomes` — missed calls never created a lead → `insertedLeadId` always null → deep-link SMS never fired | Added both outcomes to `leadOutcomes` |
+| C2 | 🔴 Critical | `<Link to="/leads">` in missed revenue card — correct path is `/dashboard/leads` — broken navigation | Fixed to `/dashboard/leads` |
+| H1 | 🟠 High | SMS "Send message" body said "Hi, it's your receptionist service returning your call" — nonsensical from owner's phone | Replaced with `"Hi, just returning your call. Please ring me back when you get a chance."` |
+| H2 | 🟠 High | `data.callerNumber` interpolated raw into email HTML (`href="tel:..."` and table row) | Added `escapeHtml()` helper; all email HTML now uses `safeCallerNumber` |
+| M1 | 🟡 Medium | `DashboardPage.load()` had no try/catch — network error or bad RLS response left loading spinner forever | Wrapped in try/catch with `setLoading(false)` in catch |
+| M2 | 🟡 Medium | Missed revenue card missing ARIA role | Added `role="status"` |
+
+### Remaining low-priority issues (not fixed, documented)
+
+- `postCallWorkflow` hardcodes `https://app.tradereceptionist.com` for `leadUrl` — use `DASHBOARD_BASE_URL` env var in Phase 3
+- Emergency calls skip `postCallWorkflow` (handled by `escalateEmergency` separately) — accepted behaviour
+
+**Build results (hardening pass):**
+- Frontend: ✅ `npm run build` clean
+- Server: ✅ `npm run build:api` clean
+
+---
+
 ## Suggested Commit Message
 
 ```
