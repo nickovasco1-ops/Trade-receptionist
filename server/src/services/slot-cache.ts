@@ -4,6 +4,16 @@ import type { Client, BusinessConfig } from '../../../shared/types';
 
 const MAX_SLOTS = 3;
 
+/**
+ * Postgres TIME columns return 'HH:MM:SS'. Normalise to 'HH:MM' and treat
+ * '00:00' (unset sentinel) as null so the defaults kick in.
+ */
+function normaliseHour(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const hhmm = raw.slice(0, 5); // 'HH:MM'
+  return hhmm === '00:00' ? null : hhmm;
+}
+
 function spokenSlot(date: Date, timezone: string): string {
   return date.toLocaleString('en-GB', {
     timeZone: timezone,
@@ -35,8 +45,8 @@ export async function getNextAvailableSlots(
       refreshToken:  client.google_refresh_token,
       days:          7,
       durationMins:  60,
-      startHour:     config.business_hours_start ?? '08:00',
-      endHour:       config.business_hours_end   ?? '18:00',
+      startHour:     normaliseHour(config.business_hours_start) ?? '08:00',
+      endHour:       normaliseHour(config.business_hours_end)   ?? '18:00',
       workingDays:   config.working_days.length ? config.working_days : [1, 2, 3, 4, 5],
       timezone,
       maxSlots:      MAX_SLOTS,

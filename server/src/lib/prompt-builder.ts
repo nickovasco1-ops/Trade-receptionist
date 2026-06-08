@@ -3,9 +3,18 @@ import type { Client, BusinessConfig } from '../../../shared/types';
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const RECEPTIONIST_LABEL = 'Trade Receptionist';
 
+/** Strips Postgres HH:MM:SS seconds and treats 00:00 as unset. */
+function normaliseHour(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const hhmm = raw.slice(0, 5);
+  return hhmm === '00:00' ? null : hhmm;
+}
+
 function formatHours(config: BusinessConfig): string {
-  if (!config.business_hours_start || !config.business_hours_end) return 'by arrangement';
-  return `${config.business_hours_start}–${config.business_hours_end} (${config.timezone})`;
+  const start = normaliseHour(config.business_hours_start);
+  const end   = normaliseHour(config.business_hours_end);
+  if (!start || !end) return 'by arrangement';
+  return `${start}–${end} (${config.timezone})`;
 }
 
 function formatWorkingDays(days: number[]): string {
