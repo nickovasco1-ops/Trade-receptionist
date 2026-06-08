@@ -17,13 +17,11 @@ const PRODUCT_TO_PLAN: Record<string, Plan> = {
   // Live-mode products — get IDs from Stripe dashboard → Products
   'prod_UOE4uHDjaA2p2A': 'starter',  // £49/mo
   'prod_UOE4eMY23okJjd': 'pro',      // £89/mo
-  // TODO: add live Business product ID here (£159/mo)
-  // Find it: Stripe dashboard → Products → Business plan → copy prod_xxx ID
+  'prod_UehtOIroOuNd9l': 'business', // £159/mo
   'prod_UOE5UUmEp0cXnD': 'agency',   // £249/mo
   // Test-mode products
   'prod_UQeX2QnK9ev3bK': 'starter',
   'prod_UQeX0UFytNZhFH': 'pro',
-  // TODO: add test Business product ID here
   'prod_UQeXswCVtfNvZq': 'agency',
 };
 
