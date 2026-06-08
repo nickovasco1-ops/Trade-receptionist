@@ -54,7 +54,7 @@ export async function getNextAvailableSlots(
 
     return slots.map((d) => spokenSlot(d, timezone));
   } catch (err: unknown) {
-    logEvent('warn', 'slot_cache.fetch_failed', { clientId: client.id, error: errorMessage(err) });
+    logEvent('error', 'slot_cache.fetch_failed', { clientId: client.id, error: errorMessage(err) });
     return [];
   }
 }

@@ -17,6 +17,7 @@ import {
   attachNumberToTrunk,
   findNumberSid,
 } from '../../services/twilio';
+import { logEvent } from '../../lib/observability';
 import type {
   ApiResponse,
   Client,
@@ -790,6 +791,85 @@ router.post('/rebuild-agent', async (req: Request, res: Response) => {
       success: false,
       error: err instanceof Error ? err.message : 'Retell update failed',
     } satisfies ApiResponse);
+  }
+});
+
+// ── GET /clients/:id/test-calendar ────────────────────────────────────────────
+// Diagnose calendar integration: attempts a token refresh + freeBusy call and
+// returns the raw Google error so we know exactly what's broken.
+
+router.get('/:id/test-calendar', async (req: Request, res: Response) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: client } = await supabase.from('clients').select('*').eq('id', req.params.id).single();
+  if (!client) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  if (!client.google_cal_id || !client.google_refresh_token) {
+    res.json({ success: false, error: `No calendar connected (cal_id: ${client.google_cal_id ?? 'null'})` } satisfies ApiResponse);
+    return;
+  }
+
+  const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID;
+  const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    res.json({ success: false, error: 'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set' } satisfies ApiResponse);
+    return;
+  }
+
+  // Step 1: refresh token
+  let accessToken: string;
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        refresh_token: client.google_refresh_token as string,
+        client_id:     GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        grant_type:    'refresh_token',
+      }).toString(),
+    });
+    const tokenBody = await tokenRes.json() as Record<string, unknown>;
+    if (!tokenRes.ok) {
+      const errMsg = JSON.stringify(tokenBody);
+      logEvent('error', 'test_calendar.token_refresh_failed', { clientId: client.id as string, error: errMsg });
+      res.json({ success: false, error: `token_refresh failed: ${errMsg}` } satisfies ApiResponse);
+      return;
+    }
+    accessToken = tokenBody['access_token'] as string;
+  } catch (err: unknown) {
+    res.json({ success: false, error: `token_refresh exception: ${err instanceof Error ? err.message : String(err)}` } satisfies ApiResponse);
+    return;
+  }
+
+  // Step 2: freeBusy probe
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 3600_000);
+  try {
+    const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timeMin: now.toISOString(), timeMax: tomorrow.toISOString(), items: [{ id: client.google_cal_id }] }),
+    });
+    const fbBody = await fbRes.json() as Record<string, unknown>;
+    if (!fbRes.ok) {
+      const errMsg = JSON.stringify(fbBody);
+      logEvent('error', 'test_calendar.free_busy_failed', { clientId: client.id as string, error: errMsg });
+      res.json({ success: false, error: `free_busy failed: ${errMsg}` } satisfies ApiResponse);
+      return;
+    }
+    const calData = (fbBody['calendars'] as Record<string, unknown>)[client.google_cal_id as string];
+    res.json({ success: true, data: { cal_id: client.google_cal_id, busy_events_today: calData } } satisfies ApiResponse);
+  } catch (err: unknown) {
+    res.json({ success: false, error: `free_busy exception: ${err instanceof Error ? err.message : String(err)}` } satisfies ApiResponse);
   }
 });
 
