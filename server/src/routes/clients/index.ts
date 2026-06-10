@@ -846,6 +846,7 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
     }
 
     const toolNames = (llmTools as Array<{ name?: string }>).map((t) => t.name ?? '(unnamed)');
+    const webhookUrl = agent.webhook_url as string | undefined;
 
     res.json({
       success: true,
@@ -853,6 +854,8 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
         agent_id: client.retell_agent_id,
         google_cal_id: client.google_cal_id,
         llm_id: llmId ?? null,
+        webhook_url: webhookUrl ?? null,
+        webhook_configured: !!webhookUrl,
         tool_count: toolNames.length,
         tool_names: toolNames,
         has_calendar_tools: toolNames.includes('check_calendar_availability'),
