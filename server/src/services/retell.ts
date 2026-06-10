@@ -466,18 +466,16 @@ export async function getCall(callId: string): Promise<Record<string, unknown> |
  * Used by the admin sync endpoint to recover calls lost due to webhook failures.
  */
 export async function listCallsForAgent(
-  agentId: string,
-  filterStartTimestamp?: number
+  agentId: string
 ): Promise<Record<string, unknown>[]> {
   if (isE2ETestMode()) {
     return [];
   }
 
-  // Retell v2: filter_criteria is an object (not an array), path is /v2/list-calls
+  // Retell v2: filter_criteria is an object, path is /v2/list-calls
+  // Agent ID filter works; skip timestamp filter as Retell v2 timestamp format is unclear.
+  // The sync endpoint already de-dupes via retell_call_id so fetching all is safe.
   const filterCriteria: Record<string, unknown> = { agent_id: [agentId] };
-  if (filterStartTimestamp) {
-    filterCriteria.start_timestamp = { lower_threshold: filterStartTimestamp };
-  }
 
   const body: Record<string, unknown> = {
     filter_criteria: filterCriteria,
