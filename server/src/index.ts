@@ -18,7 +18,7 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { runLeadFollowUp } from './services/lead-followup';
-import { listCallsForAgent, postCallWorkflow } from './services/retell';
+import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
 import type { Call, Client } from '../../shared/types';
@@ -266,6 +266,51 @@ app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
   } catch (err: unknown) {
     res.status(500).json({ success: false, error: String(err) });
   }
+});
+
+// ── POST /admin/enable-recording ─────────────────────────────────────────────
+// Patch record_audio: true onto every provisioned Retell agent.
+// Safe to call repeatedly — PATCH is idempotent.
+app.post('/admin/enable-recording', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, retell_agent_id, business_name')
+    .not('retell_agent_id', 'is', null);
+
+  if (!clients?.length) {
+    res.json({ success: true, data: { patched: 0 } });
+    return;
+  }
+
+  let patched = 0;
+  const errors: string[] = [];
+
+  for (const client of clients) {
+    try {
+      await patchRetellAgent(client.retell_agent_id as string, { record_audio: true });
+      patched++;
+      logEvent('info', 'admin.enable_recording.patched', {
+        clientId: client.id,
+        agentId: client.retell_agent_id as string,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${client.retell_agent_id}: ${msg}`);
+      logEvent('error', 'admin.enable_recording.failed', {
+        clientId: client.id,
+        agentId: client.retell_agent_id as string,
+        error: msg,
+      });
+    }
+  }
+
+  res.json({ success: true, data: { patched, errors } });
 });
 
 // ── POST /admin/sync-calls ────────────────────────────────────────────────────

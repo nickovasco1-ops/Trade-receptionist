@@ -334,6 +334,9 @@ export async function createRetellAgent(
     end_call_after_silence_ms:  10000,
     max_call_duration_ms:       600000,
     post_call_analysis_data:    POST_CALL_ANALYSIS_DATA,
+    // Enable call recording so recording_url is populated in webhook events and
+    // the dashboard audio player has something to play.
+    record_audio:               true,
   };
 
   if (webhookUrl) agentBody.webhook_url = webhookUrl;
@@ -529,6 +532,25 @@ export async function updateAgentPrompt(agentId: string, prompt: string): Promis
     body:    JSON.stringify({ general_prompt: prompt }),
   });
   if (!res.ok) throw new Error(`Retell updateAgent failed: ${await res.text()}`);
+}
+
+/**
+ * Patch a single agent-level setting on an existing Retell agent.
+ * Used by the admin endpoint to enable recording on already-provisioned agents
+ * without full re-provisioning.
+ */
+export async function patchRetellAgent(
+  agentId: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  if (isE2ETestMode()) return;
+
+  const res = await fetch(`${BASE_URL}/update-agent/${agentId}`, {
+    method:  'PATCH',
+    headers: headers(),
+    body:    JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`Retell patchAgent failed: ${await res.text()}`);
 }
 
 export async function updateAgentConfiguration(
