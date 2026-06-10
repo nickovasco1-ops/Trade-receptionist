@@ -21,7 +21,7 @@
 - [ ] Railway: All required env vars present
   - `RETELL_API_KEY` ✅
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` ✅
-  - `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET` ✅
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` ✅
   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` ✅
   - `CORS_ORIGINS` ✅
 - [ ] Sentry: Error tracking armed (check for test call events)

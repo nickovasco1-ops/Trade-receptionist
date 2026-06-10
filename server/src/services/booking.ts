@@ -13,6 +13,7 @@ import {
 } from './calendar';
 import { sendCallerSms } from './twilio';
 import { sendBookingConfirmationEmail } from './resend';
+import { logEvent, errorMessage } from '../lib/observability';
 
 export interface BookingContext {
   client: Client;
@@ -352,7 +353,7 @@ export async function createBookingForClient(
 
   if (bookingError || !bookingRow) {
     await deleteCalendarEvent(client.google_cal_id, client.google_refresh_token, googleEventId).catch((error: unknown) =>
-      console.error('[booking] calendar rollback failed after booking insert error', error)
+      logEvent('error', 'booking.calendar_rollback_failed', { clientId: client.id, stage: 'booking_insert', error: errorMessage(error) })
     );
 
     if (isUniqueViolation(bookingError)) {
@@ -374,7 +375,7 @@ export async function createBookingForClient(
     if (leadUpdateError) {
       await supabase.from('bookings').delete().eq('id', bookingRow.id);
       await deleteCalendarEvent(client.google_cal_id, client.google_refresh_token, googleEventId).catch((error: unknown) =>
-        console.error('[booking] calendar rollback failed after lead status error', error)
+        logEvent('error', 'booking.calendar_rollback_failed', { clientId: client.id, stage: 'lead_status', error: errorMessage(error) })
       );
       throw new Error('The booking could not be finalised. No changes were applied.');
     }
@@ -391,7 +392,7 @@ export async function createBookingForClient(
       address,
     }, scheduledAt);
   } catch (error: unknown) {
-    console.error('[booking] confirmation failed', error);
+    logEvent('error', 'booking.confirmation_failed', { clientId: client.id, error: errorMessage(error) });
     confirmationNote = 'Booking saved, but the confirmation could not be sent.';
   }
 

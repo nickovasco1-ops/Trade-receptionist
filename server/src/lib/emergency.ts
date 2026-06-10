@@ -1,5 +1,6 @@
 import { sendOwnerSms } from '../services/twilio';
 import { sendEmail } from '../services/resend';
+import { logEvent, errorMessage } from './observability';
 import type { Client, Call } from '../../../shared/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ export async function escalateEmergency(
         urgency:      level === 'critical' ? 'CRITICAL' : 'emergency',
         businessName: client.business_name,
       }).catch((err: unknown) => {
-        console.error('[emergency] SMS failed', err);
+        logEvent('error', 'emergency.sms_failed', { clientId: client.id, error: errorMessage(err) });
       }),
     );
   }
@@ -137,7 +138,7 @@ export async function escalateEmergency(
       subject: `${tag}: Call from ${caller}`,
       html:    `<pre style="font-family:sans-serif;white-space:pre-wrap;color:#1a1a1a">${message}</pre>`,
     }).catch((err: unknown) => {
-      console.error('[emergency] email failed', err);
+      logEvent('error', 'emergency.email_failed', { clientId: client.id, error: errorMessage(err) });
     }),
   );
 
