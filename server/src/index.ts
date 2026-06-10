@@ -157,6 +157,25 @@ app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
 
+// ── GET /admin/debug-retell-v2 ────────────────────────────────────────────────
+app.get('/admin/debug-retell-v2', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) { res.status(401).json({}); return; }
+  const key = process.env.RETELL_API_KEY;
+  const { data: c } = await supabase.from('clients').select('retell_agent_id').not('retell_agent_id','is',null).limit(1).single();
+  if (!c || !key) { res.json({ error: 'no client or key' }); return; }
+  // Try both with and without filter to see what the API returns
+  const r1 = await fetch('https://api.retellai.com/v2/list-calls', {
+    method:'POST', headers:{ Authorization:`Bearer ${key}`,'Content-Type':'application/json' },
+    body: JSON.stringify({ filter_criteria: { agent_id: [c.retell_agent_id] }, limit: 3, sort_order: 'descending' }),
+  });
+  const r2 = await fetch('https://api.retellai.com/v2/list-calls', {
+    method:'POST', headers:{ Authorization:`Bearer ${key}`,'Content-Type':'application/json' },
+    body: JSON.stringify({ limit: 3, sort_order: 'descending' }),
+  });
+  res.json({ agent_id: c.retell_agent_id, with_filter: { status: r1.status, body: (await r1.text()).slice(0,800) }, no_filter: { status: r2.status, body: (await r2.text()).slice(0,800) } });
+});
+
 // ── Admin endpoints (internal cron targets) ───────────────────────────────────
 app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
   const adminKey = process.env.ADMIN_API_KEY;
