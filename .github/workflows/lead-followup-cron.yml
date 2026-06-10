@@ -1,0 +1,28 @@
+name: Lead Follow-up Cron
+
+on:
+  schedule:
+    # Every 4 hours — triggers the 48h follow-up SMS to unresponded leads.
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-followup:
+    name: POST /admin/run-lead-followup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger lead follow-up
+        run: |
+          STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/run-lead-followup \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json")
+
+          echo "HTTP $STATUS"
+          cat /tmp/body.txt
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::Lead follow-up endpoint returned HTTP $STATUS"
+            exit 1
+          fi
