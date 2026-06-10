@@ -473,22 +473,36 @@ export async function listCallsForAgent(
     return [];
   }
 
+  const filterCriteria: Record<string, unknown> = { agent_id: [agentId] };
+  if (filterStartTimestamp) {
+    filterCriteria.start_timestamp = { lower_threshold: filterStartTimestamp };
+  }
+
   const body: Record<string, unknown> = {
-    filter_criteria: [{ agent_id: [agentId] }],
+    filter_criteria: [filterCriteria],
     limit: 100,
     sort_order: 'descending',
   };
-  if (filterStartTimestamp) {
-    body.filter_criteria = [{ agent_id: [agentId], start_timestamp: { lower_threshold: filterStartTimestamp } }];
-  }
 
   const res = await fetch(`${BASE_URL}/list-calls`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify(body),
   });
-  if (!res.ok) return [];
-  return ((await res.json()) as { calls?: Record<string, unknown>[] }).calls ?? [];
+
+  if (!res.ok) {
+    logEvent('error', 'retell.list_calls_failed', { agentId, status: res.status });
+    return [];
+  }
+
+  // Retell returns the array directly (not wrapped in { calls: [] })
+  const data = await res.json() as unknown;
+  if (Array.isArray(data)) return data as Record<string, unknown>[];
+  // Some API versions wrap in { calls: [] }
+  if (data && typeof data === 'object' && 'calls' in data) {
+    return ((data as { calls: unknown[] }).calls ?? []) as Record<string, unknown>[];
+  }
+  return [];
 }
 
 /**
