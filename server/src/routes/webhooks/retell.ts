@@ -164,24 +164,25 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
     ? new Date(event.end_timestamp).toISOString()
     : null;
 
-  // Upsert the call — idempotent if Retell retries
+  // Upsert the call — idempotent if Retell retries.
+  // Only set started_at/ended_at when Retell provides them — never overwrite a
+  // previously-set timestamp with null (call_started may have already set started_at).
+  const upsertPayload: Record<string, unknown> = {
+    client_id:      client.id,
+    retell_call_id: event.call_id,
+    caller_number:  event.from_number,
+    direction:      'inbound',
+    duration_secs:  durationSecs,
+    outcome,
+    is_emergency:   isEmergency,
+    recording_url:  event.recording_url ?? null,
+  };
+  if (startedAt) upsertPayload.started_at = startedAt;
+  if (endedAt)   upsertPayload.ended_at   = endedAt;
+
   const { data: callRow, error: callErr } = await supabase
     .from('calls')
-    .upsert(
-      {
-        client_id:      client.id,
-        retell_call_id: event.call_id,
-        caller_number:  event.from_number,
-        direction:      'inbound',
-        duration_secs:  durationSecs,
-        outcome,
-        is_emergency:   isEmergency,
-        recording_url:  event.recording_url ?? null,
-        started_at:     startedAt,
-        ended_at:       endedAt,
-      },
-      { onConflict: 'retell_call_id' }
-    )
+    .upsert(upsertPayload, { onConflict: 'retell_call_id' })
     .select()
     .single();
 

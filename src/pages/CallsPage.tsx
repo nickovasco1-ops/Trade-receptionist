@@ -67,7 +67,7 @@ export default function CallsPage() {
           transcripts ( summary )
         `)
         .eq('client_id', clientRow.id)
-        .order('started_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(200);
 
       setCalls((data ?? []) as CallWithSummary[]);

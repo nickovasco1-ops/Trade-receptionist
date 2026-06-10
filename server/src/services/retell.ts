@@ -462,6 +462,36 @@ export async function getCall(callId: string): Promise<Record<string, unknown> |
 }
 
 /**
+ * List calls for a specific agent from the Retell API.
+ * Used by the admin sync endpoint to recover calls lost due to webhook failures.
+ */
+export async function listCallsForAgent(
+  agentId: string,
+  filterStartTimestamp?: number
+): Promise<Record<string, unknown>[]> {
+  if (isE2ETestMode()) {
+    return [];
+  }
+
+  const body: Record<string, unknown> = {
+    filter_criteria: [{ agent_id: [agentId] }],
+    limit: 100,
+    sort_order: 'descending',
+  };
+  if (filterStartTimestamp) {
+    body.filter_criteria = [{ agent_id: [agentId], start_timestamp: { lower_threshold: filterStartTimestamp } }];
+  }
+
+  const res = await fetch(`${BASE_URL}/list-calls`, {
+    method:  'POST',
+    headers: headers(),
+    body:    JSON.stringify(body),
+  });
+  if (!res.ok) return [];
+  return ((await res.json()) as { calls?: Record<string, unknown>[] }).calls ?? [];
+}
+
+/**
  * Update the system prompt on an agent. Handles both v2 (LLM-backed) agents
  * and legacy v1 agents gracefully.
  */

@@ -18,6 +18,9 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { runLeadFollowUp } from './services/lead-followup';
+import { listCallsForAgent } from './services/retell';
+import { supabase } from './services/supabase';
+import { logEvent } from './lib/observability';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -167,6 +170,95 @@ app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
   } catch (err: unknown) {
     res.status(500).json({ success: false, error: String(err) });
   }
+});
+
+// ── POST /admin/sync-calls ────────────────────────────────────────────────────
+// Pull the last N days of calls from Retell for all clients and upsert any that
+// are missing from the database. Fixes calls lost due to webhook delivery failures.
+app.post('/admin/sync-calls', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  const daysBack = Math.min(30, Math.max(1, Number((req.body as Record<string, unknown>).days ?? 7)));
+  const filterTs = Date.now() - daysBack * 86_400_000;
+
+  const { data: clients } = await supabase
+    .from('clients')
+    .select('id, retell_agent_id')
+    .not('retell_agent_id', 'is', null);
+
+  if (!clients?.length) {
+    res.json({ success: true, data: { synced: 0, skipped: 0 } });
+    return;
+  }
+
+  let synced = 0;
+  let skipped = 0;
+
+  for (const client of clients) {
+    const retellCalls = await listCallsForAgent(client.retell_agent_id as string, filterTs);
+
+    for (const rc of retellCalls) {
+      const retellCallId = rc.call_id as string | undefined;
+      if (!retellCallId) continue;
+
+      const { data: existing } = await supabase
+        .from('calls')
+        .select('id')
+        .eq('retell_call_id', retellCallId)
+        .maybeSingle();
+
+      if (existing) { skipped++; continue; }
+
+      const startTs = rc.start_timestamp as number | undefined;
+      const endTs   = rc.end_timestamp   as number | undefined;
+      const durationSecs = Math.round(((rc.duration_ms as number | undefined) ?? 0) / 1000);
+      const analysis = rc.call_analysis as Record<string, unknown> | undefined;
+      const summary = (analysis?.call_summary as string | undefined) ?? '';
+      const first = summary.trim().split(/[\s|:\n]/)[0]?.toUpperCase() ?? '';
+      const outcomeMap: Record<string, string> = {
+        BOOKED: 'booked', LEAD_CAPTURED: 'lead_captured', ENQUIRY: 'enquiry',
+        SPAM: 'spam', VOICEMAIL: 'voicemail', EMERGENCY: 'emergency',
+        TRANSFERRED: 'transferred', NO_ANSWER: 'no_answer',
+      };
+      const outcome = outcomeMap[first] ?? 'enquiry';
+
+      const { error } = await supabase.from('calls').insert({
+        client_id:      client.id,
+        retell_call_id: retellCallId,
+        caller_number:  (rc.from_number as string | undefined) ?? null,
+        direction:      'inbound',
+        duration_secs:  durationSecs,
+        outcome,
+        is_emergency:   outcome === 'emergency',
+        recording_url:  (rc.recording_url as string | undefined) ?? null,
+        started_at:     startTs ? new Date(startTs).toISOString() : null,
+        ended_at:       endTs   ? new Date(endTs).toISOString()   : null,
+      });
+
+      if (error) {
+        logEvent('error', 'admin.sync_calls.insert_failed', { retellCallId, error: error.message });
+      } else {
+        // Upsert transcript if available
+        if (summary) {
+          const { data: callRow } = await supabase.from('calls').select('id').eq('retell_call_id', retellCallId).single();
+          if (callRow) {
+            await supabase.from('transcripts').upsert(
+              { call_id: callRow.id, summary, full_text: (rc.transcript as string | undefined) ?? null },
+              { onConflict: 'call_id' }
+            );
+          }
+        }
+        synced++;
+      }
+    }
+  }
+
+  logEvent('info', 'admin.sync_calls.complete', { synced, skipped, daysBack });
+  res.json({ success: true, data: { synced, skipped } });
 });
 
 // 404 fallback

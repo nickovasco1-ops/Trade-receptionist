@@ -175,9 +175,9 @@ export default function DashboardPage() {
       const [callsRes, leadsRes, quotaRes, missedRes, configRes] = await Promise.all([
         supabase
           .from('calls')
-          .select('id, outcome, is_emergency, started_at, caller_number, duration_secs')
+          .select('id, outcome, is_emergency, started_at, caller_number, duration_secs, created_at')
           .eq('client_id', clientRow.id)
-          .order('started_at', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(50),
         supabase
           .from('leads')
