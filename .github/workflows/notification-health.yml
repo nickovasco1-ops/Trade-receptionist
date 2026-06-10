@@ -1,0 +1,39 @@
+name: Notification Health Check
+
+on:
+  schedule:
+    # Every day at 08:00 UTC — fires a test notification to verify email + SMS work.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Test email + SMS delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fire test notification
+        run: |
+          STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/test-notifications \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clientId":"${{ secrets.PROD_CLIENT_ID }}"}')
+
+          echo "HTTP $STATUS"
+          cat /tmp/body.txt
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::Notification health check failed — HTTP $STATUS. Email and SMS may be broken."
+            exit 1
+          fi
+
+          RESULT=$(cat /tmp/body.txt | grep -o '"status":"[^"]*"' | head -1)
+          echo "Result: $RESULT"
+
+          if echo "$RESULT" | grep -q "failed"; then
+            echo "::error::Notification workflow returned failed status. Check Resend and Twilio."
+            exit 1
+          fi
+
+          echo "✅ Notification pipeline healthy"

@@ -3,7 +3,7 @@ import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt } from '../lib/prompt-builder';
 import { getNextAvailableSlots } from './slot-cache';
 import { isE2ETestMode } from '../config/e2e';
-import { errorMessage, logEvent } from '../lib/observability';
+import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
@@ -617,11 +617,10 @@ export async function postCallWorkflow(
         urgency:      extra.urgency,
         businessName: client.business_name,
         leadUrl,
-      }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+      }).catch((err: unknown) => captureError('post_call.provider_failure', err, {
         clientId: client.id,
         provider: 'twilio',
         channel: 'owner_sms',
-        error: errorMessage(err),
       }))
     );
   }
@@ -640,11 +639,10 @@ export async function postCallWorkflow(
       transcript:    extra.transcript,
       recordingUrl:  call.recording_url,
       durationSecs:  call.duration_secs,
-    }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+    }).catch((err: unknown) => captureError('post_call.provider_failure', err, {
       clientId: client.id,
       provider: 'resend',
       channel: 'email',
-      error: errorMessage(err),
     }))
   );
 
@@ -658,11 +656,10 @@ export async function postCallWorkflow(
         businessName: client.business_name,
         ownerName:    client.owner_name,
         booked:       outcome === 'booked',
-      }).catch((err: unknown) => logEvent('error', 'post_call.provider_failure', {
+      }).catch((err: unknown) => captureError('post_call.provider_failure', err, {
         clientId: client.id,
         provider: 'twilio',
         channel: 'caller_sms',
-        error: errorMessage(err),
       }))
     );
   }
