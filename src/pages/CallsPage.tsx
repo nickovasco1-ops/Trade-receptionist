@@ -59,16 +59,20 @@ export default function CallsPage() {
         return;
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('calls')
         .select(`
           id, outcome, is_emergency, caller_number, direction,
           duration_secs, started_at, ended_at, recording_url,
-          transcripts ( summary )
+          transcripts!call_id ( summary )
         `)
         .eq('client_id', clientRow.id)
         .order('created_at', { ascending: false })
         .limit(200);
+
+      if (error) {
+        console.error('[CallsPage] query error:', error.message);
+      }
 
       setCalls((data ?? []) as CallWithSummary[]);
       setFiltered((data ?? []) as CallWithSummary[]);

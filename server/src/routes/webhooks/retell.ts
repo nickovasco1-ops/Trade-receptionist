@@ -23,15 +23,18 @@ const router = Router();
 
 function verifySignature(rawBody: Buffer, signature: string): boolean {
   // Retell signs webhooks with HMAC-SHA256 using the API key as the secret.
-  // No separate webhook secret exists — RETELL_API_KEY is always present (required at boot).
-  const secret = process.env.RETELL_API_KEY!;
+  // Trim the key — a trailing newline or space in Railway env vars would silently break
+  // every HMAC and cause all webhook events to be dropped.
+  const secret = (process.env.RETELL_API_KEY ?? '').trim();
 
   const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expected);
 
-  if (sigBuf.length !== expBuf.length) return false;
-  return crypto.timingSafeEqual(sigBuf, expBuf);
+  // Normalise both to lowercase before comparison — some providers send uppercase hex.
+  const sigNorm = signature.trim().toLowerCase();
+  const expNorm = expected.toLowerCase();
+
+  if (sigNorm.length !== expNorm.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(sigNorm), Buffer.from(expNorm));
 }
 
 // ── Lead extraction ───────────────────────────────────────────────────────────

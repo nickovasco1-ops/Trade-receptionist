@@ -18,9 +18,10 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { runLeadFollowUp } from './services/lead-followup';
-import { listCallsForAgent } from './services/retell';
+import { listCallsForAgent, postCallWorkflow } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
+import type { Call, Client } from '../../shared/types';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -156,6 +157,101 @@ app.use('/bookings',     bookingsRouter);
 app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
+
+// ── POST /admin/test-notifications ───────────────────────────────────────────
+// Send a live test email + SMS to the owner to verify Resend and Twilio work.
+app.post('/admin/test-notifications', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  const { clientId } = req.body as { clientId?: string };
+  if (!clientId) { res.status(400).json({ success: false, error: 'clientId required' }); return; }
+
+  const [{ data: client }, { data: config }] = await Promise.all([
+    supabase.from('clients').select('*').eq('id', clientId).single(),
+    supabase.from('business_config').select('*').eq('client_id', clientId).single(),
+  ]);
+
+  if (!client) { res.status(404).json({ success: false, error: 'Client not found' }); return; }
+
+  const fakeCall: Call = {
+    id: 'test-call-id',
+    client_id: clientId,
+    retell_call_id: 'test_call_diagnostic',
+    caller_number: '+447700900000',
+    direction: 'inbound',
+    outcome: 'enquiry',
+    is_emergency: false,
+    duration_secs: 90,
+    recording_url: null,
+    started_at: new Date().toISOString(),
+    ended_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  };
+
+  const results: Record<string, string> = {};
+
+  try {
+    await postCallWorkflow(client as Client, fakeCall, '🧪 TEST — This is a diagnostic notification to verify your email and SMS are working correctly. If you received this, notifications are live.', {
+      callerName: 'Test Caller',
+      jobType: 'Diagnostic test',
+      postcode: null,
+      urgency: null,
+      transcript: null,
+      leadId: null,
+    });
+    results.status = 'sent';
+  } catch (err: unknown) {
+    results.status = 'failed';
+    results.error = err instanceof Error ? err.message : String(err);
+  }
+
+  res.json({ success: true, data: { owner_email: client.owner_email, owner_mobile: (client as Client).owner_mobile, twilio_number: (client as Client).twilio_number, results } });
+});
+
+// ── POST /admin/notify-call ───────────────────────────────────────────────────
+// Re-fire post-call notifications for a specific call that missed them.
+app.post('/admin/notify-call', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  const { retellCallId } = req.body as { retellCallId?: string };
+  if (!retellCallId) { res.status(400).json({ success: false, error: 'retellCallId required' }); return; }
+
+  const { data: callRow } = await supabase
+    .from('calls').select('*').eq('retell_call_id', retellCallId).single();
+  if (!callRow) { res.status(404).json({ success: false, error: 'Call not found' }); return; }
+
+  const { data: clientRow } = await supabase
+    .from('clients').select('*').eq('id', callRow.client_id).single();
+  if (!clientRow) { res.status(404).json({ success: false, error: 'Client not found' }); return; }
+
+  const { data: transcriptRow } = await supabase
+    .from('transcripts').select('summary, full_text').eq('call_id', callRow.id).maybeSingle();
+
+  const { data: leadRow } = await supabase
+    .from('leads').select('id, caller_name, job_type, postcode, urgency').eq('call_id', callRow.id).maybeSingle();
+
+  try {
+    await postCallWorkflow(clientRow as Client, callRow as Call, transcriptRow?.summary ?? '', {
+      callerName: leadRow?.caller_name ?? null,
+      jobType: leadRow?.job_type ?? null,
+      postcode: leadRow?.postcode ?? null,
+      urgency: leadRow?.urgency ?? null,
+      transcript: transcriptRow?.full_text ?? null,
+      leadId: leadRow?.id ?? null,
+    });
+    res.json({ success: true, data: { retellCallId, outcome: callRow.outcome, owner_email: clientRow.owner_email } });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : String(err) });
+  }
+});
 
 // ── Admin endpoints (internal cron targets) ───────────────────────────────────
 app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
