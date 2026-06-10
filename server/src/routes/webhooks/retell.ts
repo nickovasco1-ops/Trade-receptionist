@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
+import { verify as retellVerify } from 'retell-sdk';
 import { supabase } from '../../services/supabase';
 import { postCallWorkflow } from '../../services/retell';
 import { detectEmergency, escalateEmergency } from '../../lib/emergency';
@@ -20,21 +20,22 @@ import type {
 const router = Router();
 
 // ── Signature verification ────────────────────────────────────────────────────
-
-function verifySignature(rawBody: Buffer, signature: string): boolean {
-  // Retell signs webhooks with HMAC-SHA256 using the API key as the secret.
-  // Trim the key — a trailing newline or space in Railway env vars would silently break
-  // every HMAC and cause all webhook events to be dropped.
+//
+// Retell's signature format is NOT a plain HMAC of the body.
+// The SDK signs/verifies as: HMAC-SHA256(body + timestamp) with the result
+// formatted as "v={timestamp},d={hex}". The 5-minute replay window is
+// enforced inside retell-sdk's verify() — never roll this by hand.
+//
+async function verifySignature(rawBody: Buffer, signature: string): Promise<boolean> {
   const secret = (process.env.RETELL_API_KEY ?? '').trim();
+  if (!secret) return false;
 
-  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-
-  // Normalise both to lowercase before comparison — some providers send uppercase hex.
-  const sigNorm = signature.trim().toLowerCase();
-  const expNorm = expected.toLowerCase();
-
-  if (sigNorm.length !== expNorm.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(sigNorm), Buffer.from(expNorm));
+  try {
+    // SDK expects a string body — same bytes, different type.
+    return await retellVerify(rawBody.toString('utf8'), secret, signature.trim());
+  } catch {
+    return false;
+  }
 }
 
 // ── Lead extraction ───────────────────────────────────────────────────────────
@@ -412,7 +413,7 @@ router.post('/', async (req: Request, res: Response) => {
     bodyBytes: rawBody?.length ?? 0,
   });
 
-  if (!verifySignature(rawBody, signature ?? '')) {
+  if (!(await verifySignature(rawBody, signature ?? ''))) {
     // Log as ERROR (not warn) so Railway alerts fire — this is a call being silently dropped.
     // Return 200 so Retell does not retry (avoids log spam), but this MUST be investigated:
     // it means RETELL_API_KEY in Railway no longer matches what Retell uses to sign webhooks.
