@@ -39,19 +39,25 @@ The Calls page and Dashboard showed empty or very few calls despite the AI havin
 
 ---
 
-### BUG-002a — Webhook signature failures silently dropped calls
+### BUG-002a — Webhook signature verification always failing (wrong algorithm)
 
-**Root cause:** Retell signs webhooks with HMAC-SHA256 using the `RETELL_API_KEY`. When the API key in Railway differed from what Retell was using (key rotation or misconfiguration), `verifySignature` returned false. The handler returned `HTTP 200` with `{ ok: false, reason: 'invalid_signature' }` — Retell interpreted this as successful delivery and never retried. Every call was silently lost.
+**Root cause (definitive — June 2026):** Retell's webhook signature is **not** a plain `HMAC-SHA256(body)`. The correct algorithm is:
 
-**Fix:**
-- Upgraded `retell.webhook.invalid_signature` from `logEvent('warn', ...)` to `logEvent('error', ...)` with an explicit action message: *"call dropped — run POST /admin/sync-calls to recover, check RETELL_API_KEY in Railway"*
-- Added `POST /admin/sync-calls` endpoint — pulls all calls directly from Retell's `v2/list-calls` API and inserts any missing from the database. Idempotent (dedupes by `retell_call_id`).
-- Added `.github/workflows/sync-calls-cron.yml` — runs every 6 hours automatically. If `synced > 0`, GitHub Actions prints a warning in the run log (signal that webhooks are broken again).
+```
+signature = "v={timestamp},d={hex(HMAC-SHA256(body + timestamp))}"
+```
 
-**Recovery procedure if it happens again:**
-1. Railway error log will show `retell.webhook.invalid_signature` with action message
-2. Verify `RETELL_API_KEY` in Railway matches the key in the Retell dashboard
-3. Run `POST /admin/sync-calls` with `X-Admin-Key` to backfill missed calls
+The SDK also enforces a 5-minute replay window. Our hand-rolled `verifySignature` computed `HMAC(body)` and compared the hex directly — it was always wrong, so every single webhook was rejected from launch. This was the root cause of all missed calls.
+
+**Fix (commit 4233cf1):**
+- Removed the hand-rolled `verifySignature` function entirely
+- Replaced with `retell-sdk`'s `verify()` — the official SDK function that implements the correct `v=/d=` format. The SDK was already installed (`retell-sdk@5.27.0`) but was unused in the webhook path.
+
+**Rule: never hand-roll Retell webhook verification.** The SDK's algorithm is not documented in plain language — only the SDK source reveals it. Always use `import { verify } from 'retell-sdk'`.
+
+**Recovery safeguards still in place:**
+- `POST /admin/sync-calls` with `X-Admin-Key` — backfills calls missed by any future webhook failures
+- `.github/workflows/sync-calls-cron.yml` — runs every 6 hours automatically. Warns in GH Actions log if `synced > 0`.
 
 ---
 
@@ -90,6 +96,9 @@ All require `X-Admin-Key` header matching `ADMIN_API_KEY` in Railway.
 | `POST /clients/rebuild-agent` | Rebuilds Retell LLM prompt + tools from current DB state. Body: `{"clientId": "..."}` |
 | `POST /admin/sync-calls` | Pulls calls from Retell API and backfills any missing from DB. Body: `{}` |
 | `POST /admin/run-lead-followup` | Manually triggers the 48h follow-up SMS batch. Body: `{}` |
+| `POST /admin/enable-recording` | Patches `record_audio: true` on all provisioned Retell agents. Idempotent. Body: `{}` |
+| `POST /admin/test-notifications` | Fires test email + SMS to verify Resend and Twilio are live. Body: `{"clientId": "..."}` |
+| `POST /admin/notify-call` | Re-fires post-call notifications for a specific past call. Body: `{"retellCallId": "..."}` |
 
 ---
 
@@ -99,6 +108,31 @@ All require `X-Admin-Key` header matching `ADMIN_API_KEY` in Railway.
 |------|----------|-------------|
 | `sync-calls-cron.yml` | Every 6 hours | Backfills calls missed by webhook failures. Warns in GH Actions log if recoveries > 0. |
 | `lead-followup-cron.yml` | Every 4 hours | Sends 48h follow-up SMS to unresponded leads. |
+| `notification-health.yml` | Daily 08:00 UTC | Fires a test email + SMS. GitHub emails owner if the pipeline is broken. |
+
+---
+
+---
+
+## BUG-003 — Call recordings missing from dashboard
+
+**Severity:** Medium (recordings always blank)  
+**Discovered:** June 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Dashboard Calls page shows `—` in the Recording column for every call. No audio player appears when expanding a call row.
+
+### Root cause
+`createRetellAgent` never set `record_audio: true` in the agent creation body. Retell defaults to no recording. `recording_url` was `null` in every webhook event and every Retell API response.
+
+### Fix
+- Added `record_audio: true` to `createRetellAgent`'s `agentBody` — all future agents record by default
+- Added `patchRetellAgent()` utility function for targeted agent-level patches
+- Added `POST /admin/enable-recording` endpoint — patches `record_audio: true` on all existing agents. Called immediately after deploy to fix the live agent.
+
+### Prevention
+`POST /admin/enable-recording` is idempotent — safe to run again after any re-provisioning.
 
 ---
 
