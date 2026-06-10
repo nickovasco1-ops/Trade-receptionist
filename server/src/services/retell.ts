@@ -207,6 +207,10 @@ function buildRetellTools(
     const baseUrl = retellFunctionBaseUrl();
     if (baseUrl) {
       tools.push(...buildCalendarTools(baseUrl));
+    } else {
+      logEvent('error', 'retell.calendar_tools_skipped', {
+        reason: 'retellFunctionBaseUrl returned null — RETELL_FUNCTION_BASE_URL or RETELL_WEBHOOK_URL must be set in Railway',
+      });
     }
   }
 

@@ -801,6 +801,68 @@ router.post('/rebuild-agent', async (req: Request, res: Response) => {
   }
 });
 
+// ── GET /clients/:id/test-retell-agent ───────────────────────────────────────
+// Diagnose Retell agent: fetches the agent + LLM config and returns which tools
+// are currently registered. Use to verify calendar tools are attached.
+
+router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: client } = await supabase.from('clients').select('id, retell_agent_id, google_cal_id').eq('id', req.params.id).single();
+  if (!client) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+  if (!client.retell_agent_id) {
+    res.json({ success: false, error: 'No retell_agent_id on client' } satisfies ApiResponse);
+    return;
+  }
+
+  const RETELL_API_KEY = process.env.RETELL_API_KEY;
+  if (!RETELL_API_KEY) {
+    res.json({ success: false, error: 'RETELL_API_KEY not set' } satisfies ApiResponse);
+    return;
+  }
+
+  try {
+    const agentRes = await fetch(`https://api.retellai.com/get-agent/${client.retell_agent_id}`, {
+      headers: { Authorization: `Bearer ${RETELL_API_KEY}` },
+    });
+    const agent = await agentRes.json() as Record<string, unknown>;
+
+    const llmId = (agent.response_engine as Record<string, unknown> | undefined)?.llm_id as string | undefined;
+    let llmTools: unknown[] = [];
+
+    if (llmId) {
+      const llmRes = await fetch(`https://api.retellai.com/get-retell-llm/${llmId}`, {
+        headers: { Authorization: `Bearer ${RETELL_API_KEY}` },
+      });
+      const llm = await llmRes.json() as Record<string, unknown>;
+      llmTools = (llm.general_tools as unknown[]) ?? [];
+    }
+
+    const toolNames = (llmTools as Array<{ name?: string }>).map((t) => t.name ?? '(unnamed)');
+
+    res.json({
+      success: true,
+      data: {
+        agent_id: client.retell_agent_id,
+        google_cal_id: client.google_cal_id,
+        llm_id: llmId ?? null,
+        tool_count: toolNames.length,
+        tool_names: toolNames,
+        has_calendar_tools: toolNames.includes('check_calendar_availability'),
+      },
+    } satisfies ApiResponse);
+  } catch (err: unknown) {
+    res.json({ success: false, error: err instanceof Error ? err.message : String(err) } satisfies ApiResponse);
+  }
+});
+
 // ── GET /clients/:id/test-calendar ────────────────────────────────────────────
 // Diagnose calendar integration: attempts a token refresh + freeBusy call and
 // returns the raw Google error so we know exactly what's broken.
