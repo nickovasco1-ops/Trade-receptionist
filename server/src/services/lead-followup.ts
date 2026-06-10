@@ -4,7 +4,7 @@ import { logEvent, errorMessage } from '../lib/observability';
 import type { Client, Lead } from '../../../shared/types';
 
 interface LeadWithClient extends Lead {
-  clients: Pick<Client, 'business_name' | 'owner_name' | 'twilio_number'>;
+  clients: Pick<Client, 'business_name' | 'owner_name' | 'twilio_number'> | null;
 }
 
 interface FollowUpResult {
@@ -51,6 +51,12 @@ export async function runLeadFollowUp(): Promise<FollowUpResult> {
 
   for (const lead of leads) {
     const client = lead.clients;
+
+    if (!client) {
+      logEvent('warn', 'lead_followup.no_client', { leadId: lead.id });
+      result.skipped++;
+      continue;
+    }
 
     if (!client.twilio_number) {
       logEvent('warn', 'lead_followup.no_twilio_number', { leadId: lead.id });

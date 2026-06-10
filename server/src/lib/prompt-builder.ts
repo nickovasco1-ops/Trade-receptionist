@@ -1,14 +1,8 @@
 import type { Client, BusinessConfig } from '../../../shared/types';
+import { normaliseHour } from './time';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const RECEPTIONIST_LABEL = 'Trade Receptionist';
-
-/** Strips Postgres HH:MM:SS seconds and treats 00:00 as unset. */
-function normaliseHour(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const hhmm = raw.slice(0, 5);
-  return hhmm === '00:00' ? null : hhmm;
-}
 
 function formatHours(config: BusinessConfig): string {
   const start = normaliseHour(config.business_hours_start);

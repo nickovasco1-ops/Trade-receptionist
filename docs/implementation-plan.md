@@ -324,13 +324,38 @@ supabase/migrations/013_business_config_avg_job_value.sql — new column
 ### Phase 3 — Affected Files Summary
 
 ```
-server/src/services/lead-followup.ts  — new: automated follow-up cron logic
-server/src/lib/prompt-builder.ts       — async slot injection
-server/src/services/calendar.ts        — getNextAvailableSlots helper
-server/src/routes/team/index.ts        — new: team invite/accept/remove
-src/pages/SettingsPage.tsx             — team members panel, prompt override
-supabase/migrations/                   — team_members table, followup_sent_at on leads
+server/src/lib/time.ts                 — new: shared normaliseHour utility
+server/src/lib/prompt-builder.ts       — slot injection, import normaliseHour from time.ts
+server/src/services/lead-followup.ts   — new: automated follow-up cron logic
+server/src/services/slot-cache.ts      — new: calendar slot fetch with TTL cache + timeout
+server/src/routes/clients/index.ts     — system_prompt_override in settingsSchema, plan gate
+src/pages/SettingsPage.tsx             — prompt override textarea (Business/Agency only)
+supabase/migrations/014_*              — follow_up_sent_at on leads
 ```
+
+### Phase 3 — Completion Status
+
+| Item | Status | Completed |
+|------|--------|-----------|
+| 3.1 Automated 48h follow-up SMS | ✅ DONE | 2026-06-10 |
+| 3.2 Calendar slot injection in AI prompt | ✅ DONE | 2026-06-10 |
+| 3.3 Team access (second user) | ⏸ DEFERRED | High risk, low data — re-evaluate post-launch |
+| 3.4 Prompt override UI (Business/Agency) | ✅ DONE | 2026-06-10 |
+
+**Hardening pass (2026-06-10):**
+- CRITICAL: null guard on `lead.clients` in `lead-followup.ts`
+- CRITICAL: `normaliseHour` deduplicated into `server/src/lib/time.ts`
+- CRITICAL: 5s timeout + 5min TTL cache added to `slot-cache.ts`
+- MEDIUM: plan gate on `system_prompt_override` (Starter → 403)
+- MEDIUM: all `console.*` in `clients/index.ts` → `logEvent`
+- See `docs/phase-3-summary.md` for full detail
+
+**Build results (2026-06-10):**
+- Frontend: ✅ `npm run build` clean
+- Server: ✅ `npm run build:api` clean (tsc, no errors)
+
+**Pending (manual):**
+- Apply Supabase migration: `supabase/migrations/014_lead_follow_up_sent_at.sql`
 
 ---
 
@@ -376,4 +401,4 @@ These four items share the same branch. They are all changes to files the team a
 
 ---
 
-*Last updated: 2026-06-07*
+*Last updated: 2026-06-10*

@@ -114,22 +114,22 @@ interface CleanupState {
 async function rollback(state: CleanupState): Promise<void> {
   if (state.retellNumber) {
     await releaseRetellNumber(state.retellNumber).catch((e: unknown) =>
-      console.error('[provision] Retell number release failed', e)
+      logEvent('error', 'provision.rollback_retell_number_failed', { number: state.retellNumber, error: String(e) })
     );
   }
   if (state.twilioSid) {
     await releaseNumber(state.twilioSid).catch((e: unknown) =>
-      console.error('[provision] Twilio number release failed', e)
+      logEvent('error', 'provision.rollback_twilio_number_failed', { sid: state.twilioSid, error: String(e) })
     );
   }
   if (state.agentId) {
     await deleteRetellAgent(state.agentId).catch((e: unknown) =>
-      console.error('[provision] Retell agent delete failed', e)
+      logEvent('error', 'provision.rollback_agent_delete_failed', { agentId: state.agentId, error: String(e) })
     );
   }
   if (state.llmId) {
     await deleteRetellLlm(state.llmId).catch((e: unknown) =>
-      console.error('[provision] Retell LLM delete failed', e)
+      logEvent('error', 'provision.rollback_llm_delete_failed', { llmId: state.llmId, error: String(e) })
     );
   }
   if (state.clientId) {
@@ -250,7 +250,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
     if (configRow) {
       updateAgentConfiguration(client, configRow as BusinessConfig).catch((err: unknown) =>
-        console.error('[clients] Retell prompt sync failed', err)
+        logEvent('error', 'clients.retell_sync_failed', { clientId: client.id, error: String(err) })
       );
     }
   }
@@ -295,6 +295,17 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   if (clientFetchError || !existingClient) {
     res.status(404).json({ success: false, error: clientFetchError?.message ?? 'Client not found' } satisfies ApiResponse);
     return;
+  }
+
+  if (system_prompt_override !== undefined && system_prompt_override !== null && system_prompt_override !== '') {
+    const plan = (existingClient as Client).plan;
+    if (plan === 'starter') {
+      res.status(403).json({
+        success: false,
+        error: 'Custom AI instructions require a Pro plan or above.',
+      } satisfies ApiResponse);
+      return;
+    }
   }
 
   if (configFetchError) {
@@ -379,7 +390,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
 
     if (configUpdateError) {
       await rollbackSettings().catch((err: unknown) =>
-        console.error('[clients] settings rollback failed after config update error', err)
+        logEvent('error', 'settings.rollback_failed_after_config_error', { clientId: String(clientId), error: String(err) })
       );
       res.status(500).json({
         success: false,
@@ -394,7 +405,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
       await updateAgentConfiguration(nextClient, nextConfig);
     } catch (err: unknown) {
       await rollbackSettings().catch((rollbackErr: unknown) =>
-        console.error('[clients] settings rollback failed after prompt sync error', rollbackErr)
+        logEvent('error', 'settings.rollback_failed_after_sync_error', { clientId: String(clientId), error: String(rollbackErr) })
       );
       res.status(502).json({
         success: false,
@@ -559,7 +570,7 @@ router.post('/provision', async (req: Request, res: Response) => {
     }
   } catch (err: unknown) {
     // Non-fatal — agent is live, number can be added later via Settings
-    console.warn('[provision] Phone number step skipped:', err instanceof Error ? err.message : err);
+    logEvent('warn', 'provision.phone_number_step_skipped', { clientId: client.id, error: err instanceof Error ? err.message : String(err) });
   }
 
   // ── Step 9: Persist agent_id + phone back to Supabase ────────────────────
@@ -578,7 +589,7 @@ router.post('/provision', async (req: Request, res: Response) => {
   if (updateErr || !finalRow) {
     // Infrastructure is fully provisioned — only the DB record didn't update.
     // Return 207 so the caller knows it's safe and what IDs to patch manually.
-    console.error('[provision] Supabase update failed after full provisioning', updateErr);
+    logEvent('error', 'provision.supabase_update_failed', { clientId: client.id, error: updateErr?.message });
     const partialClient = { ...client, retell_agent_id: agentIds.agentId, twilio_number: phoneNumber } as Client;
     res.status(207).json({
       success: true,
@@ -592,9 +603,7 @@ router.post('/provision', async (req: Request, res: Response) => {
   }
 
   const finalClient = finalRow as Client;
-  console.log(
-    `[provision] complete  client=${finalClient.id}  mode=${finalClient.own_number ? 'keep_existing' : 'new_number'}  number=${phoneNumber ?? 'none'}`
-  );
+  logEvent('info', 'provision.complete', { clientId: finalClient.id, mode: finalClient.own_number ? 'keep_existing' : 'new_number', number: phoneNumber ?? 'none' });
   res.status(201).json({
     success: true,
     data:    buildProvisionResponse(finalClient, phoneNumber),
@@ -700,9 +709,7 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
   }
 
   const updatedClient = updated as Client;
-  console.log(
-    `[clients] assigned ${phoneNumber} to ${client.owner_email}  mode=${updatedClient.own_number ? 'keep_existing' : 'new_number'}`
-  );
+  logEvent('info', 'assign_number.complete', { clientId: client.id, number: phoneNumber, mode: updatedClient.own_number ? 'keep_existing' : 'new_number' });
   res.json({
     success: true,
     data: buildProvisionResponse(updatedClient, phoneNumber),
@@ -783,10 +790,10 @@ router.post('/rebuild-agent', async (req: Request, res: Response) => {
 
   try {
     await updateAgentConfiguration(client as Client, config as BusinessConfig);
-    console.log(`[clients] Rebuilt Retell prompt for ${client.business_name} (${client.id})`);
+    logEvent('info', 'rebuild_agent.complete', { clientId: client.id });
     res.json({ success: true } satisfies ApiResponse);
   } catch (err: unknown) {
-    console.error('[clients] rebuild-agent failed', err);
+    logEvent('error', 'rebuild_agent.failed', { clientId: client.id, error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : 'Retell update failed',
@@ -918,13 +925,13 @@ router.post('/connect-number', async (req: Request, res: Response) => {
     await attachNumberToTrunk(numberSid);
     await importTwilioNumber(client.twilio_number as string, client.retell_agent_id as string);
 
-    console.log(`[clients] connect-number repaired ${client.twilio_number} -> ${client.retell_agent_id} (${client.id})`);
+    logEvent('info', 'connect_number.complete', { clientId: client.id, number: client.twilio_number, agentId: client.retell_agent_id });
     res.json({
       success: true,
       data: { phoneNumber: client.twilio_number, agentId: client.retell_agent_id },
     } satisfies ApiResponse<{ phoneNumber: string; agentId: string }>);
   } catch (err: unknown) {
-    console.error('[clients] connect-number failed', err);
+    logEvent('error', 'connect_number.failed', { clientId: client.id, error: err instanceof Error ? err.message : String(err) });
     res.status(502).json({
       success: false,
       error: err instanceof Error ? err.message : 'Failed to connect number',
