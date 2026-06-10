@@ -180,14 +180,20 @@ app.get('/admin/debug-retell-calls', async (req, res) => {
     sort_order: 'descending',
   };
 
-  const retellRes = await fetch('https://api.retellai.com/list-calls', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${RETELL_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  // Try multiple possible Retell API paths
+  const paths = ['https://api.retellai.com/list-calls', 'https://api.retellai.com/v2/list-calls', 'https://api.retellai.com/v2/call'];
+  const results: Record<string, unknown>[] = [];
+  for (const path of paths) {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RETELL_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const raw = await r.text();
+    results.push({ path, status: r.status, body: raw.slice(0, 500) });
+  }
 
-  const raw = await retellRes.text();
-  res.json({ status: retellRes.status, agent_id: client.retell_agent_id, raw_response: raw.slice(0, 2000) });
+  res.json({ agent_id: client.retell_agent_id, results });
 });
 
 // ── Admin endpoints (internal cron targets) ───────────────────────────────────
