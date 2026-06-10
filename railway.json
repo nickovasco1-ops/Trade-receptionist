@@ -9,7 +9,6 @@
     "healthcheckPath": "/health",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ALWAYS",
-    "restartPolicyMaxRetries": 10,
-    "sleepApplication": false
+    "restartPolicyMaxRetries": 10
   }
 }
