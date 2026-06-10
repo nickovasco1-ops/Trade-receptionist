@@ -410,8 +410,15 @@ router.post('/', async (req: Request, res: Response) => {
   });
 
   if (!verifySignature(rawBody, signature ?? '')) {
-    logEvent('warn', 'retell.webhook.invalid_signature', { requestId: reqId, hasSignature: Boolean(signature) });
-    // Return 200 so Retell does not retry a rejected request (prevents log spam)
+    // Log as ERROR (not warn) so Railway alerts fire — this is a call being silently dropped.
+    // Return 200 so Retell does not retry (avoids log spam), but this MUST be investigated:
+    // it means RETELL_API_KEY in Railway no longer matches what Retell uses to sign webhooks.
+    // Recovery: run POST /admin/sync-calls to backfill any missed calls.
+    logEvent('error', 'retell.webhook.invalid_signature', {
+      requestId: reqId,
+      hasSignature: Boolean(signature),
+      action: 'call_dropped — run POST /admin/sync-calls to recover, check RETELL_API_KEY in Railway',
+    });
     res.status(200).json({ ok: false, reason: 'invalid_signature' });
     return;
   }

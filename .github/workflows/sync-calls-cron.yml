@@ -1,0 +1,36 @@
+name: Sync Calls from Retell
+
+on:
+  schedule:
+    # Every 6 hours — pulls any calls from Retell that weren't saved via webhook.
+    # Webhooks are the primary path; this is the safety net.
+    - cron: '30 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: POST /admin/sync-calls
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sync calls from Retell API
+        run: |
+          STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/sync-calls \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "HTTP $STATUS"
+          cat /tmp/body.txt
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::sync-calls endpoint returned HTTP $STATUS"
+            exit 1
+          fi
+
+          # Extract synced count and warn if calls were recovered (means webhooks missed them)
+          SYNCED=$(cat /tmp/body.txt | grep -o '"synced":[0-9]*' | grep -o '[0-9]*' || echo "0")
+          if [ "$SYNCED" -gt 0 ]; then
+            echo "::warning::$SYNCED call(s) recovered from Retell — webhooks missed these deliveries"
+          fi
