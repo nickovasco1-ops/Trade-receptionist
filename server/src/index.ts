@@ -157,45 +157,6 @@ app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
 
-// ── GET /admin/debug-retell-calls ─────────────────────────────────────────────
-// Returns the raw Retell list-calls response for the first client — for debugging only.
-app.get('/admin/debug-retell-calls', async (req, res) => {
-  const adminKey = process.env.ADMIN_API_KEY;
-  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
-    res.status(401).json({ success: false, error: 'Unauthorised' });
-    return;
-  }
-  const RETELL_API_KEY = process.env.RETELL_API_KEY;
-  const { data: client } = await supabase
-    .from('clients').select('id, retell_agent_id').not('retell_agent_id', 'is', null).limit(1).single();
-
-  if (!client || !RETELL_API_KEY) {
-    res.json({ error: 'no client or no key' });
-    return;
-  }
-
-  const body = {
-    filter_criteria: [{ agent_id: [client.retell_agent_id] }],
-    limit: 5,
-    sort_order: 'descending',
-  };
-
-  // Try multiple possible Retell API paths
-  const paths = ['https://api.retellai.com/list-calls', 'https://api.retellai.com/v2/list-calls', 'https://api.retellai.com/v2/call'];
-  const results: Record<string, unknown>[] = [];
-  for (const path of paths) {
-    const r = await fetch(path, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${RETELL_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const raw = await r.text();
-    results.push({ path, status: r.status, body: raw.slice(0, 500) });
-  }
-
-  res.json({ agent_id: client.retell_agent_id, results });
-});
-
 // ── Admin endpoints (internal cron targets) ───────────────────────────────────
 app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
   const adminKey = process.env.ADMIN_API_KEY;

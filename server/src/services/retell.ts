@@ -473,18 +473,19 @@ export async function listCallsForAgent(
     return [];
   }
 
+  // Retell v2: filter_criteria is an object (not an array), path is /v2/list-calls
   const filterCriteria: Record<string, unknown> = { agent_id: [agentId] };
   if (filterStartTimestamp) {
     filterCriteria.start_timestamp = { lower_threshold: filterStartTimestamp };
   }
 
   const body: Record<string, unknown> = {
-    filter_criteria: [filterCriteria],
+    filter_criteria: filterCriteria,
     limit: 100,
     sort_order: 'descending',
   };
 
-  const res = await fetch(`${BASE_URL}/list-calls`, {
+  const res = await fetch(`${BASE_URL}/v2/list-calls`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify(body),
