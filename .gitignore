@@ -37,3 +37,4 @@ e2e/.auth/
 .claude/worktrees/
 .stitch/
 DESIGN.md
+.vercel
