@@ -268,6 +268,51 @@ app.post('/admin/run-lead-followup', express.json(), async (req, res) => {
   }
 });
 
+// ── POST /admin/fix-agent-greeting ───────────────────────────────────────────
+// Directly PATCH begin_message + turn-taking settings onto an agent and return
+// Retell's raw response so we can verify the field is actually accepted/stored.
+app.post('/admin/fix-agent-greeting', express.json(), async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+  const { agentId, beginMessage } = req.body as { agentId?: string; beginMessage?: string };
+  if (!agentId || !beginMessage) {
+    res.status(400).json({ success: false, error: 'agentId and beginMessage required' });
+    return;
+  }
+
+  const key = (process.env.RETELL_API_KEY ?? '').trim();
+  const patchRes = await fetch(`https://api.retellai.com/update-agent/${agentId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      begin_message: beginMessage,
+      interruption_sensitivity: 0.6,
+      end_call_after_silence_ms: 20000,
+    }),
+  });
+  const bodyText = await patchRes.text();
+
+  // Read back to confirm it persisted
+  const verifyRes = await fetch(`https://api.retellai.com/get-agent/${agentId}`, {
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  const verify = verifyRes.ok ? await verifyRes.json() as Record<string, unknown> : {};
+
+  res.json({
+    success: patchRes.ok,
+    data: {
+      patch_status: patchRes.status,
+      patch_response: bodyText.slice(0, 500),
+      stored_begin_message: verify['begin_message'] ?? null,
+      stored_interruption: verify['interruption_sensitivity'] ?? null,
+      stored_silence_ms: verify['end_call_after_silence_ms'] ?? null,
+    },
+  });
+});
+
 // ── POST /admin/enable-recording ─────────────────────────────────────────────
 // Patch record_audio: true onto every provisioned Retell agent.
 // Safe to call repeatedly — PATCH is idempotent.
