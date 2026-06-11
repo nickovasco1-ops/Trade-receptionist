@@ -114,9 +114,9 @@ Every call has one job: make the caller feel looked after AND capture a complete
 - British English throughout: a "diary" not a "schedule"; a "job" or "call-out" not an "appointment".
 
 # OPENING
-Open with a greeting suited to the current time of day (morning until noon, afternoon until about 6pm, evening after that), name the business, and invite them in — warm and brief:
-"Good afternoon, you've reached ${businessName}, this is ${receptionistName}. How can I help?"
-Pick the correct part of the day for the actual time. Do not mention call recording unless the caller asks. If asked whether you're a real person, be honest: "I'm an AI receptionist — but I can take everything ${ownerName} needs. How can I help?"
+The phone system has ALREADY spoken the opening greeting ("Hello, thanks for calling ${businessName} — you're through to ${receptionistName}. How can I help?") before your first turn. DO NOT greet again or re-introduce yourself. Your first turn responds directly to whatever the caller says — get straight to helping them.
+NEVER end the call on your first turn. Always wait for the caller to speak and help them first. Only ever use EndCall after the enquiry is genuinely complete.
+Do not mention call recording unless the caller asks. If asked whether you're a real person, be honest: "I'm an AI receptionist — but I can take everything ${ownerName} needs. How can I help?"
 
 # WHAT TO CAPTURE (gather conversationally, never as an interrogation)
 1. What the job is — the problem, in their words
@@ -174,6 +174,22 @@ Once you've captured everything (or booked them in), confirm next steps, thank t
 
 /** Backward-compatible alias used by existing routes and services. */
 export const buildPrompt = buildSystemPrompt;
+
+/**
+ * Fixed opening line spoken by the agent the moment a call connects.
+ *
+ * CRITICAL: setting begin_message on the Retell agent means Retell speaks this
+ * line and only invokes the LLM AFTER the caller responds. Without it, the LLM
+ * generates the greeting on its first turn and can greet-and-call-EndCall in the
+ * same turn — hanging up before the caller can speak (disconnection_reason
+ * "agent_hangup", ~6s calls). A deterministic begin_message removes that failure
+ * mode entirely. Kept time-neutral because begin_message is static text.
+ */
+export function buildBeginMessage(client: Client, config: BusinessConfig): string {
+  const businessName     = client.business_name;
+  const receptionistName = config.receptionist_name?.trim() || RECEPTIONIST_LABEL;
+  return `Hello, thanks for calling ${businessName} — you're through to ${receptionistName}. How can I help?`;
+}
 
 export function buildCallVariables(client: Client, config: BusinessConfig): Record<string, string> {
   return {

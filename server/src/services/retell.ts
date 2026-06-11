@@ -1,6 +1,6 @@
 import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
-import { buildSystemPrompt } from '../lib/prompt-builder';
+import { buildSystemPrompt, buildBeginMessage } from '../lib/prompt-builder';
 import { getNextAvailableSlots } from './slot-cache';
 import { isE2ETestMode } from '../config/e2e';
 import { captureError, errorMessage, logEvent } from '../lib/observability';
@@ -9,6 +9,13 @@ import type { Client, Call, BusinessConfig } from '../../../shared/types';
 const BASE_URL = 'https://api.retellai.com';
 
 const CHARLOTTE_VOICE_ID = 'retell-Willa';
+
+// Conversational tuning shared by create + update so every agent stays healthy.
+// interruption_sensitivity was 0.9 (over-eager to stop talking); 0.6 is calmer.
+// Silence timeout raised to 20s so the agent waits patiently for the caller
+// instead of ending the call shortly after the greeting.
+const AGENT_INTERRUPTION_SENSITIVITY = 0.6;
+const AGENT_END_CALL_AFTER_SILENCE_MS = 20000;
 
 /**
  * Post-call analysis fields. Retell extracts these after each call and returns them
@@ -330,8 +337,8 @@ export async function createRetellAgent(
     enable_backchannel:         true,
     backchannel_frequency:      0.7,
     backchannel_words:          ['hmm', 'right', 'okay', 'yes', 'I see'],
-    interruption_sensitivity:   0.9,
-    end_call_after_silence_ms:  10000,
+    interruption_sensitivity:   AGENT_INTERRUPTION_SENSITIVITY,
+    end_call_after_silence_ms:  AGENT_END_CALL_AFTER_SILENCE_MS,
     max_call_duration_ms:       600000,
     post_call_analysis_data:    POST_CALL_ANALYSIS_DATA,
     // Enable call recording so recording_url is populated in webhook events and
@@ -562,7 +569,9 @@ export async function updateAgentConfiguration(
   const slots  = await getNextAvailableSlots(client, config);
   const prompt = buildSystemPrompt(client, config, slots);
 
+  // Update the LLM (prompt + tools).
   const agentRes = await fetch(`${BASE_URL}/get-agent/${client.retell_agent_id}`, { headers: headers() });
+  let llmUpdated = false;
   if (agentRes.ok) {
     const agent = (await agentRes.json()) as {
       response_engine?: { type: string; llm_id?: string };
@@ -570,11 +579,23 @@ export async function updateAgentConfiguration(
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
       await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, !!client.google_cal_id);
-      return;
+      llmUpdated = true;
     }
   }
 
-  await updateAgentPrompt(client.retell_agent_id, prompt);
+  if (!llmUpdated) {
+    await updateAgentPrompt(client.retell_agent_id, prompt);
+  }
+
+  // Always re-assert healthy agent-level settings. A null begin_message lets the
+  // LLM greet AND call EndCall on its first turn, hanging up before the caller
+  // speaks. Setting begin_message makes Retell speak the opening and only invoke
+  // the LLM after the caller responds — eliminating the greet-and-hangup bug.
+  await patchRetellAgent(client.retell_agent_id, {
+    begin_message:              buildBeginMessage(client, config),
+    interruption_sensitivity:   AGENT_INTERRUPTION_SENSITIVITY,
+    end_call_after_silence_ms:  AGENT_END_CALL_AFTER_SILENCE_MS,
+  });
 }
 
 // ── Legacy ────────────────────────────────────────────────────────────────────

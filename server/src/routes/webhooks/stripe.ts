@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../../services/supabase';
 import { sendEmail } from '../../services/resend';
-import { buildSystemPrompt } from '../../lib/prompt-builder';
+import { buildSystemPrompt, buildBeginMessage } from '../../lib/prompt-builder';
 import { createRetellAgent, importTwilioNumber } from '../../services/retell';
 import { searchUkNumbers, buyUkNumber, attachNumberToTrunk } from '../../services/twilio';
 import { logSubscriber } from '../../services/notion';
@@ -496,7 +496,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       prompt,
       ownerNumber:  ownerMobile,
       calendarBookingEnabled: !!client.google_cal_id,
-      beginMessage: undefined,
+      beginMessage: buildBeginMessage(client, configRow as BusinessConfig),
     });
     agentId = ids.agentId;
 

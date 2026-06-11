@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { supabase } from '../../services/supabase';
-import { buildSystemPrompt } from '../../lib/prompt-builder';
+import { buildSystemPrompt, buildBeginMessage } from '../../lib/prompt-builder';
 import {
   updateAgentConfiguration,
   createRetellAgent,
@@ -540,7 +540,7 @@ router.post('/provision', async (req: Request, res: Response) => {
       prompt,
       ownerNumber:  owner_mobile ?? null,
       calendarBookingEnabled: !!client.google_cal_id,
-      beginMessage: undefined,
+      beginMessage: buildBeginMessage(client, config),
     });
     state.llmId   = agentIds.llmId;
     state.agentId = agentIds.agentId;
