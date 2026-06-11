@@ -848,6 +848,26 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
     const toolNames = (llmTools as Array<{ name?: string }>).map((t) => t.name ?? '(unnamed)');
     const webhookUrl = agent.webhook_url as string | undefined;
 
+    // Optionally diagnose a specific call's disconnect reason (?callId=...).
+    let callDiagnosis: Record<string, unknown> | null = null;
+    const callId = req.query['callId'] as string | undefined;
+    if (callId) {
+      const callRes = await fetch(`https://api.retellai.com/v2/get-call/${callId}`, {
+        headers: { Authorization: `Bearer ${RETELL_API_KEY}` },
+      });
+      if (callRes.ok) {
+        const c = await callRes.json() as Record<string, unknown>;
+        callDiagnosis = {
+          call_status: c['call_status'],
+          disconnection_reason: c['disconnection_reason'],
+          duration_ms: c['duration_ms'],
+          transcript: typeof c['transcript'] === 'string' ? (c['transcript'] as string).slice(0, 500) : null,
+        };
+      } else {
+        callDiagnosis = { error: `get-call ${callRes.status}` };
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -859,6 +879,8 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
         tool_count: toolNames.length,
         tool_names: toolNames,
         has_calendar_tools: toolNames.includes('check_calendar_availability'),
+        raw_tools: llmTools,
+        call_diagnosis: callDiagnosis,
       },
     } satisfies ApiResponse);
   } catch (err: unknown) {
