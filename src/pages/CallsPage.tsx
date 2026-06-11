@@ -12,7 +12,7 @@ import type { Call, CallOutcome } from '../../shared/types';
 type CallWithSummary = Pick<
   Call,
   'id' | 'outcome' | 'is_emergency' | 'caller_number' | 'direction' | 'duration_secs' | 'started_at' | 'ended_at' | 'recording_url'
-> & { transcripts?: { summary: string | null }[] | null };
+> & { transcripts?: { summary: string | null; full_text: string | null }[] | null };
 
 const ALL_OUTCOMES = Object.keys(OUTCOME_TONE) as NonNullable<CallOutcome>[];
 
@@ -42,11 +42,15 @@ export default function CallsPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
   const [visible, setVisible] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
+
+      setAccessToken(session.access_token);
 
       const { data: clientRow } = await supabase
         .from('clients')
@@ -64,7 +68,7 @@ export default function CallsPage() {
         .select(`
           id, outcome, is_emergency, caller_number, direction,
           duration_secs, started_at, ended_at, recording_url,
-          transcripts!call_id ( summary )
+          transcripts!call_id ( summary, full_text )
         `)
         .eq('client_id', clientRow.id)
         .order('created_at', { ascending: false })
@@ -82,6 +86,12 @@ export default function CallsPage() {
 
     load();
   }, []);
+
+  // Build a same-origin, authenticated recording URL. Retell's CDN serves
+  // recordings as binary/octet-stream AND is blocked by our media-src CSP, so we
+  // stream through /api/calls/:id/recording which sets the correct audio/wav type.
+  const recordingSrc = (callId: string): string | null =>
+    accessToken ? `/api/calls/${callId}/recording?token=${encodeURIComponent(accessToken)}` : null;
 
   useEffect(() => {
     setFiltered(outcomeFilter === 'all' ? calls : calls.filter(call => call.outcome === outcomeFilter));
@@ -246,6 +256,8 @@ export default function CallsPage() {
               {filtered.map(call => {
                 const isOpen = expandedId === call.id;
                 const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
+                const transcriptFull = call.transcripts?.[0]?.full_text ?? null;
+                const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
                 const panelId = `call-detail-mobile-${call.id}`;
                 return (
                   <article
@@ -322,13 +334,27 @@ export default function CallsPage() {
                               <p className="text-[13px] leading-relaxed text-offwhite/62">{transcriptSummary}</p>
                             </>
                           ) : (
-                            <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
+                            <p className="text-[13px] text-offwhite/32">No summary available for this call.</p>
                           )}
-                          {call.recording_url ? (
+                          {transcriptFull ? (
+                            <details className="mt-4 group">
+                              <summary className="flex cursor-pointer list-none items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">
+                                <FileText size={13} className="text-accent/70" aria-hidden="true" />
+                                Full transcript
+                                <ChevronDown size={12} className="transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+                              </summary>
+                              <p className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-offwhite/56">{transcriptFull}</p>
+                            </details>
+                          ) : null}
+                          {audioSrc ? (
                             <div className="mt-4">
                               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Recording</p>
                               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                              <audio controls src={call.recording_url} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                              <audio controls preload="none" src={audioSrc} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                              <a href={audioSrc} download={`call-${call.id}.wav`} className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent hover:text-accent/80">
+                                <Play size={11} aria-hidden="true" />
+                                Download recording
+                              </a>
                             </div>
                           ) : null}
                         </div>
@@ -359,6 +385,8 @@ export default function CallsPage() {
                 {filtered.map(call => {
                   const isOpen = expandedId === call.id;
                   const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
+                  const transcriptFull = call.transcripts?.[0]?.full_text ?? null;
+                  const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
                   const panelId = `call-detail-desktop-${call.id}`;
                   return (
                     <div key={call.id}>
@@ -423,14 +451,28 @@ export default function CallsPage() {
                                 {transcriptSummary ? (
                                   <p className="text-[13px] leading-relaxed text-offwhite/62">{transcriptSummary}</p>
                                 ) : (
-                                  <p className="text-[13px] text-offwhite/32">No transcript available for this call.</p>
+                                  <p className="text-[13px] text-offwhite/32">No summary available for this call.</p>
                                 )}
+                                {transcriptFull ? (
+                                  <details className="mt-4 group">
+                                    <summary className="flex cursor-pointer list-none items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">
+                                      <FileText size={13} className="text-accent/70" aria-hidden="true" />
+                                      Full transcript
+                                      <ChevronDown size={12} className="transition-transform duration-200 group-open:rotate-180" aria-hidden="true" />
+                                    </summary>
+                                    <p className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-offwhite/56">{transcriptFull}</p>
+                                  </details>
+                                ) : null}
                               </div>
-                              {call.recording_url ? (
+                              {audioSrc ? (
                                 <div>
                                   <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/34">Recording</p>
                                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                                  <audio controls src={call.recording_url} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                                  <audio controls preload="none" src={audioSrc} className="w-full" style={{ colorScheme: 'dark', height: '40px' }} />
+                                  <a href={audioSrc} download={`call-${call.id}.wav`} className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent hover:text-accent/80">
+                                    <Play size={11} aria-hidden="true" />
+                                    Download recording
+                                  </a>
                                 </div>
                               ) : null}
                             </div>

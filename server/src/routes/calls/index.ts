@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Readable } from 'stream';
 import { supabase } from '../../services/supabase';
 import { getCall, postCallWorkflow } from '../../services/retell';
 import type { ApiResponse, Call, Client, LeadInsert } from '../../../../shared/types';
@@ -63,7 +64,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('calls')
     .select('*')
-    .eq('id', req.params.id)
+    .eq('id', String(req.params['id']))
     .single();
 
   if (error || !data) {
@@ -72,6 +73,80 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 
   res.json({ success: true, data } satisfies ApiResponse<Call>);
+});
+
+// GET /calls/:id/recording
+// Stream a call recording through our own origin with the correct audio/wav
+// content-type. Retell's CloudFront serves recordings as `binary/octet-stream`,
+// which Safari and some browsers refuse to play in an <audio> element. Proxying
+// also keeps the raw Retell CDN URL private.
+//
+// The browser <audio> element cannot send an Authorization header, so the access
+// token is passed as a query param and validated here. Range requests are
+// forwarded so seeking/scrubbing works.
+router.get('/:id/recording', async (req: Request, res: Response) => {
+  const callId = String(req.params['id']);
+  const token = (req.query['token'] as string | undefined)?.trim() || bearerToken(req);
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Missing authentication token' } satisfies ApiResponse);
+    return;
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  const ownerEmail = authData.user?.email;
+  if (authError || !ownerEmail) {
+    res.status(401).json({ success: false, error: 'Invalid authentication token' } satisfies ApiResponse);
+    return;
+  }
+
+  // Fetch the call and verify the requester owns it (service role bypasses RLS).
+  const { data: callRow } = await supabase
+    .from('calls')
+    .select('recording_url, clients!inner ( owner_email )')
+    .eq('id', callId)
+    .maybeSingle();
+
+  const callOwner = (callRow as { clients?: { owner_email?: string } } | null)?.clients?.owner_email;
+  const recordingUrl = (callRow as { recording_url?: string | null } | null)?.recording_url ?? null;
+
+  if (!callRow || callOwner !== ownerEmail) {
+    res.status(404).json({ success: false, error: 'Call not found' } satisfies ApiResponse);
+    return;
+  }
+  if (!recordingUrl) {
+    res.status(404).json({ success: false, error: 'No recording for this call' } satisfies ApiResponse);
+    return;
+  }
+
+  try {
+    const range = req.headers.range;
+    const upstream = await fetch(recordingUrl, {
+      headers: range ? { Range: range } : {},
+    });
+
+    if (!upstream.ok || !upstream.body) {
+      logEvent('error', 'calls.recording.upstream_failed', { callId, status: upstream.status });
+      res.status(502).json({ success: false, error: 'Could not fetch recording' } satisfies ApiResponse);
+      return;
+    }
+
+    res.status(upstream.status === 206 ? 206 : 200);
+    res.setHeader('Content-Type', 'audio/wav');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+
+    const contentLength = upstream.headers.get('content-length');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    const contentRange = upstream.headers.get('content-range');
+    if (contentRange) res.setHeader('Content-Range', contentRange);
+
+    Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]).pipe(res);
+  } catch (err: unknown) {
+    logEvent('error', 'calls.recording.exception', { callId, error: errorMessage(err) });
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: 'Failed to stream recording' } satisfies ApiResponse);
+    }
+  }
 });
 
 // POST /calls/backfill/:retell_call_id

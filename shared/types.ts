@@ -185,6 +185,10 @@ export interface RetellCallAnalyzedEvent {
   event: 'call_analyzed';
   call_id: string;
   agent_id: string;
+  // Retell sometimes only attaches the recording + transcript to this later event,
+  // so the call_analyzed handler reads them to backfill what call_ended may have missed.
+  recording_url?: string;
+  transcript?: string;
   call_analysis: {
     call_summary?: string;
     user_sentiment?: 'Positive' | 'Negative' | 'Neutral' | 'Unknown';

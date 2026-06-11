@@ -353,7 +353,7 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
   // Find the stored call
   const { data: callRow } = await supabase
     .from('calls')
-    .select('id')
+    .select('id, recording_url')
     .eq('retell_call_id', event.call_id)
     .single();
 
@@ -362,10 +362,27 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
     return;
   }
 
-  // Update transcript with refined analysis
+  // Backfill the recording URL if it wasn't ready at call_ended time. Retell
+  // sometimes only attaches recording_url to the later call_analyzed event.
+  if (event.recording_url && !callRow.recording_url) {
+    const { error: recErr } = await supabase
+      .from('calls')
+      .update({ recording_url: event.recording_url })
+      .eq('id', callRow.id);
+    if (recErr) {
+      logEvent('error', 'retell.webhook.db_persistence_failed', {
+        eventType: 'call_analyzed',
+        error: recErr.message,
+      });
+    }
+  }
+
+  // Update transcript with refined analysis. Persist full_text too so the
+  // dashboard can show the complete transcript, not just the summary.
   const { error: transcriptErr } = await supabase.from('transcripts').upsert(
     {
       call_id:   callRow.id,
+      full_text: event.transcript ?? undefined,
       summary:   event.call_analysis?.call_summary ?? null,
       raw_json:  event.call_analysis as Record<string, unknown>,
     },
