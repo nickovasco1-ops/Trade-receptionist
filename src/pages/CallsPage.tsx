@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, FileText, Filter, Phone, Play, Siren, Timer } from 'lucide-react';
+import * as Sentry from '@sentry/react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
 import DashboardShell from '../components/dashboard/DashboardShell';
@@ -7,31 +8,19 @@ import EmptyState from '../components/dashboard/ui/EmptyState';
 import StatusBadge from '../components/dashboard/ui/StatusBadge';
 import { OUTCOME_TONE } from '../components/dashboard/ui/outcomeTone';
 import { supabase } from '../lib/supabase';
+import { transcriptOf, transcriptEmbedAnomaly, type TranscriptEmbed } from '../lib/transcript';
 import type { Call, CallOutcome } from '../../shared/types';
-
-interface TranscriptRow {
-  summary: string | null;
-  full_text: string | null;
-}
 
 type CallWithSummary = Pick<
   Call,
   'id' | 'outcome' | 'is_emergency' | 'caller_number' | 'direction' | 'duration_secs' | 'started_at' | 'ended_at' | 'recording_url'
 > & {
   // transcripts.call_id is UNIQUE, so PostgREST embeds this as a single object
-  // (one-to-one), not an array. Older PostgREST/config can still return an array,
-  // so we normalise both shapes via transcriptOf().
-  transcripts?: TranscriptRow | TranscriptRow[] | null;
+  // (one-to-one), not an array. Read it only via transcriptOf() — never index [0].
+  transcripts?: TranscriptEmbed;
 };
 
 const ALL_OUTCOMES = Object.keys(OUTCOME_TONE) as NonNullable<CallOutcome>[];
-
-/** Normalise the embedded transcript whether PostgREST returns it as an object or an array. */
-function transcriptOf(call: CallWithSummary): TranscriptRow | null {
-  const t = call.transcripts;
-  if (!t) return null;
-  return Array.isArray(t) ? (t[0] ?? null) : t;
-}
 
 function formatDuration(secs: number | null) {
   if (!secs) return '—';
@@ -93,10 +82,31 @@ export default function CallsPage() {
 
       if (error) {
         console.error('[CallsPage] query error:', error.message);
+        Sentry.captureException(new Error(`CallsPage calls query failed: ${error.message}`));
       }
 
-      setCalls((data ?? []) as CallWithSummary[]);
-      setFiltered((data ?? []) as CallWithSummary[]);
+      const rows = (data ?? []) as CallWithSummary[];
+
+      // Guardrail: alert if PostgREST ever returns the transcript embed in an
+      // unexpected shape again. This is the silent failure that blanked every
+      // summary — it threw no error, so without this check it would go unnoticed.
+      const anomalies = rows
+        .map(row => ({ id: row.id, code: transcriptEmbedAnomaly(row.transcripts) }))
+        .filter((a): a is { id: string; code: string } => a.code !== null);
+
+      if (anomalies.length > 0) {
+        Sentry.captureMessage('transcript embed shape anomaly on CallsPage', {
+          level: 'error',
+          extra: {
+            anomalyCount: anomalies.length,
+            sample: anomalies.slice(0, 5),
+            hint: 'PostgREST transcript embed is no longer object|array|null — check transcriptOf() and the transcripts!call_id relationship.',
+          },
+        });
+      }
+
+      setCalls(rows);
+      setFiltered(rows);
       setLoading(false);
       setVisible(true);
     }
@@ -272,7 +282,7 @@ export default function CallsPage() {
             <div className="mt-6 space-y-3 lg:hidden">
               {filtered.map(call => {
                 const isOpen = expandedId === call.id;
-                const transcript = transcriptOf(call);
+                const transcript = transcriptOf(call.transcripts);
                 const transcriptSummary = transcript?.summary ?? null;
                 const transcriptFull = transcript?.full_text ?? null;
                 const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
@@ -402,7 +412,7 @@ export default function CallsPage() {
               <div>
                 {filtered.map(call => {
                   const isOpen = expandedId === call.id;
-                  const transcript = transcriptOf(call);
+                  const transcript = transcriptOf(call.transcripts);
                   const transcriptSummary = transcript?.summary ?? null;
                   const transcriptFull = transcript?.full_text ?? null;
                   const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
