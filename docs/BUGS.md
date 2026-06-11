@@ -136,4 +136,29 @@ Dashboard Calls page shows `—` in the Recording column for every call. No audi
 
 ---
 
+## BUG-004 — Call summary & transcript never showed on dashboard
+
+**Severity:** High (core dashboard data silently blank, no error anywhere)  
+**Discovered:** June 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+The Calls page showed the recording (playable) but never the call summary or transcript, even though both existed in the database. No error in the console or Sentry — purely silent.
+
+### Root cause
+`transcripts.call_id` has a `UNIQUE` constraint, so PostgREST treats the embed as **one-to-one** and returns the transcript as a **single object**, not an array. The component read `call.transcripts?.[0]?.summary` — indexing `[0]` on an object is always `undefined`, so summary and full transcript rendered empty. The recording was unaffected because `recording_url` is a direct column on `calls`.
+
+(Note: this was initially misdiagnosed as missing RLS. A `transcripts_select_own` SELECT policy already existed — RLS was never the blocker. Migration `015_transcripts_rls.sql` added a redundant but harmless duplicate policy.)
+
+### Fix
+- `src/lib/transcript.ts` — single source of truth `transcriptOf()` that normalises both object and array embed shapes. No page should index `transcripts[0]` directly again.
+- `CallsPage.tsx` reads transcripts only through `transcriptOf()`, and now also shows the full transcript + a download-recording fallback.
+- Backend `handleCallAnalyzed` backfills `recording_url` and `full_text` in case Retell only attaches them to the later `call_analyzed` event.
+
+### Prevention
+- **Sentry guardrail:** `transcriptEmbedAnomaly()` runs on every CallsPage load. If PostgREST ever returns the embed in an unexpected shape again (multi-row array, missing keys, primitive), it fires an `error`-level Sentry alert with the offending call ids and a fix hint — so this silent failure can never go unnoticed again.
+- **Rule:** never index a PostgREST embedded relationship with `[0]`. A `UNIQUE` FK column makes it one-to-one (object); a non-unique one makes it to-many (array). Use a normaliser.
+
+---
+
 *Last updated: June 2026*
