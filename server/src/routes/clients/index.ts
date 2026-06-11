@@ -837,12 +837,14 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
     const llmId = (agent.response_engine as Record<string, unknown> | undefined)?.llm_id as string | undefined;
     let llmTools: unknown[] = [];
 
+    let llmBeginMessage: string | null = null;
     if (llmId) {
       const llmRes = await fetch(`https://api.retellai.com/get-retell-llm/${llmId}`, {
         headers: { Authorization: `Bearer ${RETELL_API_KEY}` },
       });
       const llm = await llmRes.json() as Record<string, unknown>;
       llmTools = (llm.general_tools as unknown[]) ?? [];
+      llmBeginMessage = (llm.begin_message as string | undefined) ?? null;
     }
 
     const toolNames = (llmTools as Array<{ name?: string }>).map((t) => t.name ?? '(unnamed)');
@@ -879,6 +881,7 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
         tool_count: toolNames.length,
         tool_names: toolNames,
         has_calendar_tools: toolNames.includes('check_calendar_availability'),
+        llm_begin_message: llmBeginMessage,
         raw_tools: llmTools,
         call_diagnosis: callDiagnosis,
         agent_settings: {

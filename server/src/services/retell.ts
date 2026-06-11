@@ -227,7 +227,8 @@ function buildRetellTools(
 export async function createRetellLlm(
   prompt: string,
   ownerNumber?: string | null,
-  calendarBookingEnabled = false
+  calendarBookingEnabled = false,
+  beginMessage?: string | null
 ): Promise<{ llmId: string }> {
   if (isE2ETestMode()) {
     return { llmId: `llm_e2e_${Date.now()}` };
@@ -235,14 +236,21 @@ export async function createRetellLlm(
 
   const tools = buildRetellTools(ownerNumber, calendarBookingEnabled);
 
+  const body: Record<string, unknown> = {
+    general_prompt: prompt,
+    general_tools:  tools,
+    model:          'gpt-4o-mini',
+  };
+  // begin_message lives on the Retell LLM (NOT the agent — Retell ignores
+  // agent-level begin_message for llm-backed agents). When set, Retell speaks
+  // this static opening and only invokes the LLM AFTER the caller responds,
+  // which prevents the model greeting-and-calling-EndCall in a single first turn.
+  if (beginMessage) body.begin_message = beginMessage;
+
   const res = await fetch(`${BASE_URL}/create-retell-llm`, {
     method:  'POST',
     headers: headers(),
-    body:    JSON.stringify({
-      general_prompt: prompt,
-      general_tools:  tools,
-      model:          'gpt-4o-mini',
-    }),
+    body:    JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`Retell createLlm failed: ${await res.text()}`);
   const data = (await res.json()) as { llm_id: string };
@@ -270,19 +278,24 @@ export async function updateRetellLlmConfig(
   llmId: string,
   prompt: string,
   ownerNumber?: string | null,
-  calendarBookingEnabled = false
+  calendarBookingEnabled = false,
+  beginMessage?: string | null
 ): Promise<void> {
   if (isE2ETestMode()) {
     return;
   }
 
+  const body: Record<string, unknown> = {
+    general_prompt: prompt,
+    general_tools: buildRetellTools(ownerNumber, calendarBookingEnabled),
+  };
+  // See createRetellLlm — begin_message belongs on the LLM, not the agent.
+  if (beginMessage) body.begin_message = beginMessage;
+
   const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
     method: 'PATCH',
     headers: headers(),
-    body: JSON.stringify({
-      general_prompt: prompt,
-      general_tools: buildRetellTools(ownerNumber, calendarBookingEnabled),
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`Retell updateLlm failed: ${await res.text()}`);
 }
@@ -324,7 +337,8 @@ export async function createRetellAgent(
   const { llmId } = await createRetellLlm(
     config.prompt,
     config.ownerNumber,
-    config.calendarBookingEnabled ?? false
+    config.calendarBookingEnabled ?? false,
+    config.beginMessage
   );
 
   const webhookUrl = process.env.RETELL_WEBHOOK_URL;
@@ -347,7 +361,8 @@ export async function createRetellAgent(
   };
 
   if (webhookUrl) agentBody.webhook_url = webhookUrl;
-  if (config.beginMessage) agentBody.begin_message = config.beginMessage;
+  // NB: begin_message is set on the LLM (createRetellLlm above), not here — Retell
+  // ignores agent-level begin_message for llm-backed agents.
 
   const res = await fetch(`${BASE_URL}/create-agent`, {
     method:  'POST',
@@ -566,10 +581,14 @@ export async function updateAgentConfiguration(
 ): Promise<void> {
   if (!client.retell_agent_id) return;
 
-  const slots  = await getNextAvailableSlots(client, config);
-  const prompt = buildSystemPrompt(client, config, slots);
+  const slots        = await getNextAvailableSlots(client, config);
+  const prompt       = buildSystemPrompt(client, config, slots);
+  const beginMessage = buildBeginMessage(client, config);
 
-  // Update the LLM (prompt + tools).
+  // Update the LLM (prompt + tools + begin_message). begin_message MUST go on the
+  // LLM, not the agent — Retell silently ignores agent-level begin_message for
+  // llm-backed agents. With it set, Retell speaks the opening and only invokes the
+  // LLM after the caller responds, eliminating the greet-and-hangup bug.
   const agentRes = await fetch(`${BASE_URL}/get-agent/${client.retell_agent_id}`, { headers: headers() });
   let llmUpdated = false;
   if (agentRes.ok) {
@@ -578,7 +597,7 @@ export async function updateAgentConfiguration(
     };
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
-      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, !!client.google_cal_id);
+      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, !!client.google_cal_id, beginMessage);
       llmUpdated = true;
     }
   }
@@ -587,12 +606,9 @@ export async function updateAgentConfiguration(
     await updateAgentPrompt(client.retell_agent_id, prompt);
   }
 
-  // Always re-assert healthy agent-level settings. A null begin_message lets the
-  // LLM greet AND call EndCall on its first turn, hanging up before the caller
-  // speaks. Setting begin_message makes Retell speak the opening and only invoke
-  // the LLM after the caller responds — eliminating the greet-and-hangup bug.
+  // Agent-level turn-taking settings (these Retell DOES honour on update-agent):
+  // calmer interruption + a longer silence window so the agent waits for the caller.
   await patchRetellAgent(client.retell_agent_id, {
-    begin_message:              buildBeginMessage(client, config),
     interruption_sensitivity:   AGENT_INTERRUPTION_SENSITIVITY,
     end_call_after_silence_ms:  AGENT_END_CALL_AFTER_SILENCE_MS,
   });
