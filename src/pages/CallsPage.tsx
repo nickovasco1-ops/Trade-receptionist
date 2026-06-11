@@ -9,12 +9,29 @@ import { OUTCOME_TONE } from '../components/dashboard/ui/outcomeTone';
 import { supabase } from '../lib/supabase';
 import type { Call, CallOutcome } from '../../shared/types';
 
+interface TranscriptRow {
+  summary: string | null;
+  full_text: string | null;
+}
+
 type CallWithSummary = Pick<
   Call,
   'id' | 'outcome' | 'is_emergency' | 'caller_number' | 'direction' | 'duration_secs' | 'started_at' | 'ended_at' | 'recording_url'
-> & { transcripts?: { summary: string | null; full_text: string | null }[] | null };
+> & {
+  // transcripts.call_id is UNIQUE, so PostgREST embeds this as a single object
+  // (one-to-one), not an array. Older PostgREST/config can still return an array,
+  // so we normalise both shapes via transcriptOf().
+  transcripts?: TranscriptRow | TranscriptRow[] | null;
+};
 
 const ALL_OUTCOMES = Object.keys(OUTCOME_TONE) as NonNullable<CallOutcome>[];
+
+/** Normalise the embedded transcript whether PostgREST returns it as an object or an array. */
+function transcriptOf(call: CallWithSummary): TranscriptRow | null {
+  const t = call.transcripts;
+  if (!t) return null;
+  return Array.isArray(t) ? (t[0] ?? null) : t;
+}
 
 function formatDuration(secs: number | null) {
   if (!secs) return '—';
@@ -255,8 +272,9 @@ export default function CallsPage() {
             <div className="mt-6 space-y-3 lg:hidden">
               {filtered.map(call => {
                 const isOpen = expandedId === call.id;
-                const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
-                const transcriptFull = call.transcripts?.[0]?.full_text ?? null;
+                const transcript = transcriptOf(call);
+                const transcriptSummary = transcript?.summary ?? null;
+                const transcriptFull = transcript?.full_text ?? null;
                 const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
                 const panelId = `call-detail-mobile-${call.id}`;
                 return (
@@ -384,8 +402,9 @@ export default function CallsPage() {
               <div>
                 {filtered.map(call => {
                   const isOpen = expandedId === call.id;
-                  const transcriptSummary = call.transcripts?.[0]?.summary ?? null;
-                  const transcriptFull = call.transcripts?.[0]?.full_text ?? null;
+                  const transcript = transcriptOf(call);
+                  const transcriptSummary = transcript?.summary ?? null;
+                  const transcriptFull = transcript?.full_text ?? null;
                   const audioSrc = call.recording_url ? recordingSrc(call.id) : null;
                   const panelId = `call-detail-desktop-${call.id}`;
                   return (
