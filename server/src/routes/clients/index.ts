@@ -881,6 +881,18 @@ router.get('/:id/test-retell-agent', async (req: Request, res: Response) => {
         has_calendar_tools: toolNames.includes('check_calendar_availability'),
         raw_tools: llmTools,
         call_diagnosis: callDiagnosis,
+        agent_settings: {
+          voice_id: agent['voice_id'],
+          language: agent['language'],
+          begin_message: agent['begin_message'] ?? null,
+          end_call_after_silence_ms: agent['end_call_after_silence_ms'],
+          max_call_duration_ms: agent['max_call_duration_ms'],
+          interruption_sensitivity: agent['interruption_sensitivity'],
+          responsiveness: agent['responsiveness'],
+          enable_backchannel: agent['enable_backchannel'],
+          ambient_sound: agent['ambient_sound'] ?? null,
+          normalize_for_speech: agent['normalize_for_speech'],
+        },
       },
     } satisfies ApiResponse);
   } catch (err: unknown) {
