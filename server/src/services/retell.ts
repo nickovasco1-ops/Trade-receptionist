@@ -664,8 +664,8 @@ export async function postCallWorkflow(
 
   const tasks: Promise<unknown>[] = [];
 
-  // Owner: SMS
-  if (client.owner_mobile && fromNumber) {
+  // Owner: SMS — skip for spam; the call is archived silently, no alert needed.
+  if (client.owner_mobile && fromNumber && outcome !== 'spam') {
     tasks.push(
       sendOwnerSms({
         to:           client.owner_mobile,
