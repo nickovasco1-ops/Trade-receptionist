@@ -16,7 +16,7 @@ export type CallOutcome =
   | 'no_answer';
 export type LeadUrgency = 'routine' | 'urgent' | 'emergency';
 export type LeadPropertyType = 'residential' | 'commercial' | 'unknown';
-export type LeadStatus = 'new' | 'contacted' | 'booked' | 'lost' | 'spam';
+export type LeadStatus = 'new' | 'contacted' | 'booked' | 'lost' | 'spam' | 'flagged_for_review';
 export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 
 // ── Tables ────────────────────────────────────────────────────────────────────

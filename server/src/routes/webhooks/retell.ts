@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { verify as retellVerify } from 'retell-sdk';
 import { supabase } from '../../services/supabase';
 import { postCallWorkflow } from '../../services/retell';
-import { detectEmergency, escalateEmergency } from '../../lib/emergency';
+import { detectEmergency, escalateEmergency, getEmergencyLevel } from '../../lib/emergency';
 import { logCall, logIncident } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import type {
@@ -171,10 +171,16 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   }
 
   const client = clientRow as Client;
-  const transcript = event.transcript ?? '';
-  const summary    = event.call_analysis?.call_summary ?? '';
-  const outcome    = deriveOutcome(summary, event.call_analysis?.custom_analysis_data);
-  const isEmergency = outcome === 'emergency' || detectEmergency(transcript);
+  const transcript   = event.transcript ?? '';
+  const summary      = event.call_analysis?.call_summary ?? '';
+  const customData   = event.call_analysis?.custom_analysis_data;
+  const outcome      = deriveOutcome(summary, customData);
+  const isEmergency  = outcome === 'emergency' || detectEmergency(transcript);
+  // Urgent tier: significant inconvenience (boiler out, blocked drain, no hot water)
+  // but not life-threatening — still needs same-day attention, just not full escalation.
+  const emergencyLevel = getEmergencyLevel(transcript);
+  const isUrgent     = !isEmergency && emergencyLevel === 'urgent';
+  const flaggedForReview = customData?.['flagged_for_review'] === true;
 
   const durationSecs = Math.round((event.duration_ms ?? 0) / 1000);
   const startedAt = event.start_timestamp
@@ -253,7 +259,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   const leadOutcomes: CallOutcome[] = ['booked', 'lead_captured', 'enquiry', 'emergency', 'no_answer', 'voicemail'];
   let insertedLeadId: string | null = null;
   if (leadOutcomes.includes(outcome)) {
-    const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
+    const leadData = extractLeadData(summary, customData);
     const lead: LeadInsert = {
       client_id:             client.id,
       call_id:               call.id,
@@ -262,11 +268,11 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
       caller_email:          leadData.caller_email ?? null,
       postcode:              leadData.postcode ?? null,
       job_type:              leadData.job_type ?? null,
-      urgency:               isEmergency ? 'emergency' : (leadData.urgency ?? 'routine'),
+      urgency:               isEmergency ? 'emergency' : isUrgent ? 'urgent' : (leadData.urgency ?? 'routine'),
       property_type:         leadData.property_type ?? null,
       customer_availability: leadData.customer_availability ?? null,
       notes:                 leadData.notes ?? null,
-      status:                outcome === 'booked' ? 'booked' : 'new',
+      status:                outcome === 'booked' ? 'booked' : flaggedForReview ? 'flagged_for_review' : 'new',
     };
 
     const { data: insertedLead, error: leadErr } = await supabase
@@ -309,7 +315,7 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
 
   // Emergency escalation
   if (isEmergency) {
-    const emergencyLead = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
+    const emergencyLead = extractLeadData(summary, customData);
     void logCall({
       callerName:     emergencyLead.caller_name   ?? null,
       callerNumber:   event.from_number,
@@ -327,13 +333,13 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   }
 
   // Normal post-call workflow (SMS + email)
-  const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
+  const leadData = extractLeadData(summary, customData);
   try {
     await postCallWorkflow(client, call, summary, {
       callerName:  leadData.caller_name  ?? null,
       jobType:     leadData.job_type     ?? null,
       postcode:    leadData.postcode     ?? null,
-      urgency:     leadData.urgency      ?? null,
+      urgency:     isUrgent ? 'urgent' : (leadData.urgency ?? null),
       transcript:  transcript            || null,
       leadId:      insertedLeadId,
     });

@@ -39,6 +39,11 @@ export const POST_CALL_ANALYSIS_DATA: Record<string, unknown>[] = [
     description: 'The overall outcome of the call. booked = a slot was confirmed in the diary; lead_captured = full details taken, no booking; enquiry = info only; spam = sales/robocall; voicemail = message left, no engagement; emergency = urgent danger; transferred = put through to the owner; no_answer = silence or disconnected.',
     choices: ['booked', 'lead_captured', 'enquiry', 'spam', 'voicemail', 'emergency', 'transferred', 'no_answer'],
   },
+  {
+    type: 'boolean',
+    name: 'flagged_for_review',
+    description: 'Set to true if the job spans multiple trades, the caller is unsure which trade they need, the job sounds unusually complex or large-scale, or something about the situation means the owner should assess it personally before anyone is dispatched. Examples: "I need a plumber and an electrician", "not sure if it\'s a gas or electrical fault", "it might need structural work". Set to false for any clear single-trade job.',
+  },
 ];
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
