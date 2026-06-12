@@ -15,6 +15,7 @@ import type {
   CallOutcome,
   LeadInsert,
   LeadUrgency,
+  LeadPropertyType,
 } from '../../../../shared/types';
 
 const router = Router();
@@ -50,27 +51,42 @@ function extractLeadData(
       const v = customData[key];
       return v && typeof v === 'string' && v.trim() ? v.trim() : undefined;
     };
+    const propertyRaw = str('property_type');
+    const validPropertyTypes: LeadPropertyType[] = ['residential', 'commercial', 'unknown'];
+    const property_type = propertyRaw && validPropertyTypes.includes(propertyRaw as LeadPropertyType)
+      ? (propertyRaw as LeadPropertyType)
+      : undefined;
     return {
-      caller_name:   str('caller_name'),
-      caller_number: str('caller_number'),
-      caller_email:  str('caller_email'),
-      postcode:      str('postcode'),
-      job_type:      str('job_type'),
-      urgency:       (str('urgency') as LeadUrgency | undefined),
-      notes:         str('notes'),
+      caller_name:           str('caller_name'),
+      caller_number:         str('caller_number'),
+      caller_email:          str('caller_email'),
+      postcode:              str('postcode'),
+      job_type:              str('job_type'),
+      urgency:               (str('urgency') as LeadUrgency | undefined),
+      property_type,
+      customer_availability: str('customer_availability'),
+      notes:                 str('notes'),
     };
   }
 
   // Fallback: regex parse the AI's freeform summary
   const get = (re: RegExp): string | undefined => summary.match(re)?.[1]?.trim() || undefined;
 
+  const propertyFallback = /\b(commercial|office|shop|warehouse|site)\b/i.test(summary)
+    ? 'commercial'
+    : /\b(residential|house|flat|HMO|domestic)\b/i.test(summary)
+      ? 'residential'
+      : undefined;
+
   return {
-    caller_name:   get(/(?:customer|caller|name)[:\s|]+([A-Z][a-z]+(?: [A-Z][a-z]+)+)/),
-    caller_number: get(/(?:number|mobile|phone|tel)[:\s|]+([+\d\s().-]{7,15})/i),
-    postcode:      get(/([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})/i),
-    job_type:      get(/(?:job|trade|work|repair|service)[:\s|]+([^|.\n]{3,40})/i),
-    urgency:       (/urgent|emergency/i.test(summary) ? 'urgent' : 'routine') as LeadUrgency,
-    notes:         summary.length > 20 ? summary.slice(0, 1000) : undefined,
+    caller_name:           get(/(?:customer|caller|name)[:\s|]+([A-Z][a-z]+(?: [A-Z][a-z]+)+)/),
+    caller_number:         get(/(?:number|mobile|phone|tel)[:\s|]+([+\d\s().-]{7,15})/i),
+    postcode:              get(/([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})/i),
+    job_type:              get(/(?:job|trade|work|repair|service)[:\s|]+([^|.\n]{3,40})/i),
+    urgency:               (/urgent|emergency/i.test(summary) ? 'urgent' : 'routine') as LeadUrgency,
+    property_type:         propertyFallback as LeadPropertyType | undefined,
+    customer_availability: get(/(?:available|availability|free|best.time)[:\s|]+([^|.\n]{5,60})/i),
+    notes:                 summary.length > 20 ? summary.slice(0, 1000) : undefined,
   };
 }
 
@@ -239,16 +255,18 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   if (leadOutcomes.includes(outcome)) {
     const leadData = extractLeadData(summary, event.call_analysis?.custom_analysis_data);
     const lead: LeadInsert = {
-      client_id:     client.id,
-      call_id:       call.id,
-      caller_number: leadData.caller_number ?? event.from_number,
-      caller_name:   leadData.caller_name ?? null,
-      caller_email:  leadData.caller_email ?? null,
-      postcode:      leadData.postcode ?? null,
-      job_type:      leadData.job_type ?? null,
-      urgency:       isEmergency ? 'emergency' : (leadData.urgency ?? 'routine'),
-      notes:         leadData.notes ?? null,
-      status:        outcome === 'booked' ? 'booked' : 'new',
+      client_id:             client.id,
+      call_id:               call.id,
+      caller_number:         leadData.caller_number ?? event.from_number,
+      caller_name:           leadData.caller_name ?? null,
+      caller_email:          leadData.caller_email ?? null,
+      postcode:              leadData.postcode ?? null,
+      job_type:              leadData.job_type ?? null,
+      urgency:               isEmergency ? 'emergency' : (leadData.urgency ?? 'routine'),
+      property_type:         leadData.property_type ?? null,
+      customer_availability: leadData.customer_availability ?? null,
+      notes:                 leadData.notes ?? null,
+      status:                outcome === 'booked' ? 'booked' : 'new',
     };
 
     const { data: insertedLead, error: leadErr } = await supabase

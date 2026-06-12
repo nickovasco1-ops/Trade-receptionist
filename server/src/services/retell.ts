@@ -30,6 +30,8 @@ export const POST_CALL_ANALYSIS_DATA: Record<string, unknown>[] = [
   { type: 'string', name: 'postcode', description: 'The UK postcode of the job. Empty string if not given.' },
   { type: 'string', name: 'job_type', description: 'A short description of the job or reason for the call.' },
   { type: 'enum', name: 'urgency', description: 'How urgent the job is.', choices: ['routine', 'urgent', 'emergency'] },
+  { type: 'enum', name: 'property_type', description: 'Whether the property is residential (house, flat, HMO) or commercial (office, shop, warehouse, site). Use unknown if unclear.', choices: ['residential', 'commercial', 'unknown'] },
+  { type: 'string', name: 'customer_availability', description: "When the caller is available for the visit, in their own words — e.g. 'Thursdays after 2pm' or 'any weekday morning'. Empty string if not discussed." },
   { type: 'string', name: 'notes', description: 'Useful notes for the tradesperson: access details, preferences, timing, anything important.' },
   {
     type: 'enum',

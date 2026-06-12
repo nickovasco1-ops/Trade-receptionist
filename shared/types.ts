@@ -15,6 +15,7 @@ export type CallOutcome =
   | 'emergency'
   | 'no_answer';
 export type LeadUrgency = 'routine' | 'urgent' | 'emergency';
+export type LeadPropertyType = 'residential' | 'commercial' | 'unknown';
 export type LeadStatus = 'new' | 'contacted' | 'booked' | 'lost' | 'spam';
 export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 
@@ -104,6 +105,8 @@ export interface Lead {
   postcode: string | null;
   job_type: string | null;
   urgency: LeadUrgency | null;
+  property_type: LeadPropertyType | null;
+  customer_availability: string | null;
   notes: string | null;
   status: LeadStatus;
   created_at: string;

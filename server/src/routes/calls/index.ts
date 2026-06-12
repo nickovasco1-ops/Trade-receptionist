@@ -257,16 +257,18 @@ router.post('/backfill/:retell_call_id', async (req: Request, res: Response) => 
       return v && typeof v === 'string' && v.trim() ? v.trim() : undefined;
     };
     const lead: LeadInsert = {
-      client_id:     client.id,
-      call_id:       call.id,
-      caller_number: str('caller_number') ?? call.caller_number,
-      caller_name:   str('caller_name') ?? null,
-      caller_email:  str('caller_email') ?? null,
-      postcode:      str('postcode') ?? null,
-      job_type:      str('job_type') ?? null,
-      urgency:       (str('urgency') as LeadInsert['urgency'] | undefined) ?? 'routine',
-      notes:         summary || null,
-      status:        outcome === 'booked' ? 'booked' : 'new',
+      client_id:             client.id,
+      call_id:               call.id,
+      caller_number:         str('caller_number') ?? call.caller_number,
+      caller_name:           str('caller_name') ?? null,
+      caller_email:          str('caller_email') ?? null,
+      postcode:              str('postcode') ?? null,
+      job_type:              str('job_type') ?? null,
+      urgency:               (str('urgency') as LeadInsert['urgency'] | undefined) ?? 'routine',
+      property_type:         (str('property_type') as LeadInsert['property_type'] | undefined) ?? null,
+      customer_availability: str('customer_availability') ?? null,
+      notes:                 summary || null,
+      status:                outcome === 'booked' ? 'booked' : 'new',
     };
     await supabase.from('leads').insert(lead).then(({ error: e }) => {
       if (e) logEvent('error', 'calls.backfill.lead_insert_failed', { retell_call_id, error: errorMessage(e) });
