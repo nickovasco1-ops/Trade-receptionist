@@ -116,13 +116,13 @@ export default function DashboardShell({
       <div className="mb-8 flex items-center justify-between gap-3">
         <Link to="/" className="flex-1 min-w-0" aria-label="Trade Receptionist — home">
           <div
-            className="flex items-center justify-center rounded-[24px] px-6 py-6"
+            className="flex items-center justify-center rounded-[18px] px-4 py-3.5"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.04)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
             }}
           >
-            <Logo className="h-28 w-auto" />
+            <Logo className="h-16 w-auto" />
           </div>
         </Link>
         {mobile && (
@@ -137,18 +137,14 @@ export default function DashboardShell({
       </div>
 
       {/* Nav links */}
-      <div className="mb-5 rounded-[22px] p-4" style={{ background: 'rgba(255,255,255,0.03)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Receptionist status</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-status-success opacity-75 animate-ping" />
-            <span className="relative h-2.5 w-2.5 rounded-full bg-status-success shadow-[0_0_14px_rgba(134,239,172,0.6)]" />
+      <div className="mb-5 rounded-[16px] px-3.5 py-3" style={{ background: 'rgba(255,255,255,0.03)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2 w-2" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-status-success opacity-60 animate-ping" />
+            <span className="relative h-2 w-2 rounded-full bg-status-success shadow-[0_0_10px_rgba(134,239,172,0.5)]" />
           </span>
-          <span className="text-[13px] font-semibold text-offwhite/76">Live and answering calls</span>
+          <span className="text-[13px] font-medium text-offwhite/80">Live · answering calls</span>
         </div>
-        <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">
-          Review what your receptionist captured, act on new jobs quickly, and keep your trade calendar full.
-        </p>
       </div>
 
       <div className="flex-1 space-y-1">
@@ -163,7 +159,8 @@ export default function DashboardShell({
               to={href}
               onClick={() => setMobileOpen(false)}
               className={[
-                'flex items-center gap-3 rounded-[16px] px-3.5 py-3 text-[14px] font-medium font-body transition-all duration-200',
+                'flex items-center gap-3 rounded-[14px] px-3 py-2.5 text-[13.5px] font-medium font-body',
+                'transition-[background-color,color,transform] duration-300 ease-mechanical active:scale-[0.985]',
                 active
                   ? 'text-offwhite'
                   : 'text-offwhite/50 hover:text-offwhite/88 hover:bg-white/[0.04]',
@@ -174,13 +171,13 @@ export default function DashboardShell({
               } : undefined}
             >
               <div
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[9px]"
                 style={{
                   background: active ? 'rgba(255,107,43,0.14)' : 'rgba(255,255,255,0.05)',
                   boxShadow: active ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
                 }}
               >
-                <Icon size={15} strokeWidth={active ? 2.4 : 2} className={active ? 'text-orange-soft' : 'text-offwhite/42'} aria-hidden="true" />
+                <Icon size={14} strokeWidth={active ? 2.2 : 2} className={active ? 'text-orange-soft' : 'text-offwhite/42'} aria-hidden="true" />
               </div>
               {label}
               {active && <ChevronRight size={12} className="ml-auto text-orange-soft/60" aria-hidden="true" />}
@@ -204,7 +201,7 @@ export default function DashboardShell({
         )}
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left text-[14px] font-medium font-body text-offwhite/44 transition-all duration-200 hover:bg-white/[0.04] hover:text-offwhite/70"
+          className="flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left text-[13.5px] font-medium font-body text-offwhite/44 transition-[background-color,color,transform] duration-300 ease-mechanical hover:bg-white/[0.04] hover:text-offwhite/70 active:scale-[0.985]"
         >
           <LogOut size={15} strokeWidth={2} aria-hidden="true" />
           {preview ? 'Exit preview' : 'Sign out'}
@@ -237,7 +234,7 @@ export default function DashboardShell({
       <div className="relative flex min-h-screen">
 
         {/* ── Desktop sidebar ─────────────────────────────────── */}
-        <aside className="hidden w-[292px] flex-shrink-0 px-5 py-5 lg:block">
+        <aside className="hidden w-[272px] flex-shrink-0 px-5 py-5 lg:block">
           <div
             className="sticky top-5 h-[calc(100vh-40px)] overflow-hidden rounded-[32px]"
             style={{

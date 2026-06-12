@@ -12,7 +12,7 @@ const VARIANT_CLASSES: Record<PanelVariant, string> = {
   default: 'bg-white/[0.04] shadow-ring-subtle',
   accent: 'bg-orange/[0.08] shadow-card-accent',
   hover:
-    'bg-white/[0.04] shadow-ring-subtle transition-all duration-300 ease-mechanical hover:-translate-y-1 hover:shadow-card-hover',
+    'bg-white/[0.04] shadow-ring-subtle transition-[transform,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 hover:shadow-card-hover',
 };
 
 export default function Panel({

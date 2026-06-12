@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ElementType, FormEvent, HTMLAttributes, ReactNode } from 'react';
-import { AlertCircle, Bell, Bot, Calendar, CheckCircle, Clock, CreditCard, Key, Phone, Save, ShieldCheck, User, Wrench } from 'lucide-react';
+import { AlertCircle, Bell, Bot, Calendar, CheckCircle, Clock, CreditCard, Key, Phone, Save, User, Wrench } from 'lucide-react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
@@ -115,7 +115,7 @@ function LabeledField({
         readOnly={readOnly}
         onChange={event => onChange?.(event.target.value)}
         placeholder={placeholder}
-        className={`min-h-[50px] w-full rounded-[18px] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40 ${
+        className={`min-h-[50px] w-full rounded-[18px] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40 ${
           readOnly ? 'cursor-default bg-white/[0.03] opacity-70' : 'bg-white/[0.05]'
         }`}
         style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
@@ -438,25 +438,14 @@ export default function SettingsPage() {
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-[58ch]">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings</p>
-              <h1 className="mt-3 font-display text-[clamp(2.25rem,4vw,4rem)] font-bold leading-[0.94] tracking-[-0.05em] text-offwhite">
-                Keep your receptionist aligned with how your business runs.
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Settings</p>
+              <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
+                Keep your receptionist aligned with your business.
               </h1>
-              <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-offwhite/52 sm:text-[16px]">
-                These controls shape how your receptionist introduces your business, routes follow-up, and connects to your diary — without changing the core logic behind the product.
+              <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                How it introduces your business, routes follow-up, and books your diary.
               </p>
             </div>
-            <div className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}>
-              Product controls
-            </div>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {['Business identity', 'Receptionist profile', 'Services & hours', 'Diary connection'].map(item => (
-              <span key={item} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70" style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
-                <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
-                {item}
-              </span>
-            ))}
           </div>
         </article>
 
@@ -591,7 +580,7 @@ export default function SettingsPage() {
                   disabled={!configLoaded}
                   rows={4}
                   placeholder="We're closed right now, but your AI receptionist has taken full details of your enquiry and we'll follow up as soon as we're back on the tools."
-                  className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                  className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                   style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                 />
                 {!configLoaded ? (
@@ -624,7 +613,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => setForm(prev => ({ ...prev, receptionist_tone: tone }))}
                           aria-pressed={form.receptionist_tone === tone}
-                          className="min-h-[44px] rounded-[16px] px-3 py-2.5 text-[13px] font-semibold capitalize transition-all duration-200"
+                          className="min-h-[44px] rounded-[16px] px-3 py-2.5 text-[13px] font-semibold capitalize transition-[background-color,color,box-shadow,transform] duration-300 ease-mechanical active:scale-[0.98]"
                           style={
                             form.receptionist_tone === tone
                               ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40)', color: '#ffb59a' }
@@ -661,7 +650,7 @@ export default function SettingsPage() {
                       disabled={!configLoaded}
                       rows={4}
                       placeholder={"Boiler servicing and repairs\nCentral heating installation\nEmergency call-outs\nLandlord gas safety checks"}
-                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                       style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                     />
                     <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">One service per line. Your receptionist uses this list to qualify enquiries.</p>
@@ -677,7 +666,7 @@ export default function SettingsPage() {
                       disabled={!configLoaded}
                       rows={3}
                       placeholder={"Birmingham\nCoventry\nSolihull"}
-                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                      className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] font-body text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                       style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                     />
                     <p className="mt-2 text-[12px] leading-relaxed text-offwhite/38">One town or postcode area per line.</p>
@@ -744,7 +733,7 @@ export default function SettingsPage() {
                         value={form.business_hours_start ?? ''}
                         onChange={event => setForm(prev => ({ ...prev, business_hours_start: event.target.value || null }))}
                         disabled={!configLoaded}
-                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                         style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', colorScheme: 'dark' }}
                       />
                     </div>
@@ -758,7 +747,7 @@ export default function SettingsPage() {
                         value={form.business_hours_end ?? ''}
                         onChange={event => setForm(prev => ({ ...prev, business_hours_end: event.target.value || null }))}
                         disabled={!configLoaded}
-                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                        className="min-h-[50px] w-full rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                         style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', colorScheme: 'dark' }}
                       />
                     </div>
@@ -780,7 +769,7 @@ export default function SettingsPage() {
                                 working_days: active ? days.filter(d => d !== index) : [...days, index].sort((a, b) => a - b),
                               };
                             })}
-                            className="min-h-[44px] w-[52px] rounded-[14px] text-[13px] font-semibold transition-all duration-200"
+                            className="min-h-[44px] w-[52px] rounded-[14px] text-[13px] font-semibold transition-[background-color,color,box-shadow,transform] duration-300 ease-mechanical active:scale-[0.98]"
                             style={
                               active
                                 ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1.5px rgba(255,107,43,0.40)', color: '#ffb59a' }

@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BASE =
-  'inline-flex min-h-[46px] items-center justify-center gap-2.5 font-semibold font-body rounded-btn transition-all duration-300 ease-mechanical focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none';
+  'inline-flex min-h-[46px] items-center justify-center gap-2.5 font-semibold font-body rounded-btn transition-[transform,box-shadow,background-color,opacity] duration-300 ease-mechanical active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none';
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: 'px-4 py-2.5 text-[13px]',

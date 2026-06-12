@@ -350,17 +350,17 @@ export default function LeadsPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Leads</p>
-                <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Leads</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
                   Captured work, ready for follow-up.
                 </h1>
-                <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                  Keep the pipeline sharp, surface urgent jobs early, and move every qualified enquiry toward contact or booking without clutter.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  Surface urgent jobs early, move every enquiry toward booked.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium tabular-nums text-offwhite/64"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
               >
                 {leads.length} captured
               </div>
@@ -461,7 +461,7 @@ export default function LeadsPage() {
                 <article
                   key={lead.id}
                   id={`lead-${lead.id}`}
-                  className="relative rounded-[28px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
+                  className="relative rounded-[28px] px-5 py-5 transition-[transform,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5"
                   style={{
                     background: isEmergency
                       ? 'linear-gradient(180deg, rgba(255,107,43,0.08) 0%, rgba(10,23,39,0.96) 100%)'
@@ -497,7 +497,7 @@ export default function LeadsPage() {
                       value={status}
                       onChange={(event) => updateStatus(lead.id, event.target.value as LeadStatus)}
                       aria-label={`Update status for ${lead.caller_name ?? 'lead'}`}
-                      className={`min-h-[40px] appearance-none rounded-full px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] outline-none transition-all duration-200 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] focus:ring-2 focus:ring-orange/40 ${statusInfo.tone}`}
+                      className={`min-h-[40px] appearance-none rounded-full px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] outline-none transition-[background-color,color,box-shadow] duration-200 ease-standard shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] focus:ring-2 focus:ring-orange/40 ${statusInfo.tone}`}
                     >
                       {(Object.entries(STATUS_META) as [LeadStatus, { label: string }][]).map(([value, meta]) => (
                         <option key={value} value={value}>{meta.label}</option>
@@ -536,7 +536,7 @@ export default function LeadsPage() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <a
                         href={`tel:${lead.caller_number}`}
-                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-all duration-200 hover:-translate-y-0.5"
+                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-[transform,background-color,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
                         style={{ background: 'rgba(255,107,43,0.12)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }}
                       >
                         <Phone size={13} aria-hidden="true" />
@@ -544,7 +544,7 @@ export default function LeadsPage() {
                       </a>
                       <a
                         href={`sms:${lead.caller_number}?body=${encodeURIComponent('Hi, just returning your call. Please ring me back when you get a chance.')}`}
-                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-all duration-200 hover:-translate-y-0.5"
+                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite transition-[transform,background-color,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
                         style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.10)' }}
                       >
                         <MessageSquare size={13} aria-hidden="true" />
@@ -664,7 +664,7 @@ export default function LeadsPage() {
                                       key={slot}
                                       type="button"
                                       onClick={() => setComposer((prev) => ({ ...prev, selectedSlot: slot, error: null }))}
-                                      className="rounded-[16px] px-3 py-3 text-left text-[13px] font-semibold transition-all duration-200"
+                                      className="rounded-[16px] px-3 py-3 text-left text-[13px] font-semibold transition-[background-color,color,box-shadow,transform] duration-300 ease-mechanical active:scale-[0.98]"
                                       style={{
                                         background: selected ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.03)',
                                         boxShadow: selected

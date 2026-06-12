@@ -14,7 +14,6 @@ import {
   Phone,
   Play,
   Save,
-  ShieldCheck,
   Siren,
   Timer,
   TrendingUp,
@@ -206,36 +205,36 @@ interface StatCardProps {
 function StatCard({ label, value, icon: Icon, href, accent = false, helper }: StatCardProps) {
   const content = (
     <article
-      className="group h-full rounded-[24px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
+      className="group h-full rounded-[20px] px-5 py-[18px] transition-[transform,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
       style={{
         background: accent
           ? 'linear-gradient(180deg, rgba(255,107,43,0.11) 0%, rgba(255,107,43,0.05) 100%)'
           : 'linear-gradient(180deg, rgba(17,31,53,0.84) 0%, rgba(10,23,39,0.90) 100%)',
         boxShadow: accent
-          ? '0 0 0 1px rgba(255,107,43,0.22), 0 18px 38px rgba(2,13,24,0.26)'
-          : '0 0 0 1px rgba(255,255,255,0.08), 0 18px 38px rgba(2,13,24,0.24)',
+          ? '0 0 0 1px rgba(255,107,43,0.22), 0 12px 28px rgba(2,13,24,0.24)'
+          : '0 0 0 1px rgba(255,255,255,0.08), 0 12px 28px rgba(2,13,24,0.22)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">{label}</p>
-          <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{value}</p>
-          {helper ? <p className="mt-2 text-[12px] leading-relaxed text-offwhite/44">{helper}</p> : null}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-offwhite/36">{label}</p>
+          <p className="mt-2.5 font-display text-[28px] font-bold leading-none tracking-[-0.04em] tabular-nums text-offwhite">{value}</p>
+          {helper ? <p className="mt-2 text-[12px] leading-snug text-offwhite/40">{helper}</p> : null}
         </div>
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-full"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px]"
           style={{
-            background: accent ? 'rgba(255,107,43,0.14)' : 'rgba(255,255,255,0.06)',
-            boxShadow: accent ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.08)',
+            background: accent ? 'rgba(255,107,43,0.14)' : 'rgba(255,255,255,0.05)',
+            boxShadow: accent ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
           }}
         >
-          <Icon size={16} className={accent ? 'text-orange-soft' : 'text-offwhite/52'} aria-hidden="true" />
+          <Icon size={14} className={accent ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
         </div>
       </div>
       {href ? (
-        <div className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-orange-soft transition-colors duration-200 group-hover:text-orange">
-          View details
-          <ArrowRight size={12} aria-hidden="true" />
+        <div className="mt-3.5 inline-flex items-center gap-1 text-[12px] font-medium text-offwhite/40 transition-colors duration-200 group-hover:text-orange-soft">
+          View
+          <ArrowRight size={11} className="transition-transform duration-300 ease-smooth group-hover:translate-x-0.5" aria-hidden="true" />
         </div>
       ) : null}
     </article>
@@ -267,14 +266,14 @@ function SettingsSection({
     >
       <div className="flex items-start gap-3">
         <div
-          className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full"
+          className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-[10px]"
           style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
         >
-          <Icon size={16} className="text-orange-soft" aria-hidden="true" />
+          <Icon size={14} className="text-orange-soft" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-[20px] font-bold tracking-[-0.03em] text-offwhite">{title}</h2>
-          <p className="mt-2 max-w-[56ch] text-[13px] leading-relaxed text-offwhite/46">{description}</p>
+          <h2 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-offwhite">{title}</h2>
+          <p className="mt-1.5 max-w-[56ch] text-[12.5px] leading-relaxed text-offwhite/44">{description}</p>
         </div>
       </div>
       <div className="mt-5">{children}</div>
@@ -301,7 +300,7 @@ function LabeledField({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+      <label htmlFor={name} className="mb-2 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">
         {label}
       </label>
       <input
@@ -310,7 +309,7 @@ function LabeledField({
         readOnly={readOnly}
         onChange={event => onChange?.(event.target.value)}
         placeholder={placeholder}
-        className={`min-h-[50px] w-full rounded-[18px] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40 ${
+        className={`min-h-[44px] w-full rounded-[14px] px-3.5 py-2.5 text-[13.5px] text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40 ${
           readOnly ? 'cursor-default bg-white/[0.03] opacity-70' : 'bg-white/[0.05]'
         }`}
         style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
@@ -347,55 +346,34 @@ export default function DashboardPreviewPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Dashboard preview</p>
-                <h1 className="mt-3 font-display text-[clamp(2.25rem,4vw,4rem)] font-bold leading-[0.94] tracking-[-0.05em] text-offwhite">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Preview</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
                   Your receptionist is covering the phones.
                 </h1>
-                <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-offwhite/52 sm:text-[16px]">
-                  This is a dummy dashboard walkthrough with realistic sample data so you can inspect the full premium UI without signing in or touching live records.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  Sample data — inspect the full UI without signing in.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium text-orange-soft/90"
                 style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
               >
                 Preview mode
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[
-                'No live auth required',
-                'No database writes',
-                'Same visual system as the real dashboard',
+                { label: 'Lead capture rate', value: formatPercent(leadRate), copy: 'Calls converted into enquiries.' },
+                { label: 'Lead to booking', value: formatPercent(bookingRate), copy: 'Enquiries turned into jobs.' },
+                { label: 'Emergency share', value: formatPercent(emergencyRate), copy: 'Urgent call-outs in the mix.' },
               ].map(item => (
-                <span
-                  key={item}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
-                >
-                  <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
-                  {item}
-                </span>
+                <div key={item.label} className="rounded-[18px] bg-white/[0.04] px-[18px] py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-offwhite/36">{item.label}</p>
+                  <p className="mt-2.5 font-display text-[28px] font-bold leading-none tracking-[-0.04em] tabular-nums text-offwhite">{item.value}</p>
+                  <p className="mt-2 text-[12px] leading-snug text-offwhite/40">{item.copy}</p>
+                </div>
               ))}
-            </div>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead capture rate</p>
-                <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(leadRate)}</p>
-                <p className="mt-2 text-[12px] text-offwhite/44">Based on the sample calls currently loaded into preview.</p>
-              </div>
-              <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead to booking</p>
-                <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(bookingRate)}</p>
-                <p className="mt-2 text-[12px] text-offwhite/44">A quick view of how captured demand becomes real booked work.</p>
-              </div>
-              <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Emergency share</p>
-                <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{formatPercent(emergencyRate)}</p>
-                <p className="mt-2 text-[12px] text-offwhite/44">Shows how much urgent inbound work is coming into the pipeline.</p>
-              </div>
             </div>
           </article>
 
@@ -408,37 +386,34 @@ export default function DashboardPreviewPage() {
                 '0 24px 60px rgba(2,13,24,0.28)',
             }}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Operational focus</p>
-            <h2 className="mt-3 font-display text-[26px] font-bold leading-[1] tracking-[-0.04em] text-offwhite">
-              What needs attention next.
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Up next</p>
+            <h2 className="mt-2.5 font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.02em] text-offwhite">
+              What needs attention
             </h2>
-            <p className="mt-4 text-[14px] leading-relaxed text-offwhite/48">
-              Walk the preview routes to inspect the full visual hierarchy across calls, leads, and settings.
-            </p>
 
-            <div className="mt-6 grid gap-3">
+            <div className="mt-5 grid gap-2.5">
               {[
-                { href: '/dashboard-preview/calls', title: 'Review recent calls', copy: 'Inspect the premium filter bar, data table, and mobile cards.', icon: Phone },
-                { href: '/dashboard-preview/leads', title: 'Review captured leads', copy: 'Check the urgency/status grouping and stronger pipeline cards.', icon: Users },
-                { href: '/dashboard-preview/settings', title: 'Inspect settings surfaces', copy: 'See the upgraded utility layout and product control panels.', icon: Zap },
+                { href: '/dashboard-preview/calls', title: 'Review recent calls', copy: 'Filter bar, data table, mobile cards.', icon: Phone },
+                { href: '/dashboard-preview/leads', title: 'Review captured leads', copy: 'Urgency grouping, pipeline cards.', icon: Users },
+                { href: '/dashboard-preview/settings', title: 'Inspect settings surfaces', copy: 'Utility layout, control panels.', icon: Zap },
               ].map(item => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     to={item.href}
-                    className="rounded-[20px] px-4 py-4 transition-all duration-200 hover:-translate-y-0.5"
+                    className="group rounded-[16px] px-3.5 py-3 transition-[transform,background-color] duration-300 ease-mechanical hover:bg-white/[0.06] active:scale-[0.99]"
                     style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-                        <Icon size={16} className="text-offwhite/60" aria-hidden="true" />
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
+                        <Icon size={14} className="text-offwhite/56" aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-semibold text-offwhite">{item.title}</p>
-                        <p className="mt-1 text-[12px] leading-relaxed text-offwhite/44">{item.copy}</p>
+                        <p className="text-[13.5px] font-medium text-offwhite/90">{item.title}</p>
+                        <p className="mt-0.5 text-[12px] leading-snug text-offwhite/40">{item.copy}</p>
                       </div>
-                      <ArrowRight size={14} className="mt-1 text-orange-soft/60" aria-hidden="true" />
+                      <ArrowRight size={13} className="text-offwhite/24 transition-[transform,color] duration-300 ease-smooth group-hover:translate-x-0.5 group-hover:text-orange-soft" aria-hidden="true" />
                     </div>
                   </Link>
                 );
@@ -448,10 +423,10 @@ export default function DashboardPreviewPage() {
         </section>
 
         <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard-preview/calls" helper="Inbound conversations captured by your receptionist." />
-          <StatCard label="Leads captured" value={String(totalLeads)} icon={Users} href="/dashboard-preview/leads" helper="Enquiries worth reviewing and following up." />
-          <StatCard label="Jobs booked" value={String(bookedJobs)} icon={TrendingUp} accent helper="Calls already converted into booked work." />
-          <StatCard label="Emergencies" value={String(emergencies)} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
+          <StatCard label="Total calls" value={String(totalCalls)} icon={Phone} href="/dashboard-preview/calls" helper="Inbound, handled automatically." />
+          <StatCard label="Leads captured" value={String(totalLeads)} icon={Users} href="/dashboard-preview/leads" helper="Enquiries worth following up." />
+          <StatCard label="Jobs booked" value={String(bookedJobs)} icon={TrendingUp} accent helper="Converted into booked work." />
+          <StatCard label="Emergencies" value={String(emergencies)} icon={AlertTriangle} helper="Urgent call-outs flagged." />
         </section>
 
         <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
@@ -462,41 +437,45 @@ export default function DashboardPreviewPage() {
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
             }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/6 px-6 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5" style={{ background: 'linear-gradient(180deg,rgba(255,255,255,0.012) 0%,transparent 100%)' }}>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Latest activity</p>
-                <h2 className="mt-2 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">Recent calls</h2>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Latest activity</p>
+                <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">Recent calls</h2>
               </div>
               <Link
                 to="/dashboard-preview/calls"
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-semibold text-orange-soft transition-all duration-200 hover:-translate-y-0.5"
+                className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-orange-soft transition-[background-color,transform] duration-300 ease-mechanical hover:bg-orange/[0.12] active:scale-[0.97]"
                 style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.16)' }}
               >
                 Open calls
-                <ArrowRight size={12} aria-hidden="true" />
+                <ArrowRight size={11} className="transition-transform duration-300 ease-smooth group-hover:translate-x-0.5" aria-hidden="true" />
               </Link>
             </div>
 
-            <div className="divide-y divide-white/6">
-              {PREVIEW_CALLS.map(call => (
-                <div key={call.id} className="grid gap-4 px-6 py-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center">
+            <div>
+              {PREVIEW_CALLS.map((call, index) => (
+                <div
+                  key={call.id}
+                  className="grid gap-4 px-6 py-3 transition-colors duration-200 ease-standard hover:bg-white/[0.025] md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center"
+                  style={index % 2 === 1 ? { background: 'rgba(255,255,255,0.015)' } : undefined}
+                >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px]"
                       style={{
-                        background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                        boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                        background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.04)',
+                        boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.06)',
                       }}
                     >
-                      <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                      <Phone size={13} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/44'} aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number}</p>
-                      <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by your receptionist'}</p>
+                      <p className="truncate text-[13.5px] font-medium text-offwhite/85">{call.caller_number}</p>
+                      <p className="mt-0.5 text-[11.5px] text-offwhite/34">{call.is_emergency ? 'Urgent call-out' : 'Handled automatically'}</p>
                     </div>
                   </div>
-                  <span className="text-[12px] text-offwhite/38 tabular-nums">{formatDate(call.started_at)}</span>
-                  <span className="text-[12px] text-offwhite/38 tabular-nums">{formatDuration(call.duration_secs)}</span>
+                  <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
+                  <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
                   <StatusBadge outcome={call.outcome} className="justify-self-start md:justify-self-end" />
                 </div>
               ))}
@@ -510,24 +489,26 @@ export default function DashboardPreviewPage() {
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
             }}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Signal check</p>
-            <h2 className="mt-2 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">How the pipeline looks</h2>
-            <div className="mt-6 space-y-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Signal check</p>
+            <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">Pipeline health</h2>
+            <div className="mt-5 space-y-2.5">
               {[
-                { label: 'Lead capture', value: formatPercent(leadRate), copy: 'Shows how much answered demand is becoming structured follow-up.' },
-                { label: 'Booking efficiency', value: formatPercent(bookingRate), copy: 'A fast signal for whether captured leads are turning into jobs.' },
-                { label: 'Urgent call share', value: formatPercent(emergencyRate), copy: 'Useful when inspecting emergency response and callback pressure.' },
+                { label: 'Lead capture', value: formatPercent(leadRate), copy: 'Calls becoming enquiries.' },
+                { label: 'Booking efficiency', value: formatPercent(bookingRate), copy: 'Demand becoming booked work.' },
+                { label: 'Urgent call share', value: formatPercent(emergencyRate), copy: 'Emergency response load.' },
               ].map(item => (
                 <div
                   key={item.label}
-                  className="rounded-[20px] px-4 py-4"
+                  className="rounded-[16px] px-4 py-3.5"
                   style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-semibold text-offwhite/74">{item.label}</p>
-                    <span className="font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{item.value}</span>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div>
+                      <p className="text-[13px] font-medium text-offwhite/80">{item.label}</p>
+                      <p className="mt-0.5 text-[11.5px] text-offwhite/36">{item.copy}</p>
+                    </div>
+                    <span className="font-display text-[22px] font-bold leading-none tracking-[-0.03em] tabular-nums text-offwhite">{item.value}</span>
                   </div>
-                  <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">{item.copy}</p>
                 </div>
               ))}
             </div>
@@ -574,23 +555,23 @@ export function DashboardPreviewCallsPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Calls preview</p>
-                <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                  Every conversation, clearly organised.
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Calls</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
+                  Every conversation, organised.
                 </h1>
-                <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                  Use the filter to inspect the premium data treatment without relying on a live account or real call history.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  Filter by outcome, scan urgent work, replay any call.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium tabular-nums text-offwhite/64"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
               >
                 {filtered.length} in view
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {[
                 `${PREVIEW_CALLS.length} total loaded`,
                 `${summary.emergencyCount} urgent`,
@@ -598,10 +579,9 @@ export function DashboardPreviewCallsPage() {
               ].map(item => (
                 <span
                   key={item}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium text-offwhite/64"
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
                 >
-                  <Phone size={12} className="text-orange-soft" aria-hidden="true" />
                   {item}
                 </span>
               ))}
@@ -615,48 +595,45 @@ export function DashboardPreviewCallsPage() {
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
             }}
           >
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">
-              <Filter size={12} aria-hidden="true" />
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">
+              <Filter size={11} aria-hidden="true" />
               Filtering
             </div>
-            <p className="mt-3 text-[14px] leading-relaxed text-offwhite/48">
-              Keep the list focused on what matters right now, whether that is booked calls, missed opportunities, or urgent inbound work.
-            </p>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Current filter</p>
-                <p className="mt-3 text-[14px] font-semibold capitalize text-offwhite/78">{filterLabel}</p>
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Filter</p>
+                <p className="mt-1.5 text-[13px] font-medium capitalize text-offwhite/82">{filterLabel}</p>
               </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Average length</p>
-                <p className="mt-3 text-[14px] font-semibold text-offwhite/78">{formatDuration(summary.averageSecs)}</p>
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Avg length</p>
+                <p className="mt-1.5 text-[13px] font-medium tabular-nums text-offwhite/82">{formatDuration(summary.averageSecs)}</p>
               </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Urgent share</p>
-                <p className="mt-3 text-[14px] font-semibold text-offwhite/78">
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Urgent share</p>
+                <p className="mt-1.5 text-[13px] font-medium tabular-nums text-offwhite/82">
                   {filtered.length > 0 ? `${Math.round((summary.emergencyCount / filtered.length) * 100)}%` : '0%'}
                 </p>
               </div>
             </div>
 
-            <div className="mt-5">
-              <label htmlFor="preview-calls-filter" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
-                Outcome filter
+            <div className="mt-4">
+              <label htmlFor="preview-calls-filter" className="mb-2 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">
+                Outcome
               </label>
               <div className="relative">
                 <select
                   id="preview-calls-filter"
                   value={outcomeFilter}
                   onChange={event => setOutcomeFilter(event.target.value)}
-                  className="min-h-[50px] w-full appearance-none rounded-[18px] bg-white/[0.05] px-4 py-3 pr-11 text-[14px] text-offwhite/78 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                  className="min-h-[44px] w-full appearance-none rounded-[14px] bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13.5px] text-offwhite/82 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] outline-none transition-[box-shadow,background-color] duration-200 ease-standard hover:bg-white/[0.06] focus:ring-2 focus:ring-orange/40"
                 >
                   <option value="all">All outcomes</option>
                   {Object.keys(OUTCOME_TONE).map(outcome => (
                     <option key={outcome} value={outcome}>{OUTCOME_TONE[outcome as NonNullable<CallOutcome>].label}</option>
                   ))}
                 </select>
-                <Filter size={14} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-offwhite/30" aria-hidden="true" />
+                <Filter size={13} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-offwhite/30" aria-hidden="true" />
               </div>
             </div>
           </article>
@@ -723,7 +700,7 @@ export function DashboardPreviewCallsPage() {
             boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
           }}
         >
-          <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 border-b border-white/6 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30">
+          <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/32" style={{ background: 'rgba(255,255,255,0.025)' }}>
             <span>Caller</span>
             <span>Date</span>
             <span>Duration</span>
@@ -731,33 +708,37 @@ export function DashboardPreviewCallsPage() {
             <span>Recording</span>
           </div>
 
-          <div className="divide-y divide-white/6">
-            {filtered.map(call => (
-              <div key={call.id} className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-4 transition-colors duration-150 hover:bg-white/[0.025]">
+          <div>
+            {filtered.map((call, rowIndex) => (
+              <div
+                key={call.id}
+                className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px] gap-4 px-6 py-3 transition-colors duration-200 ease-standard hover:bg-white/[0.03]"
+                style={rowIndex % 2 === 1 ? { background: 'rgba(255,255,255,0.015)' } : undefined}
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px]"
                     style={{
-                      background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                      boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                      background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.04)',
+                      boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.06)',
                     }}
                   >
-                    <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                    <Phone size={13} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/44'} aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number}</p>
-                    <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
+                    <p className="truncate text-[13.5px] font-medium text-offwhite/85">{call.caller_number}</p>
+                    <p className="mt-0.5 text-[11.5px] text-offwhite/34">{call.is_emergency ? 'Urgent call-out' : 'Handled automatically'}</p>
                   </div>
                 </div>
-                <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
-                <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
-                <div className="pt-0.5">
+                <span className="self-center text-[12px] text-offwhite/42 tabular-nums">{formatDate(call.started_at)}</span>
+                <span className="self-center text-[12px] text-offwhite/42 tabular-nums">{formatDuration(call.duration_secs)}</span>
+                <div className="self-center pt-0.5">
                   <StatusBadge outcome={call.outcome} />
                 </div>
-                <div className="pt-0.5">
+                <div className="self-center pt-0.5">
                   {call.recording_url ? (
-                    <a href={call.recording_url} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent transition-colors duration-200 hover:text-accent-glow">
-                      <Play size={11} aria-hidden="true" />
+                    <a href={call.recording_url} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent transition-colors duration-200 hover:text-accent-glow">
+                      <Play size={10} aria-hidden="true" />
                       Play
                     </a>
                   ) : (
@@ -797,23 +778,23 @@ export function DashboardPreviewLeadsPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Leads preview</p>
-                <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Leads</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
                   Captured work, ready for follow-up.
                 </h1>
-                <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                  This seeded pipeline lets you inspect urgency grouping, lead cards, and inline status changes without relying on any live backend records.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  Surface urgent jobs early, move every enquiry toward booked.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium tabular-nums text-offwhite/64"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
               >
                 {leads.length} captured
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {[
                 `${summary.newLeads} new to review`,
                 `${summary.booked} marked booked`,
@@ -821,10 +802,9 @@ export function DashboardPreviewLeadsPage() {
               ].map(item => (
                 <span
                   key={item}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium text-offwhite/64"
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
                 >
-                  <Users size={12} className="text-orange-soft" aria-hidden="true" />
                   {item}
                 </span>
               ))}
@@ -838,24 +818,24 @@ export function DashboardPreviewLeadsPage() {
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
             }}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Pipeline view</p>
-            <h2 className="mt-3 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">Move fast on the right enquiries.</h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">New</p>
-                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{summary.newLeads}</p>
-                <p className="mt-2 text-[12px] text-offwhite/42">Fresh follow-up waiting for a response.</p>
-              </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Booked</p>
-                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{summary.booked}</p>
-                <p className="mt-2 text-[12px] text-offwhite/42">Jobs already turned into confirmed work.</p>
-              </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Emergency</p>
-                <p className="mt-3 font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{summary.emergencies}</p>
-                <p className="mt-2 text-[12px] text-offwhite/42">High-priority work that deserves fast action.</p>
-              </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Pipeline</p>
+            <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">Move fast on the right enquiries</h2>
+            <div className="mt-5 grid gap-2.5 sm:grid-cols-3 xl:grid-cols-1">
+              {[
+                { label: 'New', value: summary.newLeads, copy: 'Awaiting a response.' },
+                { label: 'Booked', value: summary.booked, copy: 'Turned into confirmed work.' },
+                { label: 'Emergency', value: summary.emergencies, copy: 'High-priority, act fast.' },
+              ].map(item => (
+                <div key={item.label} className="rounded-[16px] bg-white/[0.04] px-4 py-3.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div>
+                      <p className="text-[13px] font-medium text-offwhite/80">{item.label}</p>
+                      <p className="mt-0.5 text-[11.5px] text-offwhite/36">{item.copy}</p>
+                    </div>
+                    <span className="font-display text-[22px] font-bold leading-none tracking-[-0.03em] tabular-nums text-offwhite">{item.value}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </article>
         </section>
@@ -877,26 +857,26 @@ export function DashboardPreviewLeadsPage() {
             return (
               <article
                 key={lead.id}
-                className="rounded-[28px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
+                className="rounded-[22px] px-5 py-[18px] transition-[transform,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
                 style={{
                   background: isEmergency
                     ? 'linear-gradient(180deg, rgba(255,107,43,0.08) 0%, rgba(10,23,39,0.96) 100%)'
                     : 'linear-gradient(180deg, rgba(17,31,53,0.88) 0%, rgba(10,23,39,0.94) 100%)',
                   boxShadow: isEmergency
-                    ? '0 0 0 1px rgba(255,107,43,0.18), 0 22px 50px rgba(2,13,24,0.26)'
-                    : '0 0 0 1px rgba(255,255,255,0.08), 0 22px 50px rgba(2,13,24,0.24)',
+                    ? '0 0 0 1px rgba(255,107,43,0.18), 0 14px 32px rgba(2,13,24,0.24)'
+                    : '0 0 0 1px rgba(255,255,255,0.08), 0 14px 32px rgba(2,13,24,0.22)',
                 }}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      {isEmergency ? <AlertTriangle size={14} className="text-orange-soft" aria-hidden="true" /> : null}
-                      <p className="truncate font-display text-[20px] font-bold tracking-[-0.03em] text-offwhite">{lead.caller_name}</p>
-                      <span className={`inline-flex min-h-[24px] items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${urgencyClass}`}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isEmergency ? <AlertTriangle size={13} className="text-orange-soft" aria-hidden="true" /> : null}
+                      <p className="truncate font-display text-[16px] font-semibold tracking-[-0.02em] text-offwhite">{lead.caller_name}</p>
+                      <span className={`inline-flex min-h-[22px] items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${urgencyClass}`}>
                         {lead.urgency}
                       </span>
                     </div>
-                    <p className="mt-2 text-[12px] text-offwhite/38 tabular-nums">{formatDate(lead.created_at)}</p>
+                    <p className="mt-1.5 text-[11.5px] text-offwhite/38 tabular-nums">{formatDate(lead.created_at)}</p>
                   </div>
 
                   <select
@@ -904,7 +884,7 @@ export function DashboardPreviewLeadsPage() {
                     onChange={event =>
                       setLeads(prev => prev.map(item => (item.id === lead.id ? { ...item, status: event.target.value as LeadStatus } : item)))
                     }
-                    className={`min-h-[40px] appearance-none rounded-full px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] outline-none transition-all duration-200 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] focus:ring-2 focus:ring-orange/40 ${statusInfo.tone}`}
+                    className={`min-h-[36px] appearance-none rounded-full px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.08em] outline-none transition-[background-color,color,box-shadow] duration-200 ease-standard shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] focus:ring-2 focus:ring-orange/40 ${statusInfo.tone}`}
                   >
                     {(Object.entries(STATUS_META) as [LeadStatus, { label: string }][]).map(([value, meta]) => (
                       <option key={value} value={value}>{meta.label}</option>
@@ -939,8 +919,8 @@ export function DashboardPreviewLeadsPage() {
 
                 {lead.notes ? (
                   <div className="mt-4 rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/32">Summary</p>
-                    <p className="mt-2 text-[13px] leading-relaxed text-offwhite/52">{lead.notes}</p>
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Summary</p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-offwhite/56">{lead.notes}</p>
                   </div>
                 ) : null}
               </article>
@@ -979,37 +959,14 @@ export function DashboardPreviewSettingsPage() {
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-[58ch]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Settings preview</p>
-                  <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                    Keep your AI receptionist aligned with how your business runs.
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Settings</p>
+                  <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
+                    Keep your receptionist aligned with your business.
                   </h1>
-                  <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                    This seeded settings view lets you inspect the upgraded layout and form hierarchy while keeping everything completely local to preview mode.
+                  <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                    How it introduces your business, routes follow-up, and books your diary.
                   </p>
                 </div>
-                <div
-                  className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                  style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
-                >
-                  Product controls
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                {[
-                  'Update business details',
-                  'Manage SMS follow-up',
-                  'Keep calendar booking ready',
-                ].map(item => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                    style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
-                  >
-                    <ShieldCheck size={12} className="text-orange-soft" aria-hidden="true" />
-                    {item}
-                  </span>
-                ))}
               </div>
             </article>
 
@@ -1053,9 +1010,9 @@ export function DashboardPreviewSettingsPage() {
                       className="rounded-[20px] px-4 py-4"
                       style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
                     >
-                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-orange-soft">Divert activation code</p>
-                      <code className="mt-3 block break-all font-mono text-[18px] tracking-[0.16em] text-offwhite">{activationCode}</code>
-                      <p className="mt-3 text-[12px] leading-relaxed text-orange-soft/86">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-orange-soft/90">Divert activation code</p>
+                      <code className="mt-2.5 block break-all font-mono text-[16px] tracking-[0.14em] text-offwhite">{activationCode}</code>
+                      <p className="mt-2.5 text-[12px] leading-relaxed text-orange-soft/82">
                         This is shown in preview so you can inspect the elevated utility treatment for call diversion setup.
                       </p>
                     </div>
@@ -1068,7 +1025,7 @@ export function DashboardPreviewSettingsPage() {
                 icon={Bell}
                 description="Set the tone callers hear when they reach you outside working hours while still capturing the enquiry properly."
               >
-                <label htmlFor="preview-after-hours-message" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
+                <label htmlFor="preview-after-hours-message" className="mb-2 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">
                   Custom message
                 </label>
                 <textarea
@@ -1076,7 +1033,7 @@ export function DashboardPreviewSettingsPage() {
                   value={form.after_hours_message ?? ''}
                   onChange={event => setField('after_hours_message', event.target.value)}
                   rows={4}
-                  className="w-full resize-none rounded-[18px] bg-white/[0.05] px-4 py-3 text-[14px] text-offwhite placeholder:text-offwhite/24 outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                  className="w-full resize-none rounded-[14px] bg-white/[0.05] px-3.5 py-2.5 text-[13.5px] text-offwhite placeholder:text-offwhite/24 outline-none transition-[box-shadow,background-color] duration-200 ease-standard focus:ring-2 focus:ring-orange/40"
                   style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
                 />
               </SettingsSection>
@@ -1121,33 +1078,21 @@ export function DashboardPreviewSettingsPage() {
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
               }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Live setup status</p>
-              <h2 className="mt-3 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">What this controls</h2>
-              <p className="mt-4 text-[14px] leading-relaxed text-offwhite/48">
-                Preview mode keeps the visual structure real while leaving auth, saves, and external integrations untouched.
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Setup</p>
+              <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">What this controls</h2>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-5 space-y-2.5">
                 {[
-                  {
-                    title: 'Business identity',
-                    copy: 'Caller-facing naming and ownership details stay clear and trustworthy.',
-                  },
-                  {
-                    title: 'Call diversion readiness',
-                    copy: 'The diversion setup panel is visible with a seeded activation code for visual review.',
-                  },
-                  {
-                    title: 'Diary connection',
-                    copy: 'Calendar booking is shown as connected so you can inspect the finished utility state.',
-                  },
+                  { title: 'Business identity', copy: 'Caller-facing naming and ownership.' },
+                  { title: 'Call diversion', copy: 'Activation code for forwarding setup.' },
+                  { title: 'Diary connection', copy: 'Live calendar booking state.' },
                 ].map(item => (
                   <div
                     key={item.title}
-                    className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+                    className="rounded-[16px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
                   >
-                    <p className="text-[13px] font-semibold text-offwhite/76">{item.title}</p>
-                    <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">{item.copy}</p>
+                    <p className="text-[13px] font-medium text-offwhite/82">{item.title}</p>
+                    <p className="mt-0.5 text-[11.5px] leading-snug text-offwhite/40">{item.copy}</p>
                   </div>
                 ))}
               </div>

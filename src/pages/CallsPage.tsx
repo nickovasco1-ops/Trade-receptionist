@@ -169,23 +169,23 @@ export default function CallsPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Calls</p>
-                <h1 className="mt-3 font-display text-[clamp(2.2rem,4vw,3.8rem)] font-bold leading-[0.96] tracking-[-0.05em] text-offwhite">
-                  Every conversation, clearly organised.
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Calls</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
+                  Every conversation, organised.
                 </h1>
-                <p className="mt-4 text-[15px] leading-relaxed text-offwhite/50 sm:text-[16px]">
-                  Review what your AI receptionist answered, filter by outcome, and scan urgent or recorded calls without the dashboard feeling like a bloated admin panel.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  Filter by outcome, scan urgent work, replay any call.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium tabular-nums text-offwhite/64"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
               >
                 {filtered.length} in view
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {[
                 { label: 'total loaded', value: totalCallsDisplay },
                 { label: 'urgent', value: emergencyDisplay },
@@ -193,11 +193,10 @@ export default function CallsPage() {
               ].map(({ label, value }) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium text-offwhite/64"
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
                 >
-                  <Phone size={12} className="text-orange-soft" aria-hidden="true" />
-                  {value} {label}
+                  <span className="tabular-nums font-semibold text-offwhite/85">{value}</span> {label}
                 </span>
               ))}
             </div>
@@ -210,34 +209,31 @@ export default function CallsPage() {
               boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
             }}
           >
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">
-              <Filter size={12} aria-hidden="true" />
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">
+              <Filter size={11} aria-hidden="true" />
               Filtering
             </div>
-            <p className="mt-3 text-[14px] leading-relaxed text-offwhite/48">
-              Keep the list focused on what matters right now, whether that is booked calls, missed opportunities, or urgent inbound work.
-            </p>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Current filter</p>
-                <p className="mt-3 text-[14px] font-semibold capitalize text-offwhite/78">{filterLabel}</p>
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Filter</p>
+                <p className="mt-1.5 text-[13px] font-medium capitalize text-offwhite/82">{filterLabel}</p>
               </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Average length</p>
-                <p className="mt-3 text-[14px] font-semibold text-offwhite/78">{formatDuration(summary.averageSecs)}</p>
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Avg length</p>
+                <p className="mt-1.5 text-[13px] font-medium tabular-nums text-offwhite/82">{formatDuration(summary.averageSecs)}</p>
               </div>
-              <div className="rounded-[20px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Urgent share</p>
-                <p className="mt-3 text-[14px] font-semibold text-offwhite/78">
+              <div className="rounded-[14px] bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">Urgent share</p>
+                <p className="mt-1.5 text-[13px] font-medium tabular-nums text-offwhite/82">
                   {filtered.length > 0 ? `${Math.round((summary.emergencyCount / filtered.length) * 100)}%` : '0%'}
                 </p>
               </div>
             </div>
 
-            <div className="mt-5">
-              <label htmlFor="calls-outcome-filter" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">
-                Outcome filter
+            <div className="mt-4">
+              <label htmlFor="calls-outcome-filter" className="mb-2 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/34">
+                Outcome
               </label>
               <div className="relative">
                 <select
@@ -245,14 +241,14 @@ export default function CallsPage() {
                   value={outcomeFilter}
                   onChange={event => setOutcomeFilter(event.target.value)}
                   aria-label="Filter by outcome"
-                  className="min-h-[50px] w-full appearance-none rounded-[18px] bg-white/[0.05] px-4 py-3 pr-11 text-[14px] text-offwhite/78 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] outline-none transition-all duration-200 focus:ring-2 focus:ring-orange/40"
+                  className="min-h-[44px] w-full appearance-none rounded-[14px] bg-white/[0.05] px-3.5 py-2.5 pr-10 text-[13.5px] text-offwhite/82 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] outline-none transition-[box-shadow,background-color] duration-200 ease-standard hover:bg-white/[0.06] focus:ring-2 focus:ring-orange/40"
                 >
                   <option value="all">All outcomes</option>
                   {ALL_OUTCOMES.map(outcome => (
                     <option key={outcome} value={outcome}>{OUTCOME_TONE[outcome].label}</option>
                   ))}
                 </select>
-                <Filter size={14} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-offwhite/30" aria-hidden="true" />
+                <Filter size={13} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-offwhite/30" aria-hidden="true" />
               </div>
             </div>
           </article>
@@ -400,7 +396,7 @@ export default function CallsPage() {
                 boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
               }}
             >
-              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/30" style={{background:'rgba(255,255,255,0.025)'}}>
+              <div className="grid grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-offwhite/32" style={{background:'rgba(255,255,255,0.025)'}}>
                 <span>Caller</span>
                 <span>Date</span>
                 <span>Duration</span>
@@ -410,7 +406,7 @@ export default function CallsPage() {
               </div>
 
               <div>
-                {filtered.map(call => {
+                {filtered.map((call, rowIndex) => {
                   const isOpen = expandedId === call.id;
                   const transcript = transcriptOf(call.transcripts);
                   const transcriptSummary = transcript?.summary ?? null;
@@ -421,50 +417,51 @@ export default function CallsPage() {
                     <div key={call.id}>
                       <button
                         type="button"
-                        className="grid w-full grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-4 text-left transition-colors duration-150 hover:bg-white/[0.025]"
+                        className="grid w-full grid-cols-[minmax(0,1.3fr)_190px_120px_130px_110px_32px] gap-4 px-6 py-3 text-left transition-colors duration-200 ease-standard hover:bg-white/[0.03]"
+                        style={rowIndex % 2 === 1 && !isOpen ? { background: 'rgba(255,255,255,0.015)' } : undefined}
                         onClick={() => setExpandedId(isOpen ? null : call.id)}
                         aria-expanded={isOpen}
                         aria-controls={panelId}
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <div
-                            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px]"
                             style={{
-                              background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                              boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                              background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.04)',
+                              boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.06)',
                             }}
                           >
-                            <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                            <Phone size={13} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/44'} aria-hidden="true" />
                           </div>
                           <div className="min-w-0">
                             <div className="flex min-w-0 items-center gap-2">
-                              <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
+                              <p className="truncate text-[13.5px] font-medium text-offwhite/85">{call.caller_number ?? 'Unknown number'}</p>
                               {call.caller_number && (callerFrequency.get(call.caller_number) ?? 0) > 1 ? (
-                                <span className="inline-flex shrink-0 items-center rounded-full bg-accent/[0.08] px-2 py-0.5 text-[11px] font-semibold text-accent shadow-[inset_0_0_0_1px_rgba(153,203,255,0.14)]">
+                                <span className="inline-flex shrink-0 items-center rounded-full bg-accent/[0.08] px-2 py-0.5 text-[10.5px] font-medium text-accent shadow-[inset_0_0_0_1px_rgba(153,203,255,0.14)]">
                                   Returning
                                 </span>
                               ) : null}
                             </div>
-                            <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Urgent call-out' : 'Inbound handled by your receptionist'}</p>
+                            <p className="mt-0.5 text-[11.5px] text-offwhite/34">{call.is_emergency ? 'Urgent call-out' : 'Handled automatically'}</p>
                           </div>
                         </div>
-                        <span className="self-center text-[12px] text-offwhite/40 tabular-nums">{formatDate(call.started_at)}</span>
-                        <span className="self-center text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
+                        <span className="self-center text-[12px] text-offwhite/42 tabular-nums">{formatDate(call.started_at)}</span>
+                        <span className="self-center text-[12px] text-offwhite/42 tabular-nums">{formatDuration(call.duration_secs)}</span>
                         <div className="self-center pt-0.5">
                           <StatusBadge outcome={call.outcome} />
                         </div>
                         <div className="self-center pt-0.5">
                           {call.recording_url ? (
-                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-accent">
-                              <Play size={11} aria-hidden="true" />
-                              Recording
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent">
+                              <Play size={10} aria-hidden="true" />
+                              Play
                             </span>
                           ) : (
                             <span className="text-[12px] text-offwhite/24">—</span>
                           )}
                         </div>
                         <div className="self-center">
-                          {isOpen ? <ChevronUp size={14} className="text-offwhite/30" aria-hidden="true" /> : <ChevronDown size={14} className="text-offwhite/30" aria-hidden="true" />}
+                          <ChevronDown size={13} className={['text-offwhite/30 transition-transform duration-300 ease-smooth', isOpen ? 'rotate-180' : ''].join(' ')} aria-hidden="true" />
                         </div>
                       </button>
 

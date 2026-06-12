@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertTriangle, BarChart2, Calendar, CheckCircle, Phone, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, AlertTriangle, BarChart2, Calendar, Phone, TrendingUp, Users, Zap } from 'lucide-react';
 import type { ElementType } from 'react';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { useCounter } from '../hooks/useCounter';
@@ -65,36 +65,36 @@ function StatCard({ label, value, icon: Icon, href, accent = false, helper, test
   const content = (
     <article
       data-testid={testId}
-      className="group h-full rounded-[24px] px-5 py-5 transition-all duration-300 ease-mechanical hover:-translate-y-0.5"
+      className="group h-full rounded-[20px] px-5 py-[18px] transition-[transform,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
       style={{
         background: accent
           ? 'linear-gradient(180deg, rgba(255,107,43,0.11) 0%, rgba(255,107,43,0.05) 100%)'
           : 'linear-gradient(180deg, rgba(17,31,53,0.84) 0%, rgba(10,23,39,0.90) 100%)',
         boxShadow: accent
-          ? '0 0 0 1px rgba(255,107,43,0.22), 0 18px 38px rgba(2,13,24,0.26)'
-          : '0 0 0 1px rgba(255,255,255,0.08), 0 18px 38px rgba(2,13,24,0.24)',
+          ? '0 0 0 1px rgba(255,107,43,0.22), 0 12px 28px rgba(2,13,24,0.24)'
+          : '0 0 0 1px rgba(255,255,255,0.08), 0 12px 28px rgba(2,13,24,0.22)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">{label}</p>
-          <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{value}</p>
-          {helper ? <p className="mt-2 text-[12px] leading-relaxed text-offwhite/44">{helper}</p> : null}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-offwhite/36">{label}</p>
+          <p className="mt-2.5 font-display text-[28px] font-bold leading-none tracking-[-0.04em] tabular-nums text-offwhite">{value}</p>
+          {helper ? <p className="mt-2 text-[12px] leading-snug text-offwhite/40">{helper}</p> : null}
         </div>
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-full"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px]"
           style={{
-            background: accent ? 'rgba(255,107,43,0.14)' : 'rgba(255,255,255,0.06)',
-            boxShadow: accent ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.08)',
+            background: accent ? 'rgba(255,107,43,0.14)' : 'rgba(255,255,255,0.05)',
+            boxShadow: accent ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
           }}
         >
-          <Icon size={16} className={accent ? 'text-orange-soft' : 'text-offwhite/52'} aria-hidden="true" />
+          <Icon size={14} className={accent ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
         </div>
       </div>
       {href ? (
-        <div className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-orange-soft transition-colors duration-200 group-hover:text-orange">
-          View details
-          <ArrowRight size={12} aria-hidden="true" />
+        <div className="mt-3.5 inline-flex items-center gap-1 text-[12px] font-medium text-offwhite/40 transition-colors duration-200 group-hover:text-orange-soft">
+          View
+          <ArrowRight size={11} className="transition-transform duration-300 ease-smooth group-hover:translate-x-0.5" aria-hidden="true" />
         </div>
       ) : null}
     </article>
@@ -338,7 +338,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 to="/settings"
-                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition-[transform,background-color,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
                 style={
                   quotaAlert.urgent
                     ? { background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1px rgba(255,107,43,0.25)', color: '#ffb59a' }
@@ -375,7 +375,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 to="/dashboard/leads"
-                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium transition-[transform,background-color,box-shadow] duration-300 ease-mechanical hover:-translate-y-0.5 active:translate-y-0"
                 style={{ background: 'rgba(153,203,255,0.10)', boxShadow: '0 0 0 1px rgba(153,203,255,0.20)', color: '#99cbff' }}
               >
                 View leads
@@ -399,62 +399,42 @@ export default function DashboardPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[58ch]">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-soft">Overview</p>
-                <h1 className="mt-3 font-display text-[clamp(2.25rem,4vw,4rem)] font-bold leading-[0.94] tracking-[-0.05em] text-offwhite">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-orange-soft/90">Overview</p>
+                <h1 className="mt-2.5 font-display text-[clamp(1.7rem,2.6vw,2.3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-offwhite">
                   Your receptionist is covering the phones.
                 </h1>
-                <p className="mt-4 max-w-[54ch] text-[15px] leading-relaxed text-offwhite/52 sm:text-[16px]">
-                  Track what your receptionist handled, how much opportunity is being captured, and where you should focus next between jobs.
+                <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-offwhite/48">
+                  What was handled, what was captured, and what needs you next.
                 </p>
               </div>
               <div
-                className="rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/72"
-                style={{ background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium text-offwhite/64"
+                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
               >
-                Live operations
+                <span className="h-1.5 w-1.5 rounded-full bg-status-success shadow-[0_0_8px_rgba(134,239,172,0.5)]" aria-hidden="true" />
+                Live
               </div>
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              {[
-                'Calls captured automatically',
-                'Leads routed cleanly',
-                'Urgent jobs surfaced faster',
-              ].map(item => (
-                <span
-                  key={item}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold text-offwhite/70"
-                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)' }}
-                >
-                  <ShieldCheck size={13} className="text-orange-soft" aria-hidden="true" />
-                  {item}
-                </span>
-              ))}
             </div>
 
             {loading ? (
-              <div className="mt-7 grid gap-3 sm:grid-cols-3 animate-pulse">
+              <div className="mt-6 grid gap-3 sm:grid-cols-3 animate-pulse">
                 {[0, 1, 2].map(index => (
-                  <div key={index} className="rounded-[22px] bg-white/[0.04] h-[112px]" />
+                  <div key={index} className="rounded-[18px] bg-white/[0.04] h-[96px]" />
                 ))}
               </div>
             ) : (
-              <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead capture rate</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{leadRateDisplay}</p>
-                  <p className="mt-2 text-[12px] text-offwhite/44">Based on the calls currently loaded into your dashboard.</p>
-                </div>
-                <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Lead to booking</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{bookingRateDisplay}</p>
-                  <p className="mt-2 text-[12px] text-offwhite/44">A quick view of how much captured demand is already turning into jobs.</p>
-                </div>
-                <div className="rounded-[24px] bg-white/[0.04] px-5 py-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Emergency share</p>
-                  <p className="mt-3 font-display text-[34px] font-bold leading-none tracking-[-0.05em] text-offwhite">{emergencyRateDisplay}</p>
-                  <p className="mt-2 text-[12px] text-offwhite/44">Keep an eye on urgent inbound work so callbacks stay fast and controlled.</p>
-                </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: 'Lead capture rate', value: leadRateDisplay, copy: 'Calls converted into enquiries.' },
+                  { label: 'Lead to booking', value: bookingRateDisplay, copy: 'Enquiries turned into jobs.' },
+                  { label: 'Emergency share', value: emergencyRateDisplay, copy: 'Urgent call-outs in the mix.' },
+                ].map(item => (
+                  <div key={item.label} className="rounded-[18px] bg-white/[0.04] px-[18px] py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-offwhite/36">{item.label}</p>
+                    <p className="mt-2.5 font-display text-[28px] font-bold leading-none tracking-[-0.04em] tabular-nums text-offwhite">{item.value}</p>
+                    <p className="mt-2 text-[12px] leading-snug text-offwhite/40">{item.copy}</p>
+                  </div>
+                ))}
               </div>
             )}
           </article>
@@ -468,61 +448,47 @@ export default function DashboardPage() {
                 '0 24px 60px rgba(2,13,24,0.28)',
             }}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Operational focus</p>
-            <h2 className="mt-3 font-display text-[26px] font-bold leading-[1] tracking-[-0.04em] text-offwhite">
-              What needs attention next.
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Up next</p>
+            <h2 className="mt-2.5 font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.02em] text-offwhite">
+              What needs attention
             </h2>
-            <p className="mt-4 text-[14px] leading-relaxed text-offwhite/48">
-              Use the dashboard to spot follow-up, review recent conversations, and move leads into booked work quickly.
-            </p>
 
-            <div className="mt-6 grid gap-3">
-              <Link
-                to="/dashboard/calls"
-                className="rounded-[20px] px-4 py-4 transition-all duration-200 hover:-translate-y-0.5"
-                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-                    <Phone size={16} className="text-offwhite/60" aria-hidden="true" />
+            <div className="mt-5 grid gap-2.5">
+              {[
+                { to: '/dashboard/calls', icon: Phone, title: 'Review recent calls', copy: 'Summaries, recordings, outcomes.' },
+                { to: '/dashboard/leads', icon: Users, title: 'Act on captured leads', copy: 'Update statuses, prioritise urgent work.' },
+              ].map(({ to, icon: Icon, title, copy }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className="group rounded-[16px] px-3.5 py-3 transition-[transform,background-color] duration-300 ease-mechanical hover:bg-white/[0.06] active:scale-[0.99]"
+                  style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
+                      <Icon size={14} className="text-offwhite/56" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] font-medium text-offwhite/90">{title}</p>
+                      <p className="mt-0.5 text-[12px] leading-snug text-offwhite/40">{copy}</p>
+                    </div>
+                    <ArrowRight size={13} className="text-offwhite/24 transition-[transform,color] duration-300 ease-smooth group-hover:translate-x-0.5 group-hover:text-orange-soft" aria-hidden="true" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-offwhite">Review recent calls</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-offwhite/44">See the latest caller activity, summaries, recordings, and outcomes.</p>
-                  </div>
-                  <ArrowRight size={14} className="mt-1 text-orange-soft/60" aria-hidden="true" />
-                </div>
-              </Link>
-
-              <Link
-                to="/dashboard/leads"
-                className="rounded-[20px] px-4 py-4 transition-all duration-200 hover:-translate-y-0.5"
-                style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-                    <Users size={16} className="text-offwhite/60" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-offwhite">Act on captured leads</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-offwhite/44">Update statuses, prioritise urgent work, and keep the pipeline moving.</p>
-                  </div>
-                  <ArrowRight size={14} className="mt-1 text-orange-soft/60" aria-hidden="true" />
-                </div>
-              </Link>
+                </Link>
+              ))}
 
               <div
-                className="rounded-[20px] px-4 py-4"
-                style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.18)' }}
+                className="rounded-[16px] px-3.5 py-3"
+                style={{ background: 'rgba(255,107,43,0.07)', boxShadow: '0 0 0 1px rgba(255,107,43,0.16)' }}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange/[0.12] shadow-[0_0_0_1px_rgba(255,107,43,0.18)]">
-                    <Zap size={16} className="text-orange-soft" aria-hidden="true" />
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-orange/[0.12] shadow-[0_0_0_1px_rgba(255,107,43,0.16)]">
+                    <Zap size={14} className="text-orange-soft" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-offwhite">Premium workflow</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/86">
-                      The strongest habits are simple: review calls, update leads, and keep your receptionist settings aligned with how your business actually runs.
+                    <p className="text-[13.5px] font-medium text-offwhite/90">The routine that works</p>
+                    <p className="mt-0.5 text-[12px] leading-snug text-orange-soft/80">
+                      Review calls, update leads, keep settings current.
                     </p>
                   </div>
                 </div>
@@ -540,10 +506,10 @@ export default function DashboardPage() {
         ) : stats ? (
           <>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard testId="dashboard-stat-total-calls" label="Total calls" value={totalCallsDisplay} icon={Phone} href="/dashboard/calls" helper="Inbound conversations captured by your receptionist." />
-              <StatCard testId="dashboard-stat-total-leads" label="Leads captured" value={totalLeadsDisplay} icon={Users} href="/dashboard/leads" helper="Enquiries worth reviewing and following up." />
-              <StatCard label="Jobs booked" value={bookedJobsDisplay} icon={TrendingUp} accent helper="Calls already converted into booked work." />
-              <StatCard label="Emergencies" value={emergenciesDisplay} icon={AlertTriangle} helper="Urgent jobs that need fast action and clear prioritisation." />
+              <StatCard testId="dashboard-stat-total-calls" label="Total calls" value={totalCallsDisplay} icon={Phone} href="/dashboard/calls" helper="Inbound, handled automatically." />
+              <StatCard testId="dashboard-stat-total-leads" label="Leads captured" value={totalLeadsDisplay} icon={Users} href="/dashboard/leads" helper="Enquiries worth following up." />
+              <StatCard label="Jobs booked" value={bookedJobsDisplay} icon={TrendingUp} accent helper="Converted into booked work." />
+              <StatCard label="Emergencies" value={emergenciesDisplay} icon={AlertTriangle} helper="Urgent call-outs flagged." />
             </section>
 
             <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
@@ -557,16 +523,16 @@ export default function DashboardPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5" style={{background:'linear-gradient(180deg,rgba(255,255,255,0.012) 0%,transparent 100%)'}}>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Latest activity</p>
-                    <h2 className="mt-2 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">Recent calls</h2>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Latest activity</p>
+                    <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">Recent calls</h2>
                   </div>
                   <Link
                     to="/dashboard/calls"
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-semibold text-orange-soft transition-all duration-200 hover:-translate-y-0.5"
+                    className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-orange-soft transition-[background-color,transform] duration-300 ease-mechanical hover:bg-orange/[0.12] active:scale-[0.97]"
                     style={{ background: 'rgba(255,107,43,0.08)', boxShadow: '0 0 0 1px rgba(255,107,43,0.16)' }}
                   >
                     Open calls
-                    <ArrowRight size={12} aria-hidden="true" />
+                    <ArrowRight size={11} className="transition-transform duration-300 ease-smooth group-hover:translate-x-0.5" aria-hidden="true" />
                   </Link>
                 </div>
 
@@ -580,31 +546,35 @@ export default function DashboardPage() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-px">
-                    {recentCalls.map(call => {
+                  <div>
+                    {recentCalls.map((call, index) => {
                       const when = call.started_at
                         ? new Date(call.started_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
                         : '—';
 
                       return (
-                        <div key={call.id} className="grid gap-4 px-6 py-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center">
+                        <div
+                          key={call.id}
+                          className="grid gap-4 px-6 py-3 transition-colors duration-200 ease-standard hover:bg-white/[0.025] md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center"
+                          style={index % 2 === 1 ? { background: 'rgba(255,255,255,0.015)' } : undefined}
+                        >
                           <div className="flex min-w-0 items-center gap-3">
                             <div
-                              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px]"
                               style={{
-                                background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.05)',
-                                boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.07)',
+                                background: call.is_emergency ? 'rgba(255,107,43,0.12)' : 'rgba(255,255,255,0.04)',
+                                boxShadow: call.is_emergency ? '0 0 0 1px rgba(255,107,43,0.18)' : '0 0 0 1px rgba(255,255,255,0.06)',
                               }}
                             >
-                              <Phone size={14} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/48'} aria-hidden="true" />
+                              <Phone size={13} className={call.is_emergency ? 'text-orange-soft' : 'text-offwhite/44'} aria-hidden="true" />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[14px] font-semibold text-offwhite/78">{call.caller_number ?? 'Unknown number'}</p>
-                              <p className="mt-1 text-[12px] text-offwhite/36">{call.is_emergency ? 'Marked as urgent call-out' : 'Inbound caller handled by your receptionist'}</p>
+                              <p className="truncate text-[13.5px] font-medium text-offwhite/85">{call.caller_number ?? 'Unknown number'}</p>
+                              <p className="mt-0.5 text-[11.5px] text-offwhite/34">{call.is_emergency ? 'Urgent call-out' : 'Handled automatically'}</p>
                             </div>
                           </div>
-                          <span className="text-[12px] text-offwhite/38 tabular-nums">{when}</span>
-                          <span className="text-[12px] text-offwhite/38 tabular-nums">{formatDuration(call.duration_secs)}</span>
+                          <span className="text-[12px] text-offwhite/40 tabular-nums">{when}</span>
+                          <span className="text-[12px] text-offwhite/40 tabular-nums">{formatDuration(call.duration_secs)}</span>
                           <StatusBadge outcome={call.outcome} className="justify-self-start md:justify-self-end" />
                         </div>
                       );
@@ -620,36 +590,26 @@ export default function DashboardPage() {
                   boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(2,13,24,0.26)',
                 }}
               >
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent/72">Signal check</p>
-                <h2 className="mt-2 font-display text-[24px] font-bold tracking-[-0.04em] text-offwhite">How the pipeline looks</h2>
-                <div className="mt-6 space-y-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent/72">Signal check</p>
+                <h2 className="mt-1.5 font-display text-[18px] font-semibold tracking-[-0.02em] text-offwhite">Pipeline health</h2>
+                <div className="mt-5 space-y-2.5">
                   {[
-                    {
-                      label: 'Lead capture',
-                      value: formatPercent(leadRate),
-                      copy: 'A higher figure means your AI receptionist is converting more calls into actionable enquiries.',
-                    },
-                    {
-                      label: 'Booking efficiency',
-                      value: formatPercent(bookingRate),
-                      copy: 'Helps show whether captured demand is becoming real booked work.',
-                    },
-                    {
-                      label: 'Urgent call share',
-                      value: formatPercent(emergencyRate),
-                      copy: 'A useful signal when you need to stay sharp on emergency response and callbacks.',
-                    },
+                    { label: 'Lead capture', value: formatPercent(leadRate), copy: 'Calls becoming enquiries.' },
+                    { label: 'Booking efficiency', value: formatPercent(bookingRate), copy: 'Demand becoming booked work.' },
+                    { label: 'Urgent call share', value: formatPercent(emergencyRate), copy: 'Emergency response load.' },
                   ].map(item => (
                     <div
                       key={item.label}
-                      className="rounded-[20px] px-4 py-4"
+                      className="rounded-[16px] px-4 py-3.5"
                       style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[13px] font-semibold text-offwhite/74">{item.label}</p>
-                        <span className="font-display text-[28px] font-bold leading-none tracking-[-0.04em] text-offwhite">{item.value}</span>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div>
+                          <p className="text-[13px] font-medium text-offwhite/80">{item.label}</p>
+                          <p className="mt-0.5 text-[11.5px] text-offwhite/36">{item.copy}</p>
+                        </div>
+                        <span className="font-display text-[22px] font-bold leading-none tracking-[-0.03em] tabular-nums text-offwhite">{item.value}</span>
                       </div>
-                      <p className="mt-2 text-[12px] leading-relaxed text-offwhite/42">{item.copy}</p>
                     </div>
                   ))}
                 </div>

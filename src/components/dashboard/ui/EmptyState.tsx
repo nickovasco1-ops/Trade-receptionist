@@ -38,7 +38,7 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
       {action && (
         <Link
           to={action.href}
-          className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-orange-soft transition-all duration-200 font-body hover:-translate-y-0.5"
+          className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-orange-soft transition-[transform,background-color] duration-300 ease-mechanical font-body hover:-translate-y-0.5 active:translate-y-0"
           style={{
             background: 'rgba(255,107,43,0.08)',
             boxShadow: '0 0 0 1px rgba(255,107,43,0.18)',
