@@ -17,6 +17,7 @@ const STATUS_META: Record<LeadStatus, { label: string; tone: string }> = {
   booked: { label: 'Booked', tone: 'bg-status-success/15 text-status-success' },
   lost: { label: 'Lost', tone: 'bg-status-muted-2/10 text-status-muted-2' },
   spam: { label: 'Spam', tone: 'bg-status-muted-2/10 text-status-muted-2' },
+  flagged_for_review: { label: 'Review', tone: 'bg-orange/15 text-orange-soft' },
 };
 
 const URGENCY_META: Record<LeadUrgency, string> = {

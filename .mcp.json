@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "gitnexus": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/nicholasosuji/.npm-global/lib/node_modules/gitnexus/dist/cli/index.js",
+        "mcp"
+      ],
+      "description": "GitNexus code intelligence — impact analysis, blast radius, symbol context, execution flows, call-graph-aware rename"
+    }
+  }
+}
