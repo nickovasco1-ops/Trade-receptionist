@@ -294,3 +294,96 @@ export async function sendBookingConfirmationEmail(
     html: bookingConfirmationHtml(data),
   });
 }
+
+// ── Trial reminder email (day 8–10) ──────────────────────────────────────────
+
+export interface TrialReminderEmailData {
+  ownerName:    string;
+  businessName: string;
+  daysLeft:     number;
+  dashboardUrl: string;
+}
+
+function trialReminderHtml(data: TrialReminderEmailData): string {
+  const safeOwnerName    = escapeHtml(data.ownerName);
+  const safeBusinessName = escapeHtml(data.businessName);
+  const safeDashboardUrl = escapeHtml(data.dashboardUrl);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F3F4F6">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto">
+    <tr>
+      <td style="background:#020D18;padding:20px 24px">
+        <p style="margin:0;font-size:18px;font-weight:700;color:#F0F4F8;font-family:sans-serif;letter-spacing:-0.02em">
+          Trade Receptionist
+        </p>
+        <p style="margin:4px 0 0;font-size:12px;color:rgba(240,244,248,0.5);font-family:sans-serif">
+          ${safeBusinessName}
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:32px 24px 0">
+        <p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#111827;font-family:sans-serif">
+          Hi ${safeOwnerName},
+        </p>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#374151;font-family:sans-serif">
+          Your 14-day free trial ends in <strong>${data.daysLeft} day${data.daysLeft !== 1 ? 's' : ''}</strong>.
+          Trade Receptionist has been answering your calls — don't let a missed payment cut that off.
+        </p>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#374151;font-family:sans-serif">
+          Add your card now and you won't lose a single call. No charge until your trial ends.
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px 24px 0">
+        <a href="${safeDashboardUrl}/settings?tab=billing"
+           style="display:inline-block;padding:14px 28px;background:#FF6B2B;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;font-family:sans-serif">
+          Add card and continue →
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:24px 24px 0">
+        <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+          <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6B7280;letter-spacing:0.08em;text-transform:uppercase;font-family:sans-serif">What you keep</p>
+          <ul style="margin:0;padding-left:0;list-style:none">
+            ${['98.7% of calls answered — not missed', 'Job details texted straight to your phone', 'Spam and time-wasters filtered automatically', 'No new number needed — works with your existing line'].map(item =>
+              `<li style="padding:6px 0;font-size:14px;color:#374151;font-family:sans-serif">✓ &nbsp;${item}</li>`
+            ).join('')}
+          </ul>
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:24px;text-align:center">
+        <p style="margin:0;font-size:12px;color:#9CA3AF;font-family:sans-serif">
+          Trade Receptionist &mdash;
+          <a href="${safeDashboardUrl}" style="color:#FF6B2B;text-decoration:none">tradereceptionist.com</a>
+          &nbsp;&middot;&nbsp;
+          <a href="${safeDashboardUrl}/settings?tab=billing" style="color:#9CA3AF;text-decoration:none">Manage subscription</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendTrialReminderEmail(
+  to:   string,
+  data: TrialReminderEmailData
+): Promise<void> {
+  await sendEmail({
+    to,
+    subject: `Your free trial ends in ${data.daysLeft} day${data.daysLeft !== 1 ? 's' : ''} — add your card to keep going`,
+    html: trialReminderHtml(data),
+  });
+}

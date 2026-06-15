@@ -21,6 +21,7 @@ import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
+import { sendTrialReminderEmail } from './services/resend';
 import type { Call, Client } from '../../shared/types';
 
 const app  = express();
@@ -157,6 +158,64 @@ app.use('/bookings',     bookingsRouter);
 app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
+
+// ── POST /admin/send-trial-reminders ─────────────────────────────────────────
+// Queries trialing clients whose account is 8–10 days old and emails a card-add
+// prompt. Call this daily via a Railway cron or external scheduler.
+app.post('/admin/send-trial-reminders', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  const dashboardUrl = process.env.PUBLIC_APP_URL ?? 'https://app.tradereceptionist.com';
+
+  // Find clients in days 8–10 of their trial who haven't converted yet.
+  const now = new Date();
+  const dayStart = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: clients, error } = await supabase
+    .from('clients')
+    .select('id, email, owner_name, business_name, created_at')
+    .eq('onboarding_complete', true)
+    .eq('subscription_status', 'trialing')
+    .gte('created_at', dayStart(11))
+    .lte('created_at', dayStart(7));
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  const results: { email: string; daysLeft: number; sent: boolean; error?: string }[] = [];
+
+  for (const client of clients ?? []) {
+    const createdAt  = new Date(client.created_at as string);
+    const ageMs      = now.getTime() - createdAt.getTime();
+    const ageDays    = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+    const daysLeft   = Math.max(1, 14 - ageDays);
+
+    try {
+      await sendTrialReminderEmail(client.email as string, {
+        ownerName:    (client.owner_name as string | null) ?? 'there',
+        businessName: (client.business_name as string | null) ?? 'your business',
+        daysLeft,
+        dashboardUrl,
+      });
+      results.push({ email: client.email as string, daysLeft, sent: true });
+    } catch (err: unknown) {
+      results.push({
+        email: client.email as string,
+        daysLeft,
+        sent: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+  }
+
+  res.json({ success: true, sent: results.filter(r => r.sent).length, results });
+});
 
 // ── POST /admin/test-notifications ───────────────────────────────────────────
 // Send a live test email + SMS to the owner to verify Resend and Twilio work.

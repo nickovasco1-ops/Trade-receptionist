@@ -409,7 +409,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <div className="hero-fade mt-5 flex flex-wrap gap-2.5 text-[12px] text-offwhite/52 font-body" style={{ animationDelay: '280ms' }}>
               {[
                 'No new number needed',
-                'Custom voice and greeting',
+                'Includes 15-min setup call',
                 'Setup in minutes',
                 'Cancel anytime',
               ].map((item) => (
@@ -1156,7 +1156,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
       >
         {[
           { icon: CheckCircle2, text: '98.7% of calls answered' },
-          { icon: CheckCircle2, text: '14-day free trial, no card required' },
+          { icon: CheckCircle2, text: '14-day free trial · setup call included' },
           { icon: CheckCircle2, text: 'Set up in under 14 minutes' },
         ].map(({ icon: Icon, text }) => (
           <span key={text} className="flex items-center gap-2 text-[13px] text-offwhite/52">
@@ -1239,7 +1239,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
             >
               <p className="text-[11px] text-offwhite/28">
-              14-day free trial · No card required · Cancel anytime
+              14-day free trial · Setup call included · No card
               </p>
             </div>
 
@@ -1462,7 +1462,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
         <div className="flex flex-wrap justify-center gap-3 text-[13px] text-offwhite/28 font-body">
           {[
             { icon: CheckCircle2, label: 'No new number needed' },
-            { icon: CheckCircle2, label: 'Setup in minutes' },
+            { icon: CheckCircle2, label: 'Includes 15-min setup call' },
             { icon: CheckCircle2, label: 'Cancel anytime' },
             { icon: CheckCircle2, label: 'Custom voice and greeting' },
           ].map(({ icon: Icon, label }) => (
@@ -1573,6 +1573,11 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
               >
                 FAQs
               </button>
+            </li>
+            <li>
+              <a href="/partner" className="hover:text-offwhite transition-colors">
+                Partner Programme
+              </a>
             </li>
             <li>
               <a href="/terms" className="hover:text-offwhite transition-colors">

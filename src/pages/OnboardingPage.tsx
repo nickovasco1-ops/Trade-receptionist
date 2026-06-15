@@ -747,6 +747,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   const [clientId, setClientId] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(preview);
   const [customService, setCustomService] = useState('');
+  const [showSetupCall, setShowSetupCall] = useState(false);
 
   const [form, setForm] = useState<FormData>({
     ...(preview ? PREVIEW_FORM : DEFAULT_FORM),
@@ -898,7 +899,8 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
       if (completeErr) throw new Error(completeErr.message);
 
       clearDraft(clientId);
-      navigate('/dashboard', { replace: true });
+      setShowSetupCall(true);
+      setSaving(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — please try again.');
       setSaving(false);
@@ -1501,6 +1503,63 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
                   {step === 'ready' && (
                     <StepPane stepKey="ready">
+                      {showSetupCall ? (
+                        <div className="space-y-5">
+                          <div
+                            className="rounded-[22px] p-5"
+                            style={{
+                              background: 'linear-gradient(180deg, rgba(255,107,43,0.10) 0%, rgba(255,107,43,0.05) 100%)',
+                              boxShadow: '0 0 0 1px rgba(255,107,43,0.22)',
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full"
+                                style={{ background: 'rgba(255,107,43,0.14)', boxShadow: '0 0 0 1px rgba(255,107,43,0.24)' }}
+                              >
+                                <CheckCircle2 size={18} className="text-orange-soft" aria-hidden="true" />
+                              </div>
+                              <div>
+                                <p className="text-[18px] font-display font-bold text-offwhite">
+                                  Your receptionist is live
+                                </p>
+                                <p className="mt-2 text-[14px] leading-relaxed text-offwhite/56">
+                                  Calls are being handled. Book a quick 15-minute call with our team so we can test everything together and make sure your setup is exactly right.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div
+                            className="rounded-[20px] px-5 py-5"
+                            style={{ background: 'rgba(255,255,255,0.04)', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+                          >
+                            <CalendarDays size={20} className="text-orange-soft mb-3" aria-hidden="true" />
+                            <p className="text-[15px] font-semibold text-offwhite mb-1">15-minute setup call</p>
+                            <p className="text-[13px] text-offwhite/50 leading-relaxed mb-4">
+                              We'll do a live test call, walk through your settings, and confirm your AI receptionist sounds exactly how your business needs it to.
+                            </p>
+                            <PrimaryBtn
+                              onClick={() => {
+                                const url = import.meta.env.VITE_SETUP_CALL_URL as string | undefined;
+                                if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                                navigate('/dashboard', { replace: true });
+                              }}
+                            >
+                              Book my setup call
+                              <ArrowRight size={15} aria-hidden="true" />
+                            </PrimaryBtn>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => navigate('/dashboard', { replace: true })}
+                            className="w-full rounded text-center text-[13px] text-offwhite/32 transition-colors duration-200 hover:text-offwhite/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                          >
+                            Skip for now — go to dashboard
+                          </button>
+                        </div>
+                      ) : (
                       <div className="space-y-5">
                         <div
                           className="rounded-[22px] p-5"
@@ -1604,6 +1663,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           Go back and edit details
                         </button>
                       </div>
+                      )}
                     </StepPane>
                   )}
                 </div>

@@ -62,6 +62,7 @@ const DashboardPreviewSettingsPage = React.lazy(() =>
 const WelcomePage    = React.lazy(() => import('./src/pages/WelcomePage'));
 const TestCallPage   = React.lazy(() => import('./src/pages/TestCallPage'));
 const NotFoundPage   = React.lazy(() => import('./src/pages/NotFoundPage'));
+const PartnerPage    = React.lazy(() => import('./src/pages/PartnerPage'));
 
 // Auth guard — simple: checks Supabase session cookie presence via storage
 import { supabase } from './src/lib/supabase';
@@ -243,6 +244,13 @@ ReactDOM.createRoot(rootElement, {
         <Route path="/welcome" element={
           <React.Suspense fallback={null}>
             <WelcomePage />
+          </React.Suspense>
+        } />
+
+        {/* ── Partner programme (public) ──────────────────────── */}
+        <Route path="/partner" element={
+          <React.Suspense fallback={null}>
+            <PartnerPage />
           </React.Suspense>
         } />
 
