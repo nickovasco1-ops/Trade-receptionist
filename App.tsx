@@ -243,6 +243,13 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                 </button>
               );
             })}
+            <a
+              href="/partner"
+              className="relative font-semibold text-[14px] tracking-wide pb-1 text-offwhite/60 hover:text-offwhite"
+              style={{ transition: 'color 200ms ease' }}
+            >
+              Partners
+            </a>
           </div>
 
           {/* Desktop CTAs */}
@@ -284,6 +291,13 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                 {label}
               </button>
             ))}
+            <a
+              href="/partner"
+              className="text-xl font-bold text-left text-offwhite/80 hover:text-offwhite transition-colors w-full py-2"
+              onClick={() => setIsOpen(false)}
+            >
+              Partners
+            </a>
             <div className="flex flex-col gap-3 pt-2">
               <Button variant="outline" fullWidth onClick={() => {
                 setIsOpen(false);
