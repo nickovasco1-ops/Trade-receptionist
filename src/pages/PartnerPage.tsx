@@ -138,7 +138,7 @@ function PartnerHero() {
           </FadeUp>
           <FadeUp delay={140}>
             <p className="font-body text-lg text-offwhite/65 max-w-[52ch] leading-[1.70] mb-10">
-              Trade Receptionist answers calls, books jobs, and sends WhatsApp confirmations for UK tradespeople. Refer a client — earn 15% recurring commission for 12 months.
+              Trade Receptionist answers calls, books jobs, and sends SMS confirmations for UK tradespeople. Refer a client — earn 15% recurring commission for 12 months.
             </p>
           </FadeUp>
           <FadeUp delay={210}>
