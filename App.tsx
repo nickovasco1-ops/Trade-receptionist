@@ -881,51 +881,60 @@ const HowItWorks = () => (
 
 // ─── ROI Section ──────────────────────────────────────────────────────────────
 const ROI_STATS = [
-  { value: '£4,200', label: 'avg. lost per year', sublabel: 'to missed calls' },
-  { value: '27%', label: 'of callers never', sublabel: 'ring back' },
-  { value: '3 in 5', label: 'jobs go to whoever', sublabel: 'answers first' },
+  { value: '£4,200', label: 'avg. annual loss', sub: 'to missed calls' },
+  { value: '27%', label: 'of callers', sub: 'never ring back' },
+  { value: '3 in 5', label: 'jobs go to whoever', sub: 'answers first' },
 ];
 
 const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
   <Section id="roi" bg="gray" className="relative overflow-hidden">
+    {/* Ambient glow behind calculator */}
     <div
-      className="absolute inset-0 pointer-events-none opacity-[0.10]"
+      className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
       style={{
-        background:
-          'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 35%, rgba(255,255,255,0.02) 35%, transparent 36%, transparent 100%)',
+        width: '480px',
+        height: '480px',
+        background: 'radial-gradient(circle, rgba(255,107,43,0.07) 0%, transparent 70%)',
       }}
     />
 
-    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,0.8fr)] lg:gap-10">
+    <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
       <FadeUp className="max-w-xl">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-orange-soft">
           What are missed calls costing you?
         </p>
         <h2
           className="font-display font-bold text-offwhite"
-          style={{ fontSize: 'clamp(2.35rem, 5vw, 4.4rem)', letterSpacing: '-0.05em', lineHeight: 0.95 }}
+          style={{ fontSize: 'clamp(2.2rem, 4.5vw, 4rem)', letterSpacing: '-0.04em', lineHeight: 1.0 }}
         >
-          One missed enquiry can be a lost quote, call-out, or full day’s work.
+          Every missed call is a job that goes to whoever picks up.
         </h2>
-        <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/56">
-          Use the calculator to get a rough feel for what unanswered calls might be costing each month. One recovered job could pay for Trade Receptionist.
+        <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/55">
+          Use the calculator to see exactly what unanswered calls are costing you. Most trades businesses lose £3k–£15k a year — often without realising it.
         </p>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {ROI_STATS.map(({ value, label, sublabel }) => (
-            <div
-              key={value}
-              className="public-surface-soft rounded-[18px] px-4 py-4"
-              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 28px rgba(2,13,24,0.16)' }}
-            >
-              <div className="font-display text-[2rem] font-bold leading-none text-orange-soft">{value}</div>
-              <p className="mt-2 text-[13px] leading-snug text-offwhite/68">{label}</p>
-              <p className="text-[13px] leading-snug text-offwhite/40">{sublabel}</p>
+        {/* Editorial stat strip — no cards, just typography */}
+        <div className="mt-8 grid grid-cols-3 gap-x-4">
+          {ROI_STATS.map(({ value, label, sub }) => (
+            <div key={value}>
+              <div
+                className="font-display font-bold leading-none tabular-nums"
+                style={{
+                  fontSize: 'clamp(1.6rem, 2.5vw, 2.1rem)',
+                  letterSpacing: '-0.04em',
+                  color: '#ffb59a',
+                  fontFeatureSettings: '"tnum"',
+                }}
+              >
+                {value}
+              </div>
+              <p className="mt-1.5 text-[12px] leading-[1.4] text-offwhite/50">{label}</p>
+              <p className="text-[12px] leading-[1.4] text-offwhite/30">{sub}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <Button variant="primary" size="lg" onClick={onWaitlist}>
             Start free trial
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -977,7 +986,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
         <div className="space-y-4">
           {[
             { title: 'Asks the right questions', text: 'It captures the caller, job, urgency, and when they need you.' },
-            { title: 'Protects your time', text: 'Spam, sales calls, and weak enquiries don’t eat into the day.' },
+            { title: 'Protects your time', text: "Spam, sales calls, and weak enquiries don't eat into the day." },
             { title: 'Hands back a clean summary', text: 'You get the detail fast, without needing to listen back to voicemails.' },
           ].map((feat, i) => (
             <div
@@ -1138,7 +1147,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
           No contracts. Keep your number. Cancel anytime.
         </h2>
         <p className="text-[17px] text-offwhite/52 mb-8 leading-relaxed">
-          Start with the calls you’re currently missing, then scale up when the diary gets busier.
+          Start with the calls you're currently missing, then scale up when the diary gets busier.
         </p>
 
         {/* Toggle */}
@@ -1281,7 +1290,7 @@ const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
       answer: "No. You keep your current mobile or landline. Trade Receptionist works with call forwarding, so customers still ring the number they already know.",
     },
     {
-      question: 'Will customers know it’s AI?',
+      question: "Will customers know it's AI?",
       answer: 'Most callers just notice that the phone was answered quickly and professionally. The voice is natural, British, and focused on taking the details properly.',
     },
     {
@@ -1294,7 +1303,7 @@ const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
     },
     {
       question: 'Can I stop it from quoting prices?',
-      answer: 'Yes. You decide what it can and cannot say. If you don’t want prices discussed on calls, it can simply capture the enquiry and pass it back to you.',
+      answer: "Yes. You decide what it can and cannot say. If you don't want prices discussed on calls, it can simply capture the enquiry and pass it back to you.",
     },
     {
       question: 'What if it gets something wrong?',
@@ -1302,7 +1311,7 @@ const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
     },
     {
       question: 'Can I cancel anytime?',
-      answer: 'Yes. There’s no long contract tying you in. If it’s not right for your business, you can stop.',
+      answer: "Yes. There's no long contract tying you in. If it's not right for your business, you can stop.",
     },
   ];
 
@@ -1431,7 +1440,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
         </h2>
 
         <p className="text-[17px] text-offwhite/44 max-w-2xl mx-auto mb-8 font-body leading-relaxed">
-          If the phone rings while you’re busy, Trade Receptionist can still answer it properly, take the details, and help you book the work.
+          If the phone rings while you're busy, Trade Receptionist can still answer it properly, take the details, and help you book the work.
         </p>
 
         {/* End-state proof cue */}

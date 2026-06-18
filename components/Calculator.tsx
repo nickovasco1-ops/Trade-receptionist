@@ -1,136 +1,372 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 
-function NumberField({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  prefix = '',
-  suffix = '',
-  help,
-}: {
+// ── StepInput ─────────────────────────────────────────────────────────────────
+// Free-type input with ± stepper buttons. Uses string state internally so users
+// can type any number without mid-entry clamping. Commits on blur or Enter.
+
+interface StepInputProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
   min: number;
   max: number;
+  step: number;
   prefix?: string;
   suffix?: string;
-  help: string;
-}) {
+  hint: string;
+}
+
+function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hint }: StepInputProps) {
+  const [raw, setRaw] = useState(String(value));
+
+  // Keep raw in sync when parent drives a change (e.g. from ± buttons)
+  useEffect(() => {
+    setRaw(String(value));
+  }, [value]);
+
+  const commit = useCallback(
+    (str: string) => {
+      const cleaned = str.replace(/[£%,\s]/g, '');
+      const parsed = parseInt(cleaned, 10);
+      const clamped = Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : min;
+      setRaw(String(clamped));
+      onChange(clamped);
+    },
+    [min, max, onChange],
+  );
+
+  const decrement = () => {
+    const next = Math.max(min, value - step);
+    setRaw(String(next));
+    onChange(next);
+  };
+
+  const increment = () => {
+    const next = Math.min(max, value + step);
+    setRaw(String(next));
+    onChange(next);
+  };
+
   return (
-    <label className="block">
-      <span className="mb-2 block text-[13px] font-semibold text-offwhite/84">{label}</span>
+    <div>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.13em] text-offwhite/50 leading-none">
+          {label}
+        </span>
+        <span className="text-right text-[11px] leading-snug text-offwhite/25 shrink-0 max-w-[140px]">
+          {hint}
+        </span>
+      </div>
       <div
-        className="flex items-center rounded-[16px] px-4 py-3"
+        className="flex items-center overflow-hidden"
         style={{
-          background: 'rgba(7, 17, 31, 0.84)',
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
+          borderRadius: '10px',
+          background: 'rgba(2,10,22,0.75)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)',
         }}
       >
-        {prefix && <span className="mr-2 text-[16px] font-semibold text-orange-soft">{prefix}</span>}
-        <input
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(event) => {
-            const raw = event.target.value.trim();
-            const next = Number(raw);
+        {/* Decrement */}
+        <button
+          type="button"
+          onClick={decrement}
+          disabled={value <= min}
+          aria-label={`Decrease ${label}`}
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/35 disabled:opacity-20"
+          style={{ transition: 'background 150ms ease, color 150ms ease' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(240,244,248,0.85)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = ''; }}
+        >
+          −
+        </button>
 
-            if (raw === '' || !Number.isFinite(next)) {
-              return;
-            }
+        {/* Input */}
+        <div className="relative flex min-w-0 flex-1 items-center justify-center px-1">
+          {prefix && (
+            <span
+              className="mr-0.5 select-none text-[15px] font-semibold leading-none"
+              style={{ color: '#ffb59a' }}
+            >
+              {prefix}
+            </span>
+          )}
+          <input
+            type="text"
+            inputMode="numeric"
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit(raw);
+              if (e.key === 'ArrowUp') { e.preventDefault(); increment(); }
+              if (e.key === 'ArrowDown') { e.preventDefault(); decrement(); }
+            }}
+            className="w-full min-w-0 bg-transparent text-center text-[17px] font-semibold text-offwhite outline-none"
+            style={{ fontFeatureSettings: '"tnum"', letterSpacing: '-0.01em' }}
+          />
+          {suffix && (
+            <span className="ml-0.5 select-none text-[13px] font-semibold text-offwhite/35">
+              {suffix}
+            </span>
+          )}
+        </div>
 
-            onChange(Math.min(max, Math.max(min, next)));
-          }}
-          className="w-full bg-transparent text-[18px] font-semibold text-offwhite outline-none"
-        />
-        {suffix && <span className="ml-2 text-[14px] font-semibold text-offwhite/45">{suffix}</span>}
+        {/* Increment */}
+        <button
+          type="button"
+          onClick={increment}
+          disabled={value >= max}
+          aria-label={`Increase ${label}`}
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/35 disabled:opacity-20"
+          style={{ transition: 'background 150ms ease, color 150ms ease' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(240,244,248,0.85)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = ''; }}
+        >
+          +
+        </button>
       </div>
-      <span className="mt-2 block text-[12px] leading-relaxed text-offwhite/40">{help}</span>
-    </label>
+    </div>
   );
 }
 
-export const Calculator: React.FC = () => {
-  const [missedCallsPerWeek, setMissedCallsPerWeek] = useState(6);
-  const [averageJobValue, setAverageJobValue] = useState(280);
-  const [conversionRate, setConversionRate] = useState(35);
+// ── Separator ─────────────────────────────────────────────────────────────────
+function Divider() {
+  return (
+    <div
+      className="h-px w-full"
+      style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)' }}
+    />
+  );
+}
 
-  const potentialLostMonthly = useMemo(() => {
-    const estimated = missedCallsPerWeek * averageJobValue * (conversionRate / 100) * 4.33;
-    return Math.round(estimated / 10) * 10;
-  }, [averageJobValue, conversionRate, missedCallsPerWeek]);
+// ── Calculator ─────────────────────────────────────────────────────────────────
 
-  const yearlyView = potentialLostMonthly * 12;
+const STARTER_MONTHLY = 49;
+
+export function Calculator() {
+  const [missedPerWeek, setMissedPerWeek] = useState(6);
+  const [jobValue, setJobValue] = useState(280);
+  const [conversionPct, setConversionPct] = useState(35);
+
+  const monthly = useMemo(() => {
+    const raw = missedPerWeek * jobValue * (conversionPct / 100) * 4.33;
+    return Math.round(raw / 10) * 10;
+  }, [missedPerWeek, jobValue, conversionPct]);
+
+  const weekly = useMemo(() => Math.round(monthly / 4.33 / 10) * 10, [monthly]);
+  const annual = monthly * 12;
+
+  const roiMultiple = monthly > 0 ? Math.round(monthly / STARTER_MONTHLY) : null;
+  const breakEven = useMemo(() => {
+    const perCall = jobValue * (conversionPct / 100);
+    if (perCall <= 0) return null;
+    return Math.ceil(STARTER_MONTHLY / perCall);
+  }, [jobValue, conversionPct]);
+
+  // Subscription bar: what fraction of the monthly loss is the TR subscription?
+  const subBarPct = monthly > 0 ? Math.min(100, Math.round((STARTER_MONTHLY / monthly) * 100)) : 0;
+
+  // Animate the annual number on change
+  const annualRef = useRef<HTMLDivElement>(null);
+  const prevAnnual = useRef(annual);
+  useEffect(() => {
+    if (prevAnnual.current !== annual && annualRef.current) {
+      const el = annualRef.current;
+      el.style.opacity = '0.45';
+      el.style.transform = 'translateY(-4px)';
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }),
+      );
+      prevAnnual.current = annual;
+    }
+  }, [annual]);
 
   return (
     <div
-      className="rounded-[24px] p-5 md:p-6"
+      className="overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, rgba(20,29,43,0.96) 0%, rgba(10,18,30,0.98) 100%)',
+        borderRadius: '20px',
+        background: 'linear-gradient(160deg, rgba(6,18,36,0.97) 0%, rgba(3,12,24,0.99) 100%)',
         boxShadow:
-          '0 0 0 1px rgba(255,255,255,0.08), 0 28px 60px rgba(2,13,24,0.40), inset 0 1px 0 rgba(255,255,255,0.04)',
+          '0 0 0 1px rgba(255,255,255,0.07), 0 40px 80px rgba(2,13,24,0.55), 0 8px 16px rgba(2,13,24,0.30)',
       }}
     >
-      <div className="grid gap-4">
-        <NumberField
-          label="Missed calls per week"
-          value={missedCallsPerWeek}
-          onChange={setMissedCallsPerWeek}
-          min={1}
-          max={50}
-          help="How many genuine callers usually hit voicemail or no answer?"
-        />
-
-        <NumberField
-          label="Average job value"
-          value={averageJobValue}
-          onChange={setAverageJobValue}
-          min={50}
-          max={5000}
-          prefix="£"
-          help="Use your typical job, quote, or call-out value."
-        />
-
-        <NumberField
-          label="Estimated conversion rate"
-          value={conversionRate}
-          onChange={setConversionRate}
-          min={5}
-          max={100}
-          suffix="%"
-          help="Roughly how many of those callers would turn into paid work?"
-        />
-      </div>
-
+      {/* Header strip */}
       <div
-        className="mt-5 rounded-[20px] px-5 py-5"
-        style={{
-          background: 'linear-gradient(180deg, rgba(255,107,43,0.10) 0%, rgba(255,107,43,0.05) 100%)',
-          boxShadow: 'inset 0 0 0 1px rgba(255,107,43,0.16)',
-        }}
+        className="flex items-center gap-2 px-5 py-3"
+        style={{ background: 'rgba(2,10,22,0.55)' }}
       >
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-offwhite/48">
-          Potential work lost each month
-        </p>
         <div
-          className="mt-2 font-display font-bold leading-none text-orange-soft"
-          style={{ fontSize: 'clamp(2.8rem, 4vw, 4.5rem)', letterSpacing: '-0.05em' }}
-        >
-          £{potentialLostMonthly.toLocaleString('en-GB')}
-        </div>
-        <p className="mt-2 text-[14px] leading-relaxed text-offwhite/58">
-          That’s around £{yearlyView.toLocaleString('en-GB')} a year in work that could have been booked.
-        </p>
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: '#FF6B2B', boxShadow: '0 0 6px rgba(255,107,43,0.6)' }}
+        />
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-offwhite/30">
+          Income loss calculator
+        </span>
       </div>
 
-      <p className="mt-4 text-[13px] leading-relaxed text-offwhite/48">
-        One recovered job could pay for Trade Receptionist.
-      </p>
+      <Divider />
+
+      <div className="grid md:grid-cols-[1.1fr_1fr]">
+        {/* ── Left: Inputs ──────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-5 p-5">
+          <StepInput
+            label="Missed calls / week"
+            value={missedPerWeek}
+            onChange={setMissedPerWeek}
+            min={1}
+            max={60}
+            step={1}
+            hint="Genuine callers who went unanswered"
+          />
+          <StepInput
+            label="Average job value"
+            value={jobValue}
+            onChange={setJobValue}
+            min={20}
+            max={10000}
+            step={10}
+            prefix="£"
+            hint="Quote, call-out, or typical job fee"
+          />
+          <StepInput
+            label="Calls that convert"
+            value={conversionPct}
+            onChange={setConversionPct}
+            min={5}
+            max={100}
+            step={5}
+            suffix="%"
+            hint="Enquiries that become paid work"
+          />
+
+          {/* Formula note */}
+          <p
+            className="mt-auto text-[11px] leading-relaxed"
+            style={{ color: 'rgba(240,244,248,0.22)' }}
+          >
+            {missedPerWeek} calls × £{jobValue} × {conversionPct}% × 52&nbsp;weeks
+          </p>
+        </div>
+
+        {/* Vertical separator on desktop, horizontal on mobile */}
+        <div
+          className="hidden md:block w-px self-stretch"
+          style={{ background: 'linear-gradient(180deg, transparent, rgba(255,255,255,0.06), transparent)' }}
+        />
+        <div
+          className="h-px md:hidden"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)' }}
+        />
+
+        {/* ── Right: Results ──────────────────────────────────────────────── */}
+        <div
+          className="flex flex-col p-5"
+          style={{ background: 'rgba(255,107,43,0.025)' }}
+        >
+          {/* Annual — dominant */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: 'rgba(240,244,248,0.32)' }}>
+              Annual loss estimate
+            </p>
+            <div
+              ref={annualRef}
+              className="mt-1 font-display font-bold leading-[1] tabular-nums"
+              style={{
+                fontSize: 'clamp(2.8rem, 5vw, 4.8rem)',
+                letterSpacing: '-0.04em',
+                color: '#ffb59a',
+                fontFeatureSettings: '"tnum"',
+                transition: 'opacity 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 280ms cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              £{annual.toLocaleString('en-GB')}
+            </div>
+          </div>
+
+          {/* Monthly + weekly */}
+          <div className="mt-4 flex gap-5">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+                Monthly
+              </p>
+              <p
+                className="mt-0.5 font-display font-semibold tabular-nums"
+                style={{ fontSize: '1.35rem', letterSpacing: '-0.03em', color: 'rgba(240,244,248,0.75)', fontFeatureSettings: '"tnum"' }}
+              >
+                £{monthly.toLocaleString('en-GB')}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+                Weekly
+              </p>
+              <p
+                className="mt-0.5 font-display font-semibold tabular-nums"
+                style={{ fontSize: '1.35rem', letterSpacing: '-0.03em', color: 'rgba(240,244,248,0.75)', fontFeatureSettings: '"tnum"' }}
+              >
+                £{weekly.toLocaleString('en-GB')}
+              </p>
+            </div>
+          </div>
+
+          <Divider />
+          <div className="my-4" />
+
+          {/* Subscription comparison */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+              vs Trade Receptionist
+            </p>
+
+            {/* Proportion bar */}
+            {monthly > 0 && (
+              <div className="mt-2.5 mb-3">
+                <div
+                  className="h-1.5 w-full overflow-hidden"
+                  style={{ borderRadius: '99px', background: 'rgba(255,107,43,0.15)' }}
+                >
+                  <div
+                    className="h-full"
+                    style={{
+                      width: `${subBarPct}%`,
+                      minWidth: '4px',
+                      borderRadius: '99px',
+                      background: '#99cbff',
+                      transition: 'width 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </div>
+                <div className="mt-1.5 flex justify-between">
+                  <span className="text-[10px]" style={{ color: '#99cbff' }}>
+                    TR: £{STARTER_MONTHLY}/mo
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'rgba(255,107,43,0.6)' }}>
+                    Loss: £{monthly.toLocaleString('en-GB')}/mo
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {roiMultiple !== null && roiMultiple > 0 && (
+              <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.55)' }}>
+                You're losing{' '}
+                <strong style={{ color: 'rgba(240,244,248,0.85)' }}>{roiMultiple}×</strong> more than
+                the subscription costs each month.
+              </p>
+            )}
+            {breakEven !== null && (
+              <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.35)' }}>
+                {breakEven <= 1
+                  ? 'One recovered call covers the subscription.'
+                  : `${breakEven} recovered calls covers the month.`}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
+}
