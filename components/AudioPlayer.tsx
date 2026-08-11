@@ -193,14 +193,14 @@ export const AudioPlayer: React.FC = () => {
               <p className="font-display font-bold text-[16px] text-offwhite leading-none tracking-tight mb-1">
                 No Hot Water — Customer Call Sample
               </p>
-              <p className="text-[12px] text-offwhite/40 font-body leading-none">
+              <p className="text-[12px] text-offwhite/62 font-body leading-none">
                 Trade Receptionist · custom voice demo
               </p>
             </div>
           </div>
 
           <span
-            className="font-mono text-[12px] text-offwhite/30 px-2.5 py-1.5 rounded-lg"
+            className="font-mono text-[12px] text-offwhite/58 px-2.5 py-1.5 rounded-lg"
             style={{ background: 'rgba(255,255,255,0.04)' }}
           >
             {formatTime(currentTime)} / {duration > 0 ? formatTime(duration) : '--:--'}
@@ -250,7 +250,7 @@ export const AudioPlayer: React.FC = () => {
         </button>
 
         {/* Caption */}
-        <p className="mt-4 text-center text-[11px] text-offwhite/20 font-body">
+        <p className="mt-4 text-center text-[11px] text-offwhite/56 font-body">
           Example enquiry · sample voice demo
         </p>
       </div>

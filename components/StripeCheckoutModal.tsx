@@ -43,7 +43,7 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
                 : '0 0 0 1px rgba(255,255,255,0.10)',
             }}
           >
-            <Icon size={18} className={plan.popular ? 'text-orange-soft' : 'text-offwhite/56'} />
+            <Icon size={18} className={plan.popular ? 'text-orange-soft' : 'text-offwhite/66'} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -79,9 +79,9 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
             <span className="font-display text-[52px] font-bold text-offwhite leading-none tracking-[-0.04em]">
               £{plan.price}
             </span>
-            <span className="text-[14px] text-offwhite/36 font-body">/mo after trial</span>
+            <span className="text-[14px] text-offwhite/58 font-body">/mo after trial</span>
           </div>
-          <p className="text-[13px] leading-relaxed text-offwhite/48">{PLAN_TAGLINE[plan.key]}</p>
+          <p className="text-[13px] leading-relaxed text-offwhite/62">{PLAN_TAGLINE[plan.key]}</p>
           <p className="mt-2 text-[11px] font-bold text-orange-soft/70">{plan.calls}</p>
         </div>
       </div>
@@ -104,7 +104,7 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
       </a>
 
       {/* Trust micro-copy */}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-[11px] text-offwhite/30 font-body">
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-[11px] text-offwhite/58 font-body">
         <span>14-day free trial</span>
         <span aria-hidden="true">·</span>
         <span>No card required</span>
@@ -125,7 +125,7 @@ function PlanSelector({ onSelect }: { onSelect: (plan: PlanConfig) => void }) {
         <h3 id="stripe-checkout-title" className="font-display text-[28px] font-bold text-offwhite leading-tight tracking-[-0.03em]">
           Start your <em className="not-italic bg-gradient-to-br from-orange to-orange-glow bg-clip-text text-transparent">free</em> trial
         </h3>
-        <p className="mt-2 text-[13px] text-offwhite/44 font-body">
+        <p className="mt-2 text-[13px] text-offwhite/62 font-body">
           No charge today. Pick the plan that fits your call volume.
         </p>
       </div>
@@ -159,21 +159,21 @@ function PlanSelector({ onSelect }: { onSelect: (plan: PlanConfig) => void }) {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-offwhite/36 font-body mt-0.5">{plan.calls}</p>
+                <p className="text-[11px] text-offwhite/58 font-body mt-0.5">{plan.calls}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="text-right">
                   <p className="font-display text-[22px] font-bold text-offwhite leading-none tracking-tight">£{plan.price}</p>
-                  <p className="text-[10px] text-offwhite/30 font-body">/mo</p>
+                  <p className="text-[10px] text-offwhite/58 font-body">/mo</p>
                 </div>
-                <ArrowRight size={14} className="text-offwhite/24 transition-colors group-hover:text-orange-soft" />
+                <ArrowRight size={14} className="text-offwhite/56 transition-colors group-hover:text-orange-soft" />
               </div>
             </div>
           </button>
         ))}
       </div>
 
-      <p className="mt-5 text-center text-[11px] text-offwhite/26 font-body">
+      <p className="mt-5 text-center text-[11px] text-offwhite/56 font-body">
         14-day free trial · No card required · Cancel anytime
       </p>
     </>
@@ -289,7 +289,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-offwhite/30 transition-all duration-200 hover:bg-white/[0.06] hover:text-offwhite/70"
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-offwhite/58 transition-all duration-200 hover:bg-white/[0.06] hover:text-offwhite/70"
             aria-label="Close"
           >
             <X size={17} />
@@ -301,7 +301,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
               {/* Switch plan */}
               <button
                 onClick={() => setSelectedPlan(null)}
-                className="mt-4 w-full text-center text-[12px] text-offwhite/30 font-body transition-colors hover:text-offwhite/56"
+                className="mt-4 w-full text-center text-[12px] text-offwhite/58 font-body transition-colors hover:text-offwhite/66"
               >
                 Not {selectedPlan.name}? Switch plan
               </button>

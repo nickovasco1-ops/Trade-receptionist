@@ -91,7 +91,7 @@ export const StatusGauge: React.FC<StatusGaugeProps> = ({
       </div>
 
       <span
-        className="text-center font-bold uppercase tracking-[0.10em] text-offwhite/40"
+        className="text-center font-bold uppercase tracking-[0.10em] text-offwhite/62"
         style={{ fontSize: labelSizes[size] }}
       >
         {label}
@@ -147,7 +147,7 @@ export const Button: React.FC<ButtonProps> = ({
       'rounded-btn bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.04)_100%)] text-offwhite ' +
       'ring-1 ring-white/10 shadow-[0_10px_24px_rgba(2,13,24,0.18)] hover:bg-white/[0.10] hover:ring-white/18 backdrop-blur-sm',
     ghost:
-      'bg-transparent text-offwhite/60 hover:text-offwhite hover:bg-white/[0.06] rounded-btn',
+      'bg-transparent text-offwhite/70 hover:text-offwhite hover:bg-white/[0.06] rounded-btn',
   };
 
   const sizes: Record<string, string> = {
@@ -221,7 +221,9 @@ export const Section: React.FC<{
   return (
     <section
       id={id}
-      className={`public-section ${bgMap[bg]} py-16 md:py-24 ${className}`}
+      // scroll-mt keeps anchor jumps from parking the heading tight under the
+      // fixed header (desktop clearance was only ~12px without it).
+      className={`public-section ${bgMap[bg]} scroll-mt-20 md:scroll-mt-28 py-16 md:py-24 ${className}`}
     >
       <div className="public-section-divider" aria-hidden="true" />
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">

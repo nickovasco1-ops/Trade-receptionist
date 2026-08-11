@@ -72,8 +72,8 @@ export default function TradesMarquee() {
                   boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
                 }}
               >
-                <Icon className="w-[14px] h-[14px] text-offwhite/40" strokeWidth={1.75} aria-hidden="true" />
-                <span className="text-[13px] font-semibold text-offwhite/55 font-body whitespace-nowrap">
+                <Icon className="w-[14px] h-[14px] text-offwhite/62" strokeWidth={1.75} aria-hidden="true" />
+                <span className="text-[13px] font-semibold text-offwhite/66 font-body whitespace-nowrap">
                   {label}
                 </span>
               </div>
@@ -99,8 +99,8 @@ export default function TradesMarquee() {
                   boxShadow: '0 0 0 1px rgba(255,255,255,0.07)',
                 }}
               >
-                <Icon className="w-[14px] h-[14px] text-offwhite/40" strokeWidth={1.75} aria-hidden="true" />
-                <span className="text-[13px] font-semibold text-offwhite/55 font-body whitespace-nowrap">
+                <Icon className="w-[14px] h-[14px] text-offwhite/62" strokeWidth={1.75} aria-hidden="true" />
+                <span className="text-[13px] font-semibold text-offwhite/66 font-body whitespace-nowrap">
                   {label}
                 </span>
               </div>

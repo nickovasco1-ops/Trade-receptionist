@@ -81,14 +81,14 @@ const CallScreen = () => (
 
       <div className="text-center">
         <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1 font-body"
-           style={{ color: 'rgba(240,244,248,0.35)' }}>
+           style={{ color: 'rgba(240,244,248,0.60)' }}>
           Answering call
         </p>
         <p className="font-display font-semibold text-[18px] text-[#F0F4F8]"
            style={{ letterSpacing: '-0.01em' }}>
           Dave Hendricks
         </p>
-        <p className="text-[13px] mt-1 font-body" style={{ color: 'rgba(240,244,248,0.4)' }}>
+        <p className="text-[13px] mt-1 font-body" style={{ color: 'rgba(240,244,248,0.62)' }}>
           +44 7700 900142
         </p>
       </div>
@@ -147,7 +147,7 @@ const TextSummaryScreen = () => (
       </div>
       <div>
         <p className="text-[13px] font-semibold text-[#F0F4F8] font-display">Trade Receptionist</p>
-        <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.35)' }}>Text message received</p>
+        <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.60)' }}>Text message received</p>
       </div>
     </div>
 
@@ -156,7 +156,7 @@ const TextSummaryScreen = () => (
       <div className="text-center">
         <span
           className="text-[10px] px-3 py-1 rounded-full font-body"
-          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,244,248,0.3)' }}
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,244,248,0.58)' }}
         >
           Today, 14:32
         </span>
@@ -170,23 +170,23 @@ const TextSummaryScreen = () => (
         <p className="text-[12px] font-bold text-[#ffb59a] font-display">📞 New Job Enquiry</p>
         <div className="space-y-1.5 text-[12px] font-body">
           <div className="flex gap-2">
-            <span style={{ color: 'rgba(240,244,248,0.3)', minWidth: '56px' }}>Name</span>
+            <span style={{ color: 'rgba(240,244,248,0.58)', minWidth: '56px' }}>Name</span>
             <span style={{ color: 'rgba(240,244,248,0.75)' }}>Mrs. Helen Briggs</span>
           </div>
           <div className="flex gap-2">
-            <span style={{ color: 'rgba(240,244,248,0.3)', minWidth: '56px' }}>Job</span>
+            <span style={{ color: 'rgba(240,244,248,0.58)', minWidth: '56px' }}>Job</span>
             <span style={{ color: 'rgba(240,244,248,0.75)' }}>Boiler service + repair</span>
           </div>
           <div className="flex gap-2">
-            <span style={{ color: 'rgba(240,244,248,0.3)', minWidth: '56px' }}>Area</span>
+            <span style={{ color: 'rgba(240,244,248,0.58)', minWidth: '56px' }}>Area</span>
             <span style={{ color: 'rgba(240,244,248,0.75)' }}>SW11 3RL</span>
           </div>
           <div className="flex gap-2">
-            <span style={{ color: 'rgba(240,244,248,0.3)', minWidth: '56px' }}>Urgency</span>
+            <span style={{ color: 'rgba(240,244,248,0.58)', minWidth: '56px' }}>Urgency</span>
             <span style={{ color: '#ffb59a' }}>This week</span>
           </div>
           <div className="flex gap-2">
-            <span style={{ color: 'rgba(240,244,248,0.3)', minWidth: '56px' }}>Phone</span>
+            <span style={{ color: 'rgba(240,244,248,0.58)', minWidth: '56px' }}>Phone</span>
             <span style={{ color: 'rgba(240,244,248,0.75)' }}>07700 900381</span>
           </div>
         </div>
@@ -209,7 +209,7 @@ const SpamScreen = () => (
   <div className="flex flex-col h-full">
     <div className="px-4 pt-6 pb-4">
       <p className="text-[11px] font-bold uppercase tracking-[0.1em] font-body mb-4"
-         style={{ color: 'rgba(240,244,248,0.3)' }}>
+         style={{ color: 'rgba(240,244,248,0.58)' }}>
         Today's calls
       </p>
       <div className="space-y-2">
@@ -227,11 +227,11 @@ const SpamScreen = () => (
           >
             <div className="flex-1 min-w-0 mr-3">
               <p className="text-[12px] font-semibold truncate font-display"
-                 style={{ color: c.passed ? 'rgba(240,244,248,0.75)' : 'rgba(240,244,248,0.3)' }}>
+                 style={{ color: c.passed ? 'rgba(240,244,248,0.75)' : 'rgba(240,244,248,0.58)' }}>
                 {c.caller}
               </p>
               <p className="text-[10px] truncate font-body"
-                 style={{ color: 'rgba(240,244,248,0.25)' }}>
+                 style={{ color: 'rgba(240,244,248,0.55)' }}>
                 {c.sub}
               </p>
             </div>
@@ -241,7 +241,7 @@ const SpamScreen = () => (
             >
               {c.passed
                 ? <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#ffb59a' }} />
-                : <XCircle className="w-3.5 h-3.5" style={{ color: 'rgba(240,244,248,0.2)' }} />
+                : <XCircle className="w-3.5 h-3.5" style={{ color: 'rgba(240,244,248,0.52)' }} />
               }
             </div>
           </div>
@@ -257,7 +257,7 @@ const SpamScreen = () => (
         <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: '#FF8C55' }} />
         <div>
           <p className="text-[11px] font-bold font-body" style={{ color: '#ffb59a' }}>2 spam calls blocked today</p>
-          <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.3)' }}>3 genuine leads forwarded</p>
+          <p className="text-[10px] font-body" style={{ color: 'rgba(240,244,248,0.58)' }}>3 genuine leads forwarded</p>
         </div>
       </div>
     </div>
@@ -290,7 +290,7 @@ const DiaryScreen = () => (
           >
             <span
               className="font-mono text-[11px] flex-shrink-0"
-              style={{ color: slot.new ? '#FF8C55' : 'rgba(240,244,248,0.25)' }}
+              style={{ color: slot.new ? '#FF8C55' : 'rgba(240,244,248,0.55)' }}
             >
               {slot.time}
             </span>
@@ -299,7 +299,7 @@ const DiaryScreen = () => (
                  style={{ color: slot.new ? 'rgba(240,244,248,0.85)' : 'rgba(240,244,248,0.5)' }}>
                 {slot.job}
               </p>
-              <p className="text-[10px] truncate font-body" style={{ color: 'rgba(240,244,248,0.25)' }}>
+              <p className="text-[10px] truncate font-body" style={{ color: 'rgba(240,244,248,0.55)' }}>
                 {slot.client}
               </p>
             </div>
@@ -439,7 +439,7 @@ const FeatureBlock: React.FC<FeatureBlockProps> = ({ feature, index, isActive, o
         </span>
         <Icon
           className="w-4 h-4"
-          style={{ color: isActive ? '#ffb59a' : 'rgba(240,244,248,0.2)' }}
+          style={{ color: isActive ? '#ffb59a' : 'rgba(240,244,248,0.52)' }}
         />
       </div>
 
@@ -480,11 +480,11 @@ const FeatureBlock: React.FC<FeatureBlockProps> = ({ feature, index, isActive, o
       >
         <CheckCircle2
           className="w-3 h-3 flex-shrink-0"
-          style={{ color: isActive ? '#FF8C55' : 'rgba(240,244,248,0.2)' }}
+          style={{ color: isActive ? '#FF8C55' : 'rgba(240,244,248,0.52)' }}
         />
         <span
           className="text-[12px] font-semibold font-body"
-          style={{ color: isActive ? '#ffb59a' : 'rgba(240,244,248,0.3)' }}
+          style={{ color: isActive ? '#ffb59a' : 'rgba(240,244,248,0.58)' }}
         >
           {feature.outcome}
         </span>

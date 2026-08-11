@@ -174,7 +174,7 @@ function TimelineStep({
       <div className="mb-5 flex items-start justify-between gap-3">
         <AssetTile asset={asset} frameSize="h-[72px] w-[72px]" imageSize="h-14 w-14" />
         <span
-          className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/52"
+          className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-offwhite/66"
           style={{ background: 'rgba(255,255,255,0.04)' }}
         >
           Step {String(index + 1).padStart(2, '0')}
@@ -187,7 +187,7 @@ function TimelineStep({
       >
         {title}
       </h3>
-      <p className="mt-3 text-[14px] leading-[1.65] text-offwhite/60">{description}</p>
+      <p className="mt-3 text-[14px] leading-[1.65] text-offwhite/70">{description}</p>
     </article>
   );
 }
@@ -215,7 +215,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
               </h2>
             </div>
 
-            <p className="max-w-md text-[15px] leading-[1.75] text-offwhite/52">
+            <p className="max-w-md text-[15px] leading-[1.75] text-offwhite/66">
               Built to make missed calls feel manageable again, without adding more admin to your day.
             </p>
           </div>
@@ -238,7 +238,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
           <div className="mt-8 flex flex-col gap-4 rounded-[24px] px-5 py-5 public-surface-soft md:flex-row md:items-center md:justify-between md:px-6">
             <div>
               <p className="text-[15px] font-semibold text-offwhite">That’s the whole job path, compressed into one clean handover.</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-offwhite/48">You stay focused on the work. The enquiry still gets answered properly.</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-offwhite/62">You stay focused on the work. The enquiry still gets answered properly.</p>
             </div>
 
             {onWaitlist && (
@@ -258,7 +258,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
           >
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)] lg:items-center">
               <div>
-                <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-offwhite/28">
+                <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-offwhite/56">
                   What happens on every answered call
                 </p>
                 <ProofMediaPanel />
@@ -275,7 +275,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
                   >
                     {CALL_FLOW_PROOF_PANEL.title}
                   </h4>
-                  <p className="mt-3 text-[14px] leading-[1.7] text-offwhite/52">
+                  <p className="mt-3 text-[14px] leading-[1.7] text-offwhite/66">
                     {CALL_FLOW_PROOF_PANEL.description}
                   </p>
                 </div>
@@ -284,7 +284,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
                   {CALL_FLOW_PROOF_PANEL.supportingPoints.map((point) => (
                     <div
                       key={point}
-                      className="rounded-[16px] px-4 py-3 text-[13px] font-medium text-offwhite/68"
+                      className="rounded-[16px] px-4 py-3 text-[13px] font-medium text-offwhite/70"
                       style={{
                         background: 'linear-gradient(180deg, rgba(255,255,255,0.052) 0%, rgba(255,255,255,0.028) 100%)',
                         boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05), 0 10px 22px rgba(2,13,24,0.12)',
@@ -301,7 +301,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
           <div className="mt-12">
             <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-offwhite/34">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-offwhite/58">
                   Everything you need to stop missing work
                 </p>
                 <h3
@@ -312,7 +312,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
                 </h3>
               </div>
 
-              <p className="max-w-md text-[14px] leading-[1.7] text-offwhite/48">
+              <p className="max-w-md text-[14px] leading-[1.7] text-offwhite/62">
                 The essentials for answering faster, qualifying better, and getting real jobs back into your diary.
               </p>
             </div>
@@ -330,7 +330,7 @@ export default function FeaturesGrid({ onWaitlist }: FeaturesGridProps) {
                     <AssetTile asset={asset} frameSize="h-16 w-16" imageSize="h-12 w-12" />
                   </div>
                   <h4 className="font-display text-[1.05rem] font-bold leading-tight text-offwhite">{title}</h4>
-                  <p className="mt-2 text-[14px] leading-[1.65] text-offwhite/55">{description}</p>
+                  <p className="mt-2 text-[14px] leading-[1.65] text-offwhite/66">{description}</p>
                 </article>
               ))}
             </div>

@@ -41,7 +41,7 @@ export const ContactUs: React.FC = () => {
           >
             Got a question?
           </h2>
-          <p className="text-[17px] text-offwhite/50 leading-relaxed">
+          <p className="text-[17px] text-offwhite/66 leading-relaxed">
             We'll get back to you within one business day — usually same day.
           </p>
         </div>
@@ -56,11 +56,11 @@ export const ContactUs: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="name" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                <label htmlFor="name" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
                   Your Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/56 pointer-events-none" />
                   <input
                     type="text"
                     id="name"
@@ -76,11 +76,11 @@ export const ContactUs: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/56 pointer-events-none" />
                   <input
                     type="email"
                     id="email"
@@ -98,11 +98,11 @@ export const ContactUs: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+              <label htmlFor="message" className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
                 Message
               </label>
               <div className="relative">
-                <MessageSquare className="absolute left-4 top-4 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                <MessageSquare className="absolute left-4 top-4 w-4 h-4 text-offwhite/56 pointer-events-none" />
                 <textarea
                   id="message"
                   required

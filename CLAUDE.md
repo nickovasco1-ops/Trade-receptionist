@@ -19,7 +19,9 @@ If a change would violate one of these, stop and ask.
 
 ## §1 — Product Identity & Voice
 
-**Trade Receptionist** is a premium AI virtual receptionist for UK tradespeople (plumbers, electricians, builders, HVAC, construction). It answers calls, books jobs, filters spam, and sends WhatsApp summaries so the trade never loses a customer while under a sink or on a roof.
+**Trade Receptionist** is a premium AI virtual receptionist for UK tradespeople (plumbers, electricians, builders, HVAC, construction). It answers calls, books jobs, filters spam, and sends SMS + email summaries so the trade never loses a customer while under a sink or on a roof.
+
+**Multi-tenancy model**: one subscriber = one row in the `clients` table = one dedicated Retell voice agent + one dedicated Twilio phone number + one `business_config` row (hours, tone, emergency keywords, pricing). There is no shared agent — every tenant's system prompt is generated fresh per-tenant by `server/src/lib/prompt-builder.ts` and pushed to a Retell agent created just for them at signup (`server/src/routes/webhooks/stripe.ts` → `provisionClient()`, or manually via `POST /clients/provision`). Tenant isolation on the frontend is enforced by Supabase RLS keyed on `owner_email = auth.jwt() ->> 'email'`; the backend uses the Supabase **service-role** key and bypasses RLS entirely, so tenant isolation server-side is enforced by application code (matching `owner_email` / `client_id` on every query), not by the database. See §8.9.
 
 ### Aesthetic — "Industrial Luminescence"
 
@@ -96,7 +98,9 @@ This is one repo with three distinct surfaces. They share design tokens; they do
 | `--color-accent-glow` | `#60A5FA` | `bg-accent-glow` | Secondary glow |
 | `--color-offwhite` | `#F0F4F8` | `text-offwhite` | Primary text on dark. Never pure white. |
 
-Body text on dark: `text-offwhite/70`. Captions/labels on dark: `text-offwhite/40`.
+Body text on dark: `text-offwhite/70`. Captions/labels on dark: **`text-offwhite/58` minimum — never lower**.
+
+> **Contrast floor (marketing site).** The audience reads this on a phone in a van cab in daylight. `/40` measures ~3.4:1 and fails WCAG AA for text under 24px; `/58` measures ~5.7:1 on `navy-mid`. Marketing surfaces were swept to a `/56` floor on 2026-08-11 — do not reintroduce sub-`/56` text opacities. Verify with a pixel-resolved contrast pass, not by eye.
 
 > **Note**: the Tailwind class is `text-accent`, not `text-blue-accent`. The original spec said `blue-accent`; the actual config exposes it as `accent`. Use `accent` in code.
 
@@ -185,10 +189,12 @@ Pre-built Tailwind utilities: `shadow-orange-glow`, `shadow-orange-glow-lg`, `sh
 
 | Level | Opacity | Blur | Use |
 |---|---|---|---|
-| Deep | 4% | 16px | Background panels, hero overlays |
-| Standard | 6% | 24px | Feature cards, stat panels |
-| Elevated | 10% | 32px | Pricing cards, modals |
+| Deep | 5.5% | 16px | Background panels, hero overlays |
+| Standard | 8% | 24px | Feature cards, stat panels |
+| Elevated | 12% | 32px | Pricing cards, modals |
 | Surface | 15% | 40px | Tooltips, popovers |
+
+> Raised from 4/6/10% on 2026-08-11 for daylight legibility — at 4–6% the card edges disappear in bright ambient light. `index.css` also carries a `@media (prefers-contrast: more)` block that pushes these to 10/14/18%. The `.glass-ring` hairline is `rgba(255,255,255,0.12)` (was `0.08`) for the same reason.
 
 Standard glass:
 ```css
@@ -543,32 +549,54 @@ The dashboard is **not** a marketing surface. It uses the same tokens but a diff
 ### 8.1 Stack (server)
 
 ```
-Express (server/src/index.ts)
-TypeScript (~5.8)
-Pino logging (pino-pretty in dev)
+Express 4 (server/src/index.ts), Node 24 (see .nvmrc), TypeScript ~5.8, run via tsx (dev) / tsc (build)
+helmet (CSP disabled — API is JSON-only, served to a cross-origin SPA)
+express-rate-limit — three tiers: defaultLimiter 120/min, writeLimiter 20/min, webhookLimiter 300/min
+Pino logging (pino-pretty in dev) + server/src/lib/observability.ts (structured logEvent/captureError, bridges to Sentry)
+@sentry/node (gated on SENTRY_DSN — no-op if unset), instrument.ts imported first so it wraps everything
 Zod for runtime validation at every boundary
-Supabase JS client (@supabase/supabase-js)
-Deployed on Railway
+Supabase JS client (@supabase/supabase-js), service-role key — bypasses RLS, see §8.9
+retell-sdk (webhook signature verification) — separate from the client-side retell-client-js-sdk used by TestCallPage
+@notionhq/client — optional ops logging (no-ops if NOTION_API_KEY unset)
+Deployed on Railway (two railway.json files — see §10 landmine)
 ```
 
-### 8.2 Layout
+### 8.2 Layout (verified against source, 2026-08-06)
 
 ```
 server/src/
-├── index.ts              ← app bootstrap
-├── lib/                  ← prompt-builder, emergency, internal helpers + their tests
+├── index.ts                    ← app bootstrap: middleware order, router mounts, admin endpoints (inline, not a router)
+├── instrument.ts                ← Sentry.init(), gated on SENTRY_DSN, imported first-line in index.ts
+├── config/e2e.ts                 ← E2E_TEST_MODE short-circuits Retell/Twilio/Notion/Resend to fake deterministic responses
+├── lib/
+│   ├── prompt-builder.ts        ← builds the full per-tenant Retell system prompt + begin_message (see §8.6)
+│   ├── emergency.ts             ← keyword-tiered emergency detection (critical/high/urgent) + SMS/email escalation
+│   ├── observability.ts         ← logEvent/captureError — structured logging bridged to Sentry
+│   ├── time.ts                  ← normaliseHour() — Postgres HH:MM:SS → HH:MM, '00:00' = unset sentinel
+│   └── emergency.test.ts
 ├── routes/
-│   ├── auth/             ← session / signup / login
-│   ├── calls/            ← call data API for dashboard
-│   ├── clients/          ← tenant / customer mgmt
-│   ├── health/           ← liveness / readiness
-│   └── webhooks/         ← Twilio + Retell + Stripe inbound
+│   ├── auth/                    ← Google Calendar OAuth (consent URL, callback, token exchange)
+│   ├── billing/                 ← Stripe Billing Portal session creation
+│   ├── bookings/                ← dashboard-facing booking CRUD + availability
+│   ├── calls/                   ← call list/detail, recording proxy, backfill, browser test-call proxy
+│   ├── clients/                 ← tenant provisioning, number assignment, settings, CRUD
+│   ├── health/                  ← liveness + `/health/integrations` (which env vars are configured, booleans only)
+│   ├── retell-tools/            ← check-availability + create-booking, called live by the Retell agent mid-call
+│   └── webhooks/
+│       ├── retell.ts            ← call_started / call_ended / call_analyzed
+│       ├── stripe.ts            ← checkout.session.completed / invoice.* / customer.subscription.deleted
+│       ├── improvmx.ts          ← inbound email auto-triage for hello@tradereceptionist.com
+│       └── index.ts
 └── services/
-    ├── calendar.ts       ← Google Calendar
-    ├── resend.ts         ← email (Resend)
-    ├── retell.ts         ← AI voice (Retell)
-    ├── supabase.ts       ← server-side Supabase admin client
-    └── twilio.ts         ← phone numbers + SMS/voice
+    ├── booking.ts                ← shared booking engine (used by both routes/bookings and routes/retell-tools)
+    ├── calendar.ts                ← Google Calendar OAuth2 + freeBusy availability engine
+    ├── lead-followup.ts           ← 48h–7day "we missed you" SMS follow-up (idempotent, admin/cron-triggered)
+    ├── notion.ts                  ← optional ops logging: call log, subscribers, incidents DBs
+    ├── resend.ts                  ← transactional email + HTML templates
+    ├── retell.ts                  ← Retell agent/LLM lifecycle, number import, post-call SMS+email workflow
+    ├── slot-cache.ts               ← 5-min in-memory cache of spoken availability, hints the LLM prompt
+    ├── supabase.ts                 ← service-role Supabase client + Database type map
+    └── twilio.ts                   ← number search/buy/release, SIP trunk attach, SMS sending
 ```
 
 ### 8.3 Conventions
@@ -581,20 +609,109 @@ server/src/
 
 ### 8.4 Supabase
 
-- Schema lives in `supabase/migrations/*.sql`. Treat migrations as append-only; never edit a committed migration — write a new one.
-- Tenant isolation is via RLS. Any new table needs RLS policies before merge.
-- Use the **server** Supabase client (service role) only inside `server/`. The **browser** client (`src/lib/supabase.ts`) uses anon key + RLS.
+- Schema lives in `supabase/migrations/*.sql` (17 migrations as of 2026-08-06). Treat migrations as append-only; never edit a committed migration — write a new one.
+- Six tables: `clients`, `business_config`, `calls`, `transcripts`, `leads`, `bookings`. Full list + purpose in §8.9.
+- RLS policies exist on all six (added incrementally — `transcripts` had none until migration 015, a real bug that shipped: the dashboard silently showed zero transcripts for months). Any new table needs RLS policies **in the same migration**, not a follow-up.
+- **RLS only governs the browser client.** `src/lib/supabase.ts` uses the anon key + user JWT, so RLS (`owner_email = auth.jwt() ->> 'email'`) is the real tenant boundary there. `server/src/services/supabase.ts` uses the **service-role key**, which bypasses RLS completely — every server route that returns tenant data must filter by `owner_email`/`client_id` in application code. There is no database-level backstop for a missing `.eq('client_id', ...)` in a server route.
 
 ### 8.5 Integration boundaries (do not break)
 
 | Integration | Where | What it does | Don't break |
 |---|---|---|---|
-| Retell | `server/src/services/retell.ts` | AI voice agent answers calls | Prompt-builder lives in `server/src/lib/prompt-builder.ts`. Changing prompt schema requires retesting against Retell. |
-| Twilio | `server/src/services/twilio.ts` + webhooks | Number provisioning, SMS, call routing. Supports both new-number and keep-existing-number modes (see commit a65cfa5). | Never log raw call recordings. Verify webhook signatures. |
-| Stripe | `components/StripeCheckoutModal.tsx` + server webhook | Subscriptions / billing | Never trust client-side price IDs alone. Verify on webhook. |
-| Resend | `server/src/services/resend.ts` | Transactional email | Templates must use UK English. |
-| Google Calendar | `server/src/services/calendar.ts` | Job booking into trade's diary | OAuth tokens stored encrypted; refresh flow runs server-side only. |
-| Gemini TTS | `components/AudioPlayer.tsx` (client) | Demo audio | Uses `import.meta.env.VITE_GEMINI_API_KEY`. Mission-critical for the demo CTA. |
+| Retell AI | `server/src/services/retell.ts`, `server/src/lib/prompt-builder.ts` | Voice AI agent (voice `retell-Willa`/"Charlotte", en-GB) answers every call. One agent + one LLM per tenant, created at provisioning. | Prompt-builder assembles ~200 lines of tenant-specific instructions (tone, booking rules, emergency keywords, rates, escalation). Changing its output shape requires retesting live against a Retell agent. `buildBeginMessage()` is deliberately static — a dynamic greeting previously caused the LLM to greet-and-hang-up in the same turn. |
+| Twilio | `server/src/services/twilio.ts` + `routes/webhooks` (form-encoded) | UK number search/purchase, SIP trunk attach (this is what actually routes inbound PSTN calls into Retell — a number without a trunk attach just says "incorrect number"), SMS sending. Supports **new-number** mode (bought number is the advertised business number) and **keep-existing** mode (`**004*{number}#` universal-divert USSD code forwards the tenant's real number). | Never log raw call recordings. `TWILIO_ADDRESS_SID`/`TWILIO_BUNDLE_SID` required for UK regulatory number purchase. |
+| Stripe | `components/StripeCheckoutModal.tsx` (static Payment Links per plan, `src/lib/plans.ts`) + `server/src/routes/webhooks/stripe.ts` | Subscriptions / billing. `checkout.session.completed` runs the **entire tenant provisioning pipeline** (Retell agent + Twilio number + Supabase auth user + welcome email) — this is the most consequential webhook in the codebase. | Webhook signature is verified by hand (HMAC-SHA256 of `timestamp.rawBody`, `timingSafeEqual`) — **not** the Stripe SDK. If `STRIPE_WEBHOOK_SECRET` is unset, verification is silently skipped. `PRODUCT_TO_PLAN` hardcodes live+test Stripe product IDs — a new/changed Stripe product needs this map updated or new signups silently get no plan. |
+| Resend | `server/src/services/resend.ts` | Transactional email (post-call summaries, booking confirmations, trial reminders, welcome email, ImprovMX auto-replies). | Templates must use UK English. Defaults `RESEND_FROM_EMAIL` to `hello@tradereceptionist.com` if unset. |
+| Google Calendar | `server/src/services/calendar.ts`, `routes/auth` | Per-tenant OAuth2; agent checks `freeBusy` live mid-call via `retell-tools` and books directly into the trade's diary. | OAuth `state` param is HMAC-signed (`GOOGLE_OAUTH_STATE_SECRET`, falls back to `SUPABASE_SERVICE_ROLE_KEY` if unset). Refresh-token exchange runs server-side only. |
+| Notion | `server/src/services/notion.ts` | **Optional internal ops dashboard** — call log, subscriber signups, incident audit trail, three separate databases. Lazy-inits and silently no-ops if `NOTION_API_KEY` is unset — never blocks the call/webhook pipeline. | Fire-and-forget by design; never let a Notion write become load-bearing for the call flow. |
+| Sentry | `index.tsx` (frontend, DSN **hardcoded**, EU region) + `server/src/instrument.ts` (backend, gated on `SENTRY_DSN` env var) | Error + performance tracking, session replay (frontend), source-map upload at build time (`SENTRY_AUTH_TOKEN`). | Frontend DSN is intentionally not an env var (see `.env.example` comment) — don't "fix" this into `VITE_SENTRY_DSN` without checking `vite.config.ts`'s Sentry plugin config first. Backend is a genuine no-op without `SENTRY_DSN` — fine for local dev. |
+| Crisp | `components/CrispChat.tsx`, mounted globally in `index.tsx` | Live chat widget on the marketing site. | Controlled entirely by `VITE_CRISP_WEBSITE_ID` — blank disables it, no code change needed for local dev. |
+| ImprovMX | `server/src/routes/webhooks/improvmx.ts` | Inbound email webhook for `hello@tradereceptionist.com` (ImprovMX is an email-forwarding service, not a full support desk) — keyword-categorises and auto-replies via Resend. | Does not create tickets anywhere; purely a triage auto-responder. Skips automated senders and internal `@tradereceptionist.com` addresses to avoid reply loops. |
+| Google Gemini (`@google/genai`) | `scripts/generate-sample-call.mjs` — **build-time only** | Pre-generates the static demo call audio file (`public/assets/generated/sample-call.wav`) played by `components/AudioPlayer.tsx`. | **Not a runtime/browser dependency** — despite what earlier versions of this file said. Uses server-side `GEMINI_API_KEY` (never `VITE_GEMINI_API_KEY` — the script's own comments explicitly warn against browser-side Gemini calls). `AudioPlayer.tsx` itself just plays a static `.wav` via `<audio>` + Web Audio API for the waveform visualisation; it has zero API dependency at runtime. Regenerate via `npm run generate:demo-audio`. |
+| Google Apps Script (waitlist) | `components/WaitlistModal.tsx` | Waitlist signup form `POST`s to a hardcoded `script.google.com/macros/s/...` URL. | **This is live, current behaviour** — not stale legacy, despite what earlier versions of this file claimed. If you migrate this to Supabase, update this row and remove the Apps Script URL. |
+
+### 8.6 Call lifecycle (Retell webhook flow)
+
+1. **`call_started`** → upsert `calls` row keyed on `retell_call_id` (`ignoreDuplicates: true` — Retell retries are expected).
+2. Live, mid-call: the agent may call the `retell-tools` endpoints (`check-availability` / `create-booking`, both HMAC-verified via `X-Retell-Signature`) to check the tenant's Google Calendar and book directly.
+3. **`call_ended`** → upsert `calls` (never overwrite `started_at`/`ended_at` with null), upsert `transcripts`, derive `outcome` from Retell's structured post-call analysis (fallback: regex on the summary), derive emergency tier via `server/src/lib/emergency.ts` keyword matching, upsert a `leads` row for outcomes `booked|lead_captured|enquiry|emergency|no_answer|voicemail` (unique on `leads.call_id`, migration 010 — prevents duplicate leads on webhook retry).
+   - **Emergency** → `escalateEmergency()` (owner SMS + email, tier-appropriate copy) + Notion incident-style call log, then returns early — skips the normal post-call workflow.
+   - **Normal** → `postCallWorkflow()` (owner SMS + owner email + optional caller SMS confirmation, each channel's failure caught independently) + Notion call log.
+4. **`call_analyzed`** (fires after `call_ended`, once Retell finishes deeper analysis) → backfills `recording_url` if still missing, refines transcript/lead fields.
+5. All post-webhook processing runs fire-and-forget **after** the `200` ack — Retell's webhook signature verification uses `retell-sdk`'s `verify()` (SHA-256 of `body+timestamp`, 5-minute replay window). A bad signature is logged as `error` (triggers Railway/Sentry alerting) but still returns `200 {ok:false}` to avoid Retell retry storms; recovery path is `POST /admin/sync-calls`.
+
+### 8.7 Tenant provisioning & billing flow
+
+Two entry points do the same underlying work, with different guarantees:
+
+- **`checkout.session.completed` webhook** (`routes/webhooks/stripe.ts` → `provisionClient()`) — the real-world path. Runs: insert `clients` → insert `business_config` (defaults: 08:00–18:00 Mon–Fri, Europe/London, standard emergency keywords) → build prompt + `createRetellAgent()` → buy/attach a UK Twilio number → create Supabase auth user + magic link → send welcome email (Resend) → log to Notion. **No rollback** — if a later step fails, earlier steps are left in place and the failure is only logged. Idempotent on `owner_email` (re-running just updates lifecycle fields).
+- **`POST /clients/provision`** (`routes/clients/index.ts`) — manual/admin path with the same steps, but **with full rollback** on any failure in steps 1–8 (deletes the Twilio number, Retell agent + LLM, and the `clients`/`business_config` rows). If only the final Supabase-persist step fails, returns `207` with the provisioned provider IDs so a human can `PATCH` them in manually rather than losing already-purchased infrastructure.
+- **Number mode** is decided per-tenant by whether `own_number` is set on the request: unset → **new_number** mode (bought number is the tenant's advertised number); set → **keep_existing** mode (tenant keeps their real number, activates a UK carrier divert code `**004*{twilio_number}#` — works on EE/O2/Vodafone/Three/BT Mobile/Sky Mobile).
+- Stripe lifecycle events (`invoice.payment_succeeded/failed`, `customer.subscription.deleted`) update `clients.subscription_status`/`payment_status`/`is_active`/`current_period_end`, matched in priority order: `stripe_subscription_id` → `stripe_customer_id` → `owner_email`.
+
+### 8.8 Admin / cron-triggered endpoints
+
+No scheduler exists inside this repo — these are designed to be hit by an external cron (Railway cron, GitHub Actions, etc.) and are all gated by an `x-admin-key` header matching `ADMIN_API_KEY` (checked inline per-route in `index.ts`, not shared middleware):
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /admin/send-trial-reminders` | Emails clients 8–10 days into a `trialing` subscription. Intended daily. |
+| `POST /admin/run-lead-followup` | Runs `services/lead-followup.ts` — 48h–7day "we missed you" SMS to uncontacted leads. Intended recurring. |
+| `POST /admin/sync-calls` | Pulls recent calls from Retell per-agent, backfills any missing from Supabase. Webhook-delivery-failure recovery. |
+| `POST /admin/test-notifications` | Sends a live diagnostic SMS+email for a given `clientId`. |
+| `POST /admin/notify-call` | Re-fires post-call notifications for a `retellCallId` that missed them. |
+| `POST /admin/fix-agent-greeting` | Directly patches `begin_message`/turn-taking on a Retell agent, reads back to verify. |
+| `POST /admin/enable-recording` | Bulk-patches `record_audio: true` onto every tenant's Retell agent. |
+
+### 8.9 Database schema
+
+Six tables (`supabase/migrations/002_revised_schema.sql` onward — `001_initial_schema.sql` created a different schema that 002 drops entirely, so treat 001 as dead history, not a reference):
+
+| Table | Purpose | Notable columns added later |
+|---|---|---|
+| `clients` | One row per tenant | `own_number` (003), `onboarding_complete` (005), Stripe lifecycle columns — `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `payment_status`, `current_period_end` (011), lowercased-email trigger (012) |
+| `business_config` | Per-tenant hours/tone/pricing | `receptionist_tone` (006), `after_hours_message` (007), `avg_job_value` (013, default 250 — feeds dashboard missed-revenue estimates) |
+| `calls` | One row per Retell call | — |
+| `transcripts` | Full call transcript | RLS policy only added in 015 (see §8.4) |
+| `leads` | Extracted lead per qualifying call outcome | unique on `call_id` (010), `follow_up_sent_at` (014), `property_type` + `customer_availability` (016), `'flagged_for_review'` status value (017) |
+| `bookings` | Confirmed calendar bookings | `call_id` FK (009), partial unique indexes: one scheduled booking per lead + one per client+timeslot (008) |
+
+**RLS pattern**: every policy compares `owner_email = auth.jwt() ->> 'email'` on `clients` directly; every child table uses `client_id IN (SELECT id FROM clients WHERE owner_email = auth.jwt() ->> 'email')` (or a `calls JOIN clients` for `transcripts`, which has no direct `client_id` column). Consistent "walk up to `clients` via `owner_email`" model — reuse it verbatim for any new tenant-scoped table.
+
+### 8.10 Deployment
+
+- **Frontend**: Vercel. `vercel.json` — `outputDirectory: dist`, rewrites `/api/:path*` → the Railway backend URL (this is how the SPA avoids CORS for same-origin-looking calls), catch-all SPA rewrite to `index.html`, CSP allow-lists `*.supabase.co`, `api.retellai.com`, and the Sentry ingest endpoint. Deploys on push (Vercel's own Git integration — no custom GitHub Action for this).
+- **Backend**: Railway. **Two `railway.json` files exist with different settings** — root `railway.json` (`buildCommand: cd server && npm ci --include=dev && npm run build`, 60s healthcheck timeout, `restartPolicyType: ALWAYS`, 10 retries) and `server/railway.json` (assumes the service root is `server/` directly, 30s healthcheck timeout, `restartPolicyType: ON_FAILURE`, 3 retries). Which one Railway actually reads depends on the Railway service's configured root directory — **check the Railway dashboard, don't assume**, before editing either file. Healthcheck hits `/health`.
+- **CI**: `.github/workflows/ci.yml` exists (injects test secrets for `.env.test` per that file's own comment) — read it before assuming what runs on PRs.
+
+### 8.11 Environment variables — grouped by service
+
+Full reference: `docs/ENVIRONMENT.md` + `npm run validate:env -- --env=<local|test|staging|production>` (checks presence/validity only, never prints values). Boot-blocking vs optional is enforced in `server/src/index.ts` (hard `process.exit(1)` vs warn-only) — this table reflects that, not aspiration:
+
+| Var | Local dev | Notes |
+|---|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | **Blocker** | `src/lib/supabase.ts` throws at import time if missing — frontend won't even mount. |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | **Blocker** | Server hard-exits on boot without these. |
+| `RETELL_API_KEY` | **Blocker** | Server hard-exits on boot. Also the HMAC secret for webhook verification (no separate webhook secret). |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | **Blocker** | Server hard-exits on boot. |
+| `TWILIO_SIP_TRUNK_SID` | Functional blocker | Not a boot check, but without it newly-bought numbers never route into Retell. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Warn-only locally, **required staging/prod** | Server boots without them but checkout/billing silently breaks. |
+| `RESEND_API_KEY` | Warn-only locally, **required staging/prod** | Emails silently fail to send without it. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional locally, **required staging/prod** | Calendar OAuth. |
+| `RETELL_WEBHOOK_URL`, `RETELL_FUNCTION_BASE_URL`, `RETELL_SIP_TERMINATION_URI`, `PUBLIC_API_BASE_URL` | Optional in code | Needed for live Retell dashboard config / custom tool URLs, not for local boot. |
+| `NOTION_API_KEY` + 3 DB IDs | Fully optional | No-ops when absent — never blocks the call pipeline. |
+| `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Optional | Backend Sentry is a genuine no-op without `SENTRY_DSN`. Frontend DSN is hardcoded (not env-driven). |
+| `VITE_CRISP_WEBSITE_ID` | Optional | Blank disables the widget. |
+| `ADMIN_API_KEY` | Required only for the §8.8 admin endpoints | Not a boot check. |
+| `GEMINI_API_KEY` | Not needed for `npm run dev` | Server-side only, used solely by `scripts/generate-sample-call.mjs` at build/content time — never set as `VITE_GEMINI_API_KEY`. |
+
+### 8.12 Current state / open work (inferred from code, 2026-08-06)
+
+- Core call → webhook → outcome → notify pipeline, tenant provisioning (both webhook and manual paths), Google Calendar booking (both live-call tool and dashboard-initiated), Stripe billing lifecycle, and the marketing site are all implemented and build clean.
+- `docs/ONBOARDING.md` states stale pricing (Starter £29/100 calls, Pro £59/300 calls, Agency £119/unlimited — three tiers) that does not match the live four-tier pricing in `src/lib/plans.ts`, `App.tsx`, and `shared/types.ts` (Starter £49/Pro £89/Business £159/Agency £249). Fix the doc, not the code — see §10.
+- `TestCallPage.tsx` (browser-mic Retell test harness) exists and is auth-gated but not linked from any nav — reachable only by direct URL (`/test-call`).
+- `DashboardPreviewPage.tsx` and siblings (`OnboardingPreviewPage`, `DashboardPreviewCallsPage`, etc.) are public, unauthenticated sales-demo versions of the real dashboard — `DashboardShell` takes a `preview` prop that fakes auth state for this purpose. Don't wire real data into these.
+- Test coverage: Playwright e2e (`e2e/`, `playwright.config.ts` + `playwright.smoke.config.ts`), one server unit test (`emergency.test.ts`). No frontend unit test runner is configured.
 
 ---
 
@@ -604,14 +721,17 @@ server/src/
 
 ```
 React 19.2
-Vite 6.2
+Vite 6.2 (Vite 6.4 as actually resolved — package.json pins ^6.2.0)
 TypeScript ~5.8
 Tailwind v4 via @tailwindcss/vite — config lives in index.css (@theme)
-react-router-dom 7
+react-router-dom 7 (BrowserRouter/Routes live in index.tsx, not App.tsx — App.tsx is the marketing page only, mounted at "/")
 Lucide icons
-Lenis smooth scroll (initialised in index.tsx)
-Supabase JS
-Google Gemini TTS (@google/genai) for AudioPlayer
+Lenis smooth scroll (initialised in index.tsx, marketing route only)
+Supabase JS (anon key — RLS-governed, see §8.4)
+retell-client-js-sdk — used by TestCallPage.tsx for the browser-mic live agent test, NOT the marketing AudioPlayer
+@sentry/react + @sentry/vite-plugin — error/session-replay tracking + build-time source-map upload
+@vercel/analytics
+@google/genai — devDependency, build-time only (scripts/generate-sample-call.mjs), not shipped to the browser
 ```
 
 `tailwind.config.ts` exists as legacy mirror — keep tokens in sync with `index.css` `@theme`. Do not delete it without replacing every tooling consumer.
@@ -689,14 +809,19 @@ Lazy-load below-fold components (`AudioPlayer`, `Calculator`, `Testimonials`, `B
 | `App.tsx` | ~2,000 lines / 85KB. Violates the 800-line ceiling in §9.5. Splitting is desirable but high-risk because it owns hero, sections, and routing wiring. | Don't bulk-add to it. When you must touch it, propose extracting one section at a time into `components/sections/<Section>.tsx`. Never rewrite wholesale in a single PR. |
 | `tailwind.config.ts` vs `index.css` `@theme` | Two sources of token truth. Tailwind v4 reads CSS; the TS file is legacy. | Treat `index.css` as canonical. Mirror any token change into `tailwind.config.ts` so legacy tooling stays consistent. Do not delete the TS file without an audit. |
 | Legacy color aliases (`brand-*`, `tradeBlue.*`) | Older components still reference them. | Keep them. Don't "clean up" without a grep + replace pass. |
-| `components/AudioPlayer.tsx` | Mission-critical for the marketing demo CTA. Uses `@google/genai` with `VITE_GEMINI_API_KEY`. | Don't change the audio pipeline without a manual end-to-end test (button → audio playing). API key must remain `VITE_*`. |
-| `components/WaitlistModal.tsx` / `StripeCheckoutModal.tsx` | The original spec referenced a Google Apps Script webhook for waitlist. Reality is Supabase + Stripe. | If you see the Apps Script reference anywhere, it's stale spec, not live code. |
-| Twilio number flows | Two modes: provision new number, **or** keep customer's existing number (commit a65cfa5). | Onboarding and call routing must handle both branches. Backfill endpoint exists (commit 23e2735). |
-| Webhook backfill | `server/src/routes/webhooks` + the backfill endpoint replay missed events. | When changing webhook handlers, ensure they remain idempotent — replays are real. |
-| Supabase migrations | Append-only. | Never edit a committed migration. Add a new one. |
-| Lenis | Initialised once in `index.tsx`. | Don't re-initialise per page. Don't replace with native scroll. |
+| `components/AudioPlayer.tsx` | **Corrected 2026-08-06 — earlier versions of this file had this backwards.** It plays a static pre-generated `public/assets/generated/sample-call.wav` via `<audio>` + Web Audio API. It has **no runtime API dependency** — `@google/genai`/Gemini only runs at content-generation time via `npm run generate:demo-audio` (`scripts/generate-sample-call.mjs`), using a server-side `GEMINI_API_KEY`, never `VITE_GEMINI_API_KEY`. | Don't reintroduce a live browser-side Gemini call. To refresh the demo audio, regenerate the file and commit it; don't wire the player to a live API. |
+| `components/WaitlistModal.tsx` | **Corrected 2026-08-06 — earlier versions of this file had this backwards.** It `POST`s to a live, hardcoded `script.google.com/macros/s/...` Google Apps Script URL. This **is** current production behaviour, not stale legacy — no Supabase-backed waitlist table exists. | If you migrate the waitlist to Supabase, update this row (and §8.5) in the same PR. Don't assume the Apps Script reference is dead code without checking. |
+| Twilio number flows | Two modes: provision new number, **or** keep customer's existing number (`clients.own_number`, migration 003). | Onboarding and call routing must handle both branches — `buildProvisionResponse()` in `routes/clients/index.ts` branches on this. `POST /clients/connect-number` is the repair path for numbers provisioned before the SIP-trunk-attach step existed. |
+| Webhook backfill | `POST /calls/backfill/:retell_call_id` and `POST /admin/sync-calls` replay missed Retell events by re-pulling from Retell's API. | When changing `routes/webhooks/retell.ts`, keep it idempotent — replays are a real, designed-for recovery path, not a hypothetical. |
+| Supabase migrations | Append-only, 17 files as of 2026-08-06 (see §8.9). Migration 001 created a schema that 002 immediately drops — don't treat 001 as representative of the live schema. | Never edit a committed migration. Add a new one. |
+| Lenis | Initialised once in `index.tsx`, marketing route (`/`) only. | Don't re-initialise per page. Don't replace with native scroll. |
 | Float animation tax | `animate-float-*` runs forever. | Cap at 3 floating elements per section. Never on the dashboard. |
 | Stripe live key not in Railway | `STRIPE_SECRET_KEY_LIVE` is in `.env` locally but Railway still uses the old key. | Add `STRIPE_SECRET_KEY=sk_live_...` to Railway environment variables so production payments go live. |
+| Two `railway.json` files | Root `railway.json` and `server/railway.json` have different `buildCommand`, healthcheck timeout, and restart policy (§8.10). | Before editing either, confirm in the Railway dashboard which root directory the service actually uses — editing the wrong one silently does nothing. |
+| `docs/ONBOARDING.md` pricing | States Starter £29 (100 calls)/Pro £59 (300 calls)/Agency £119 (unlimited) — a stale three-tier scheme that appears nowhere in code. | Live pricing is the four-tier Starter £49/Pro £89/Business £159/Agency £249 in `src/lib/plans.ts` (§6.3, §14). Fix the doc; don't "reconcile" the code toward it. |
+| Stripe webhook signature verification | `routes/webhooks/stripe.ts` verifies by hand (HMAC-SHA256 of `timestamp.rawBody`), not via the Stripe SDK, and **silently skips verification** if `STRIPE_WEBHOOK_SECRET` is unset rather than rejecting the request. | Never deploy without `STRIPE_WEBHOOK_SECRET` set — an unset secret does not fail closed. |
+| `checkout.session.completed` has no rollback | `provisionClient()` in the Stripe webhook keeps going and only logs on a failed step (unlike `POST /clients/provision`, which fully rolls back). | A real-world checkout can leave a tenant with e.g. a Retell agent but no Twilio number. `POST /admin/sync-calls` and manual `PATCH`/`POST /clients/:id/assign-number` are the recovery tools, not a webhook retry. |
+| Two local env files needed | `server/package.json`'s `dev` script runs `tsx watch --env-file=../.env` — it reads root **`.env`** only, never `.env.local`. Vite (`dev:web`) reads `.env.local` automatically per its own convention. `npm run dev` runs both concurrently. | Keep both `.env` and `.env.local` populated with the same values for local dev (both are gitignored), or `npm run dev:api` boots with none of your secrets and hard-exits on the required-var check (§8.11). |
 
 ---
 
@@ -791,12 +916,29 @@ Don't. Use existing tokens. If genuinely missing, propose a token addition in **
 ### Useful commands
 
 ```
-npm run dev          # web + api together (concurrently)
-npm run dev:web      # vite only
-npm run dev:api      # express only
-npm run build        # vite production build
-npm run build:api    # tsc for server
+npm run dev                    # web + api together (concurrently)
+npm run dev:web                # vite only, http://localhost:3000
+npm run dev:api                # express only, http://localhost:3001 (tsx watch, loads ../.env)
+npm run build                  # vite production build → dist/
+npm run build:api              # tsc for server → server/dist/
+npm run preview                # preview the vite production build
+
+npm run test:e2e                # Playwright, full suite
+npm run test:e2e:ui             # Playwright UI mode
+npm run test:e2e:debug          # Playwright debug mode
+npm run test:smoke              # Playwright, playwright.smoke.config.ts (release smoke subset)
+npm run test:release-smoke      # alias for test:smoke
+
+npm run validate:env -- --env=<local|test|staging|production>   # checks required env vars are present, never prints values
+
+npm run generate:demo-audio             # regenerate public/assets/generated/sample-call.wav (needs GEMINI_API_KEY, server-side)
+npm run generate:call-flow-assets       # regenerate all call-flow illustration assets
+npm run generate:landing-asset          # regenerate a single landing-page image asset
+
+npm run visual-skill:dry-run    # trade-receptionist-visual-skill CLI, dry-run mode
 ```
+
+CLIs installed on this machine for deploy/DB operations (not npm scripts): `supabase` (Supabase CLI), `railway` (Railway CLI), `vercel` (Vercel CLI). None are wired into npm scripts — invoke directly, e.g. `supabase db push`, `railway up`, `vercel --prod`. None are authenticated by default; each needs an interactive login (`supabase login`, `railway login`, `vercel login`) before first use.
 
 ---
 
@@ -853,12 +995,12 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 ---
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
-*v3.0 · 2026-04-26*
+*v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Trade-receptionist** (2139 symbols, 4272 relationships, 161 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Trade-receptionist** (2103 symbols, 4187 relationships, 160 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -867,8 +1009,9 @@ This project is indexed by GitNexus as **Trade-receptionist** (2139 symbols, 427
 - **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
 - **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
 - When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
 
 ## Never Do
 

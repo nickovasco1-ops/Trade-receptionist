@@ -231,7 +231,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
                   key={target}
                   onClick={() => handleNav(target)}
                   className={`relative font-semibold text-[14px] tracking-wide pb-1 ${
-                    isActive ? 'text-orange-soft' : 'text-offwhite/60 hover:text-offwhite'
+                    isActive ? 'text-orange-soft' : 'text-offwhite/70 hover:text-offwhite'
                   }`}
                   style={{ transition: 'color 200ms ease' }}
                 >
@@ -245,7 +245,7 @@ const Header = ({ currentView, onViewChange, onWaitlist }: {
             })}
             <a
               href="/partner"
-              className="relative font-semibold text-[14px] tracking-wide pb-1 text-offwhite/60 hover:text-offwhite"
+              className="relative font-semibold text-[14px] tracking-wide pb-1 text-offwhite/70 hover:text-offwhite"
               style={{ transition: 'color 200ms ease' }}
             >
               Partners
@@ -401,7 +401,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               Trade Receptionist answers when you can&apos;t, captures the customer&apos;s details, filters time-wasters, and sends the job straight to your phone as a text or into your diary.
             </p>
 
-            <p className="hero-fade mt-4 max-w-[34rem] text-[15px] leading-relaxed text-offwhite/48 font-body" style={{ animationDelay: '180ms' }}>
+            <p className="hero-fade mt-4 max-w-[34rem] text-[15px] leading-relaxed text-offwhite/62 font-body" style={{ animationDelay: '180ms' }}>
               Built for UK plumbers, electricians, builders, roofers and heating engineers.
             </p>
 
@@ -420,7 +420,7 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </Button>
             </div>
 
-            <div className="hero-fade mt-5 flex flex-wrap gap-2.5 text-[12px] text-offwhite/52 font-body" style={{ animationDelay: '280ms' }}>
+            <div className="hero-fade mt-5 flex flex-wrap gap-2.5 text-[12px] text-offwhite/66 font-body" style={{ animationDelay: '280ms' }}>
               {[
                 'No new number needed',
                 'Includes 15-min setup call',
@@ -477,7 +477,7 @@ const SocialProof = () => (
     <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
 
       {/* Label */}
-      <p className="text-center text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/25 mb-10 font-body">
+      <p className="text-center text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/56 mb-10 font-body">
         Trusted by UK tradespeople
       </p>
 
@@ -519,7 +519,7 @@ const SocialProof = () => (
                   duration={1200}
                 />
               </div>
-              <p className="text-[11px] font-semibold text-offwhite/35 font-body leading-tight">{label}</p>
+              <p className="text-[11px] font-semibold text-offwhite/58 font-body leading-tight">{label}</p>
             </div>
           </div>
         ))}
@@ -644,7 +644,7 @@ const UseCases = () => {
                 {/* Text */}
                 <div className="p-5 flex flex-col gap-2 flex-1">
                   <h3 className="font-display font-bold text-offwhite text-[15px] leading-snug">{headline}</h3>
-                  <p className="text-[13px] text-offwhite/45 font-body leading-relaxed flex-1">{desc}</p>
+                  <p className="text-[13px] text-offwhite/62 font-body leading-relaxed flex-1">{desc}</p>
                 </div>
               </div>
             </FadeUp>
@@ -713,7 +713,7 @@ const PainPoints = () => (
 
             <div>
               <p className="text-offwhite font-semibold text-[16px] mb-1 font-display leading-snug">{label}</p>
-              <p className="text-offwhite/30 text-[11px] font-body uppercase tracking-[0.10em]">{sub}</p>
+              <p className="text-offwhite/58 text-[11px] font-body uppercase tracking-[0.10em]">{sub}</p>
             </div>
 
             {/* Separator */}
@@ -722,7 +722,7 @@ const PainPoints = () => (
               style={{ background: 'linear-gradient(90deg, rgba(255,107,43,0.25) 0%, transparent 100%)' }}
             />
 
-            <p className="text-[14px] text-offwhite/45 font-body leading-relaxed flex-1">{detail}</p>
+            <p className="text-[14px] text-offwhite/62 font-body leading-relaxed flex-1">{detail}</p>
           </div>
         </FadeUp>
       ))}
@@ -845,7 +845,7 @@ const HowItWorksStep = ({ step, index }: { step: typeof HOW_STEPS[number]; index
         <div className={`step-progress-fill${filled ? ' is-filled' : ''}`} />
       </div>
 
-      <p className="text-offwhite/50 leading-relaxed text-[15px] max-w-xs font-body">{step.desc}</p>
+      <p className="text-offwhite/66 leading-relaxed text-[15px] max-w-xs font-body">{step.desc}</p>
     </div>
   );
 };
@@ -909,7 +909,7 @@ const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
         >
           Every missed call is a job that goes to whoever picks up.
         </h2>
-        <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/55">
+        <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/66">
           Use the calculator to see exactly what unanswered calls are costing you. Most trades businesses lose £3k–£15k a year — often without realising it.
         </p>
 
@@ -928,8 +928,8 @@ const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
               >
                 {value}
               </div>
-              <p className="mt-1.5 text-[12px] leading-[1.4] text-offwhite/50">{label}</p>
-              <p className="text-[12px] leading-[1.4] text-offwhite/30">{sub}</p>
+              <p className="mt-1.5 text-[12px] leading-[1.4] text-offwhite/66">{label}</p>
+              <p className="text-[12px] leading-[1.4] text-offwhite/58">{sub}</p>
             </div>
           ))}
         </div>
@@ -964,7 +964,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
         >
           Hear how it answers a customer.
         </h2>
-        <p className="text-[17px] text-offwhite/60 mb-8 leading-relaxed">
+        <p className="text-[17px] text-offwhite/70 mb-8 leading-relaxed">
           Listen to a short example of Trade Receptionist handling a real-style customer enquiry, capturing the job details, and sending the summary back to the trade business.
         </p>
 
@@ -1005,7 +1005,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
               </div>
               <div className="pt-0.5">
                 <h4 className="font-display font-bold text-[17px] text-offwhite mb-1">{feat.title}</h4>
-                <p className="text-[14px] text-offwhite/55 leading-relaxed">{feat.text}</p>
+                <p className="text-[14px] text-offwhite/66 leading-relaxed">{feat.text}</p>
               </div>
             </div>
           ))}
@@ -1034,7 +1034,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-2">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Sample Call</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/58">Sample Call</p>
               <p className="mt-1 text-[15px] font-semibold text-offwhite/78">Jess — boiler breakdown, SE19. Handled end to end.</p>
             </div>
             <div
@@ -1058,7 +1058,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
             boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 14px 30px rgba(2,13,24,0.20)',
           }}
         >
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/58">
             What your AI captured from this call
           </p>
           <div className="space-y-3">
@@ -1074,7 +1074,7 @@ const DemoSection = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 >
                   {label}
                 </span>
-                <p className="text-[13px] leading-[1.55] text-offwhite/65">{value}</p>
+                <p className="text-[13px] leading-[1.55] text-offwhite/70">{value}</p>
               </div>
             ))}
           </div>
@@ -1146,7 +1146,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
         >
           No contracts. Keep your number. Cancel anytime.
         </h2>
-        <p className="text-[17px] text-offwhite/52 mb-8 leading-relaxed">
+        <p className="text-[17px] text-offwhite/66 mb-8 leading-relaxed">
           Start with the calls you're currently missing, then scale up when the diary gets busier.
         </p>
 
@@ -1160,7 +1160,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               className={`px-7 py-3 min-h-[44px] rounded-full text-[13px] font-bold transition-colors duration-300 ${
                 billing === b
                   ? 'bg-orange text-white shadow-orange-glow'
-                  : 'text-offwhite/40 hover:text-offwhite/70'
+                  : 'text-offwhite/62 hover:text-offwhite/70'
               }`}
             >
               {b === 'monthly' ? 'Monthly' : 'Yearly'}
@@ -1182,7 +1182,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
           { icon: CheckCircle2, text: '14-day free trial · setup call included' },
           { icon: CheckCircle2, text: 'Set up in under 14 minutes' },
         ].map(({ icon: Icon, text }) => (
-          <span key={text} className="flex items-center gap-2 text-[13px] text-offwhite/52">
+          <span key={text} className="flex items-center gap-2 text-[13px] text-offwhite/66">
             <Icon className="h-3.5 w-3.5 flex-shrink-0 text-orange" aria-hidden="true" />
             {text}
           </span>
@@ -1221,7 +1221,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
             )}
 
             <div className="mb-5 flex items-center justify-between gap-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/32">Best for</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/58">Best for</p>
               <div
                 className="rounded-full px-3 py-1.5 text-[11px] font-semibold text-offwhite/72"
                 style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.07)' }}
@@ -1231,7 +1231,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
             </div>
 
             <h3 className="font-display text-2xl font-bold text-offwhite mb-1">{plan.name}</h3>
-            <p className="text-[13px] text-offwhite/40 mb-7 leading-relaxed">
+            <p className="text-[13px] text-offwhite/62 mb-7 leading-relaxed">
               {plan.isPopular ? 'The best balance of speed, reliability, and automation for growing trades businesses.' : plan.name === 'Starter' ? 'A fast, professional front desk for sole traders who want every enquiry captured.' : plan.name === 'Business' ? 'For growing teams who need multiple numbers and shared access across the business.' : 'Full-scale cover for multi-van operators running multiple departments or brands.'}
             </p>
 
@@ -1239,7 +1239,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               <span className="font-display text-5xl font-bold text-offwhite tracking-[-0.03em]">
                 {plan.price}
               </span>
-              <span className="text-offwhite/30 text-[13px]">{plan.period}</span>
+              <span className="text-offwhite/58 text-[13px]">{plan.period}</span>
             </div>
 
             {billing === 'yearly' && (
@@ -1250,7 +1250,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
 
             <ul className="space-y-3.5 mb-8 flex-1">
               {plan.features.map((feat, k) => (
-                <li key={k} className="flex items-start gap-2.5 text-[14px] text-offwhite/60">
+                <li key={k} className="flex items-start gap-2.5 text-[14px] text-offwhite/70">
                   <CheckCircle2 className="w-4 h-4 text-orange-soft flex-shrink-0 mt-0.5" />
                   {feat}
                 </li>
@@ -1261,7 +1261,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               className="mb-4 rounded-[16px] px-4 py-3 text-center"
               style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
             >
-              <p className="text-[11px] text-offwhite/28">
+              <p className="text-[11px] text-offwhite/56">
               14-day free trial · Setup call included · No card
               </p>
             </div>
@@ -1326,7 +1326,7 @@ const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
           >
             Straight answers before you switch on call handling.
           </h2>
-          <p className="mt-5 max-w-md text-[16px] leading-relaxed text-offwhite/52">
+          <p className="mt-5 max-w-md text-[16px] leading-relaxed text-offwhite/66">
             Plain-English answers to the practical questions most trades businesses ask before they stop relying on missed calls and voicemail.
           </p>
 
@@ -1390,13 +1390,13 @@ const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
                   className={`w-5 h-5 flex-shrink-0 transition-[transform,color] duration-300 ${
                     openIndex === i
                       ? 'rotate-180 text-orange-soft'
-                      : 'text-offwhite/30 group-hover:text-offwhite/60'
+                      : 'text-offwhite/58 group-hover:text-offwhite/70'
                   }`}
                 />
               </button>
 
               <div className={`accordion-body${openIndex === i ? ' is-open' : ''}`}>
-                <div className="px-6 pb-6 text-[15px] text-offwhite/56 leading-relaxed">
+                <div className="px-6 pb-6 text-[15px] text-offwhite/66 leading-relaxed">
                   {faq.answer}
                 </div>
               </div>
@@ -1439,12 +1439,12 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
           Stop losing jobs to missed calls.
         </h2>
 
-        <p className="text-[17px] text-offwhite/44 max-w-2xl mx-auto mb-8 font-body leading-relaxed">
+        <p className="text-[17px] text-offwhite/62 max-w-2xl mx-auto mb-8 font-body leading-relaxed">
           If the phone rings while you're busy, Trade Receptionist can still answer it properly, take the details, and help you book the work.
         </p>
 
         {/* End-state proof cue */}
-        <div className="mb-10 flex flex-wrap items-center justify-center gap-2 text-[13px] text-offwhite/38">
+        <div className="mb-10 flex flex-wrap items-center justify-center gap-2 text-[13px] text-offwhite/58">
           {[
             { label: "Call answered" },
             { label: "Lead captured" },
@@ -1462,7 +1462,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
                 {label}
               </span>
               {idx < arr.length - 1 && (
-                <ArrowRight className="h-3 w-3 text-offwhite/18" aria-hidden="true" />
+                <ArrowRight className="h-3 w-3 text-offwhite/56" aria-hidden="true" />
               )}
             </React.Fragment>
           ))}
@@ -1482,7 +1482,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
           </Button>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 text-[13px] text-offwhite/28 font-body">
+        <div className="flex flex-wrap justify-center gap-3 text-[13px] text-offwhite/56 font-body">
           {[
             { icon: CheckCircle2, label: 'No new number needed' },
             { icon: CheckCircle2, label: 'Includes 15-min setup call' },
@@ -1494,7 +1494,7 @@ const FinalCTA = ({ onWaitlist }: { onWaitlist: () => void }) => {
               className="flex items-center gap-2 rounded-full px-4 py-2"
               style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
             >
-              <Icon className="w-3.5 h-3.5 text-offwhite/25" aria-hidden="true" />
+              <Icon className="w-3.5 h-3.5 text-offwhite/56" aria-hidden="true" />
               {label}
             </span>
           ))}
@@ -1518,7 +1518,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/30">Trade Receptionist</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-offwhite/58">Trade Receptionist</p>
             <h3 className="mt-2 font-display text-[clamp(2rem,3vw,3rem)] font-bold leading-[0.98] text-offwhite">
               The premium AI receptionist for UK trades.
             </h3>
@@ -1535,14 +1535,14 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
           <div className="mb-6">
             <Logo height={100} />
           </div>
-          <p className="text-[15px] text-offwhite/35 leading-relaxed max-w-sm">
+          <p className="text-[15px] text-offwhite/58 leading-relaxed max-w-sm">
             The UK's #1 AI receptionist for tradespeople. Never miss a call. Never lose a job.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {['Plumbers', 'Electricians', 'Builders', 'HVAC', 'Carpenters'].map((trade) => (
               <span
                 key={trade}
-                className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-offwhite/58"
+                className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-offwhite/66"
                 style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
               >
                 {trade}
@@ -1552,25 +1552,25 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </div>
 
         <div>
-          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/30 mb-5">Product</h4>
-          <ul className="space-y-3 text-[14px] text-offwhite/45">
+          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/58 mb-5">Product</h4>
+          <ul className="space-y-0.5 text-[14px] text-offwhite/62">
             <li>
               <button
                 onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                className="hover:text-offwhite transition-colors"
+                className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors"
               >
                 Pricing
               </button>
             </li>
             <li>
-              <button onClick={onWaitlist} className="hover:text-offwhite transition-colors text-left">
+              <button onClick={onWaitlist} className="inline-flex min-h-[44px] items-center text-left hover:text-offwhite transition-colors">
                 Start Free Trial
               </button>
             </li>
             <li>
               <button
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-                className="hover:text-offwhite transition-colors"
+                className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors"
               >
                 Hear how it answers a customer
               </button>
@@ -1579,12 +1579,12 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
         </div>
 
         <div>
-          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/30 mb-5">Company</h4>
-          <ul className="space-y-3 text-[14px] text-offwhite/45">
+          <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/58 mb-5">Company</h4>
+          <ul className="space-y-0.5 text-[14px] text-offwhite/62">
             <li>
               <button
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="hover:text-offwhite transition-colors"
+                className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors"
               >
                 How it works
               </button>
@@ -1592,23 +1592,23 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
             <li>
               <button
                 onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
-                className="hover:text-offwhite transition-colors"
+                className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors"
               >
                 FAQs
               </button>
             </li>
             <li>
-              <a href="/partner" className="hover:text-offwhite transition-colors">
+              <a href="/partner" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
                 Partner Programme
               </a>
             </li>
             <li>
-              <a href="/terms" className="hover:text-offwhite transition-colors">
+              <a href="/terms" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
                 Terms of Service
               </a>
             </li>
             <li>
-              <a href="/privacy" className="hover:text-offwhite transition-colors">
+              <a href="/privacy" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
                 Privacy Policy
               </a>
             </li>
@@ -1652,7 +1652,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
             </a>
           ))}
         </div>
-        <p className="text-[13px] text-offwhite/25">
+        <p className="text-[13px] text-offwhite/56">
           &copy; 2026 Trade Receptionist Ltd. All rights reserved. Registered in England &amp; Wales.
         </p>
       </div>
@@ -1709,44 +1709,43 @@ const WhatsAppButton = () => (
 // Only strictly necessary cookies (Supabase auth) + cookieless Vercel Analytics.
 // No advertising tracking. ICO rules: no consent banner needed for strictly
 // necessary cookies — but a transparent notice is best practice.
+// Slim single-row bar. Sits directly above the sticky mobile CTA bar rather than
+// floating over page content — the previous 176px card covered the calculator
+// inputs and the how-it-works steps for every first-time mobile visitor.
 const CookieNotice: React.FC = () => {
   const [visible, setVisible] = useState(() => !localStorage.getItem('cookie-ack'));
   if (!visible) return null;
+  const dismiss = () => { localStorage.setItem('cookie-ack', '1'); setVisible(false); };
   return (
     <div
-      className="fixed bottom-24 left-4 right-4 z-[60] rounded-[20px] p-4 font-body md:hidden"
+      className="fixed bottom-[68px] left-0 right-0 z-[60] font-body md:hidden"
       style={{
-        background:   'linear-gradient(180deg, rgba(10,35,64,0.96) 0%, rgba(8,26,48,0.96) 100%)',
+        background: 'rgba(8,26,48,0.97)',
         backdropFilter: 'blur(20px)',
-        boxShadow:    '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(2,13,24,0.45)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 -1px 0 rgba(255,255,255,0.06)',
       }}
       role="region"
       aria-label="Cookie notice"
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-offwhite/34">Privacy-first by default</p>
+      <div className="flex items-center gap-3 px-4 py-2">
+        <p className="flex-1 text-[12px] leading-[1.45] text-offwhite/72">
+          Strictly necessary cookies only — no ad tracking.{' '}
+          <a
+            href="/privacy#cookies"
+            className="text-orange-soft underline underline-offset-2 transition-colors hover:text-orange"
+          >
+            Privacy
+          </a>
+        </p>
         <button
-          onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
-          className="text-[12px] text-offwhite/40 transition-colors hover:text-offwhite/75"
+          onClick={dismiss}
+          className="-mr-2 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-offwhite/72 transition-colors duration-200 hover:text-offwhite focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-2"
           aria-label="Dismiss cookie notice"
         >
-          Dismiss
+          <X size={18} aria-hidden="true" />
         </button>
       </div>
-      <p className="text-[13px] text-offwhite/60 leading-[1.6] mb-3 md:hidden">
-        We use strictly necessary cookies for authentication and anonymous analytics.
-        No advertising tracking.{' '}
-        <a href="/privacy#cookies" className="text-orange-soft hover:text-orange transition-colors underline underline-offset-2">
-          Privacy Policy
-        </a>
-      </p>
-      <button
-        onClick={() => { localStorage.setItem('cookie-ack', '1'); setVisible(false); }}
-        className="w-full h-10 rounded-btn text-[13px] font-semibold text-white transition-all duration-200"
-        style={{ background: 'linear-gradient(135deg, #FF6B2B, #FF8C55)', boxShadow: '0 12px 26px rgba(249,115,22,0.24)' }}
-      >
-        Continue
-      </button>
     </div>
   );
 };

@@ -81,7 +81,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
         {/* Close — absolute so it stays over the scroll */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-offwhite/30 hover:text-offwhite/80 transition-colors z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="absolute top-5 right-5 text-offwhite/58 hover:text-offwhite/80 transition-colors z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -104,7 +104,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
             <h3 className="font-display text-2xl font-bold text-offwhite mb-3 tracking-tight">
               You're in — check your email
             </h3>
-            <p className="text-offwhite/50 mb-8 leading-relaxed text-[15px]">
+            <p className="text-offwhite/66 mb-8 leading-relaxed text-[15px]">
               We'll send your login details and setup guide within 1 hour. No card required.
             </p>
             <Button variant="outline" fullWidth onClick={onClose}>
@@ -117,7 +117,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
               <h3 className="font-display text-[26px] font-bold text-offwhite mb-1.5 tracking-tight">
                 Set up your free trial — takes 2 minutes
               </h3>
-              <p className="text-offwhite/40 text-[14px] leading-relaxed">
+              <p className="text-offwhite/62 text-[14px] leading-relaxed">
                 We'll set up your account straight away. No card needed to start.
               </p>
             </div>
@@ -125,11 +125,11 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/56 pointer-events-none" />
                   <input
                     type="text"
                     required
@@ -146,11 +146,11 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
               {/* Email */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/56 pointer-events-none" />
                   <input
                     type="email"
                     required
@@ -167,11 +167,11 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
 
               {/* Trade / Role */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/35 mb-2">
-                  Your Trade <span className="text-offwhite/20">(Optional)</span>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-offwhite/58 mb-2">
+                  Your Trade <span className="text-offwhite/56">(Optional)</span>
                 </label>
                 <div className="relative">
-                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/25 pointer-events-none" />
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-offwhite/56 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="e.g. Plumber, Site Manager"
@@ -217,7 +217,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
               </div>
             </form>
 
-            <p className="mt-5 text-center text-[12px] text-offwhite/20">
+            <p className="mt-5 text-center text-[12px] text-offwhite/56">
               We'll send your login details within 1 hour. No card needed to start.
             </p>
           </div>

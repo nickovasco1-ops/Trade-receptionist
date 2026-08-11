@@ -50,10 +50,10 @@ function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hin
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.13em] text-offwhite/50 leading-none">
+        <span className="text-[11px] font-bold uppercase tracking-[0.13em] text-offwhite/66 leading-none">
           {label}
         </span>
-        <span className="text-right text-[11px] leading-snug text-offwhite/25 shrink-0 max-w-[140px]">
+        <span className="text-right text-[11px] leading-snug text-offwhite/56 shrink-0 max-w-[140px]">
           {hint}
         </span>
       </div>
@@ -71,7 +71,7 @@ function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hin
           onClick={decrement}
           disabled={value <= min}
           aria-label={`Decrease ${label}`}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/35 disabled:opacity-20"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/58 disabled:opacity-20"
           style={{ transition: 'background 150ms ease, color 150ms ease' }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(240,244,248,0.85)'; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = ''; }}
@@ -92,6 +92,7 @@ function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hin
           <input
             type="text"
             inputMode="numeric"
+            aria-label={label}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             onBlur={(e) => commit(e.target.value)}
@@ -104,7 +105,7 @@ function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hin
             style={{ fontFeatureSettings: '"tnum"', letterSpacing: '-0.01em' }}
           />
           {suffix && (
-            <span className="ml-0.5 select-none text-[13px] font-semibold text-offwhite/35">
+            <span className="ml-0.5 select-none text-[13px] font-semibold text-offwhite/58">
               {suffix}
             </span>
           )}
@@ -116,7 +117,7 @@ function StepInput({ label, value, onChange, min, max, step, prefix, suffix, hin
           onClick={increment}
           disabled={value >= max}
           aria-label={`Increase ${label}`}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/35 disabled:opacity-20"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-[20px] font-light text-offwhite/58 disabled:opacity-20"
           style={{ transition: 'background 150ms ease, color 150ms ease' }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(240,244,248,0.85)'; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = ''; (e.currentTarget as HTMLButtonElement).style.color = ''; }}
@@ -200,9 +201,9 @@ export function Calculator() {
       >
         <div
           className="h-1.5 w-1.5 rounded-full"
-          style={{ background: '#FF6B2B', boxShadow: '0 0 6px rgba(255,107,43,0.6)' }}
+          style={{ background: '#FF6B2B', boxShadow: '0 0 6px rgba(255,140,85,0.95)' }}
         />
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-offwhite/30">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-offwhite/58">
           Income loss calculator
         </span>
       </div>
@@ -245,7 +246,7 @@ export function Calculator() {
           {/* Formula note */}
           <p
             className="mt-auto text-[11px] leading-relaxed"
-            style={{ color: 'rgba(240,244,248,0.22)' }}
+            style={{ color: 'rgba(240,244,248,0.60)' }}
           >
             {missedPerWeek} calls × £{jobValue} × {conversionPct}% × 52&nbsp;weeks
           </p>
@@ -268,7 +269,7 @@ export function Calculator() {
         >
           {/* Annual — dominant */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: 'rgba(240,244,248,0.32)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: 'rgba(240,244,248,0.62)' }}>
               Annual loss estimate
             </p>
             <div
@@ -289,7 +290,7 @@ export function Calculator() {
           {/* Monthly + weekly */}
           <div className="mt-4 flex gap-5">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.60)' }}>
                 Monthly
               </p>
               <p
@@ -300,7 +301,7 @@ export function Calculator() {
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: 'rgba(240,244,248,0.60)' }}>
                 Weekly
               </p>
               <p
@@ -317,7 +318,7 @@ export function Calculator() {
 
           {/* Subscription comparison */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: 'rgba(240,244,248,0.28)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: 'rgba(240,244,248,0.60)' }}>
               vs Trade Receptionist
             </p>
 
@@ -343,7 +344,7 @@ export function Calculator() {
                   <span className="text-[10px]" style={{ color: '#99cbff' }}>
                     TR: £{STARTER_MONTHLY}/mo
                   </span>
-                  <span className="text-[10px]" style={{ color: 'rgba(255,107,43,0.6)' }}>
+                  <span className="text-[10px]" style={{ color: 'rgba(255,140,85,0.95)' }}>
                     Loss: £{monthly.toLocaleString('en-GB')}/mo
                   </span>
                 </div>
@@ -351,14 +352,14 @@ export function Calculator() {
             )}
 
             {roiMultiple !== null && roiMultiple > 0 && (
-              <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.55)' }}>
+              <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.70)' }}>
                 You're losing{' '}
                 <strong style={{ color: 'rgba(240,244,248,0.85)' }}>{roiMultiple}×</strong> more than
                 the subscription costs each month.
               </p>
             )}
             {breakEven !== null && (
-              <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.35)' }}>
+              <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'rgba(240,244,248,0.62)' }}>
                 {breakEven <= 1
                   ? 'One recovered call covers the subscription.'
                   : `${breakEven} recovered calls covers the month.`}

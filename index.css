@@ -104,25 +104,52 @@ body {
   outline-offset: 3px;
 }
 
+/* Tailwind v4's preflight sets `cursor: default` on <button>, so every CTA,
+   nav item and stepper on the site rendered with an arrow instead of a hand.
+   Restore the expected affordance for anything actually clickable. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label[for],
+select {
+  cursor: pointer;
+}
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* ─── Scrollbar ─── */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ─── Glass Utilities ─── */
+/* Surface alphas run slightly hotter than a pure-dark-room design would want:
+   the audience reads this on a phone in a van cab in daylight, where 4–6%
+   surfaces wash out completely and cards lose their edges. */
 .glass {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
 .glass-elevated {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
 }
 .glass-deep {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.055);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+/* Users who have asked their OS for more contrast get a further push. */
+@media (prefers-contrast: more) {
+  .glass          { background: rgba(255, 255, 255, 0.14); }
+  .glass-elevated { background: rgba(255, 255, 255, 0.18); }
+  .glass-deep     { background: rgba(255, 255, 255, 0.10); }
+  .glass-ring     { box-shadow: 0 0 0 1px rgba(255,255,255,0.24),
+                                0 8px 32px rgba(2,13,24,0.40); }
 }
 
 /* ─── Blueprint Grid ─── */
@@ -708,7 +735,7 @@ input, select, textarea {
 
 /* ─── Glass Card Ring ─── */
 .glass-ring {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.08),
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.12),
               0 8px 32px rgba(2,13,24,0.40);
 }
 .glass-ring-hover:hover {

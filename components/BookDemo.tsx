@@ -34,7 +34,7 @@ export const BookDemo: React.FC = () => {
             See Trade Receptionist{' '}
             <span style={{ color: '#FF6B2B', fontStyle: 'italic' }}>in action.</span>
           </h1>
-          <p className="text-[18px] text-offwhite/55 leading-relaxed max-w-xl mx-auto">
+          <p className="text-[18px] text-offwhite/66 leading-relaxed max-w-xl mx-auto">
             A quick 15-minute walkthrough. Hear a real call flow, see the setup, and get a tailored recommendation for your trade.
           </p>
         </div>
@@ -79,7 +79,7 @@ export const BookDemo: React.FC = () => {
 
         {/* Footer note */}
         <div className="text-center mt-10">
-          <p className="text-[13px] text-offwhite/30 mb-2">Prefer to email?</p>
+          <p className="text-[13px] text-offwhite/58 mb-2">Prefer to email?</p>
           <a
             href="mailto:hello@tradereceptionist.co.uk"
             className="text-orange-soft font-semibold text-[14px] hover:text-orange transition-colors duration-200"
