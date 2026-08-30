@@ -38,3 +38,8 @@ e2e/.auth/
 .stitch/
 DESIGN.md
 .vercel
+
+# Health reports are generated per run and published as CI artifacts + job
+# summaries. Committing one per day would be noise; the bundle baseline in
+# .claude/health/ IS tracked, because the size check compares against it.
+reports/

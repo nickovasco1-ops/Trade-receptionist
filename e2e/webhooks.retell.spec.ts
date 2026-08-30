@@ -179,7 +179,7 @@ test.describe('Retell webhooks', () => {
     try {
       await postStarted(account.agentId, callId);
       await postEnded(account.agentId, callId);
-      const call = await eventually(() => getCallByRetellId(callId), Boolean, 'base call before analysis');
+      const call = await eventually(() => getCallByRetellId(callId), Boolean, 'base call before analysis') as { id: string } | null;
       await eventually(
         () => restGet<Record<string, unknown>>('leads', `call_id=eq.${call!.id}&select=id`),
         (rows) => rows.length === 1,

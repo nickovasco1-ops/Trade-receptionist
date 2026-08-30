@@ -1008,6 +1008,9 @@ Don't. Use existing tokens. If genuinely missing, propose a token addition in **
 - [ ] If touching Supabase schema: new migration, RLS policies updated.
 - [ ] Build passes (`npm run build`); server build passes if server changed (`npm run build:api`).
 - [ ] `npm run test:e2e` is green and `npm test --prefix server` passes — CI runs both, and both were dark for months.
+- [ ] `npm run typecheck` is clean.
+- [ ] `npm run health:daily` reports no escalating failure (see §16).
+- [ ] If you added a test: **the reported test count went up.** A suite matching no files exits 0.
 - [ ] Manually exercised the change. Type-checking is not feature-checking.
 
 ### Useful commands
@@ -1026,6 +1029,12 @@ npm run test:e2e:ui             # Playwright UI mode
 npm run test:e2e:debug          # Playwright debug mode
 npm run test:smoke              # Playwright, playwright.smoke.config.ts (release smoke subset)
 npm run test:release-smoke      # alias for test:smoke
+
+npm run typecheck               # tsc --noEmit over the web app (server is covered by build:api)
+npm run health:daily            # deterministic health checks, ~2 min, no browser
+npm run health:deep             # adds the Playwright journeys, ~10 min
+node tests/health/runner.mjs --only=C2          # one catalogue class
+node tests/health/runner.mjs --only=sig.stripe_fails_closed   # one check
 
 npm run validate:env -- --env=<local|test|staging|production>   # checks required env vars are present, never prints values
 
@@ -1092,8 +1101,55 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 
 ---
 
+## §16 — Health Audit System
+
+The application has a standing, evidence-based health audit. It exists because
+this codebase's defining failure mode is not bugs — it is **bugs that nobody
+finds for months**. A Business-tier checkout failed silently until a customer
+complained; mid-call booking returned 401 for three months; the data plane was
+unauthenticated in production; a cron was red for 29 days.
+
+| Piece | Where | What it is |
+|---|---|---|
+| Failure catalogue | `.claude/health/FAILURE_CATALOG.md` | 17 failure **classes** mined from git history, Sentry, all 18 migrations and live production state, ranked by recurrence × blast radius. Every check traces to a row. |
+| Standing rules | `.claude/health/RULES.md` | Evidence requirements, the read-only production rule, seed-tenant confinement, how fixes ship. Read before operating the system. |
+| Checks | `tests/health/checks/*.mjs` | Deterministic pass/fail. No LLM judgement. |
+| Runner | `tests/health/runner.mjs` | `npm run health:daily` / `health:deep`. Writes `reports/health/YYYY-MM-DD.{md,json}`. |
+| Agent | `.claude/agents/app-health-auditor.md` | Subagent for health/audit/regression/pre-deploy requests. |
+| Schedules | `.github/workflows/health-daily.yml`, `health-deep.yml` | 06:00 UTC Mon–Fri (07:00 BST); deep on Sunday 22:00 UTC. |
+
+### The rules that make it trustworthy
+
+- **A PASS carries a command, its output and its exit code.** Enforced in
+  `finalise()` — a PASS without evidence is downgraded to BLOCKED automatically.
+- **A check that cannot run is BLOCKED, never PASS.** An all-BLOCKED run is
+  treated as a failed run.
+- **Escalation is critical/high only**, via job failure → GitHub's owner email.
+  Everything else lives in the report artifact and the job summary. Silence is
+  meant to be trustworthy, so it must also be rare.
+- **Writes are confined to two seed tenants** (`*@health.tradereceptionist.test`)
+  by `assertSeedTenant()`. Never a real tenant.
+- **No migrations, no schema changes, no key rotation.** Two checks are
+  permanently BLOCKED because of this and should stay that way.
+
+### Adding a check
+
+New failure class → add the catalogue row **and** the check in the same commit.
+`meta.catalogue_present` fails the run if any `C*` class has no check, so the
+catalogue and the suite cannot drift apart.
+
+> `notification-health.yml` was retired on 2026-08-30. It fired a live SMS and
+> email at a real tenant every day, had been failing for 29+ days with nobody
+> acting on it, and was training the owner to ignore the exact email channel
+> this system escalates through. Its useful half is now
+> `providers.credentials_live`.
+
+---
+
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
+*v3.9 · 2026-08-30 — added the health audit system (§16): a 17-class failure catalogue mined from eight months of real history, deterministic checks in `tests/health/`, `health:daily`/`health:deep` runners that refuse to report a pass without a recorded command and exit code, scheduled daily and deep workflows, and the `app-health-auditor` subagent. Added a `typecheck` script and fixed the five pre-existing type errors it surfaced — one a real bug (`TestCallPage` called `mute(next)`, whose argument the SDK ignores, so unmuting muted). Retired `notification-health.yml`, which had been red for 29 days while texting a live tenant daily.*
+
 *v3.6 · 2026-08-30 — reconciled tenant lifecycle state against Stripe (three churned tenants were still `is_active`); added `/admin/check-tenant-integrity`; `DELETE /clients/:id` now releases the Twilio number and Retell agent instead of orphaning them; corrected the false "No card required" claim in 7 places and gave Business/Agency Payment Links their advertised 14-day trial; repaired the e2e suite (20 hard failures → 0, incl. two real bugs: a query-dropping redirect and webhook tests that were signing wrongly and asserting nothing) and widened CI to run it all.*
 *v3.5 · 2026-08-30 — added §8.4a (API auth guards) after finding the entire data plane unauthenticated in production; two new §10 landmines (public data plane, Stripe lifecycle drift); Business/Agency Payment Links given the 14-day trial they had always been advertised with.*
 *v3.4 · 2026-08-30 — fixed `importTwilioNumber()`/`assignAgentToNumber()` for Retell's 2026-03-31 weighted-agent-list migration (the old `inbound_agent_id` field was failing every number import); exported `welcomeHtml` and added `server/src/scripts/send-welcome.ts` to re-send a welcome email out-of-band, since replaying a Stripe event hits the idempotency path and skips it; new §10 landmine for the Retell deprecation.*

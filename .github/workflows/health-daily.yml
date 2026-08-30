@@ -1,0 +1,81 @@
+name: Health (daily)
+
+# 06:00 UTC Mon–Fri. GitHub cron has no timezone support, so this is 07:00
+# Europe/London during BST and 06:00 during GMT. The half-year drift is
+# deliberate: pinning to 07:00 GMT would mean 08:00 BST for most of the year,
+# and a morning check is more useful early than late.
+on:
+  schedule:
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch:
+  # Also on PRs that touch the things the checks are about, so a regression is
+  # caught before it merges rather than the next morning.
+  pull_request:
+    paths:
+      - 'server/src/routes/webhooks/**'
+      - 'server/src/routes/retell-tools/**'
+      - 'server/src/middleware/**'
+      - 'supabase/migrations/**'
+      - 'shared/types.ts'
+      - 'tests/health/**'
+
+concurrency:
+  group: health-daily-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  health:
+    name: Deterministic health checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read          # meta.no_workflow_failing_repeatedly reads run history
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+      - run: npm ci --prefix server
+
+      # The bundle-size check compares against the last recorded value. Without
+      # a cache every run is a "first run" and the check is permanently BLOCKED.
+      - name: Restore bundle baseline
+        uses: actions/cache@v4
+        with:
+          path: .claude/health/bundle-baseline.json
+          key: bundle-baseline-${{ github.run_id }}
+          restore-keys: bundle-baseline-
+
+      - name: Run health:daily
+        env:
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RETELL_API_KEY: ${{ secrets.RETELL_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: npm run health:daily
+
+      # Always publish the report, especially on failure — the whole point is
+      # that the evidence is readable without re-running anything.
+      - name: Publish report to the job summary
+        if: always()
+        run: |
+          FILE="reports/health/$(date -u +%F).md"
+          if [ -f "$FILE" ]; then cat "$FILE" >> "$GITHUB_STEP_SUMMARY"; else
+            echo "No report produced — the runner did not get far enough to write one." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-daily-${{ github.run_id }}
+          path: reports/health/
+          retention-days: 90

@@ -28,7 +28,10 @@
     "test:e2e:report": "playwright show-report",
     "test:smoke": "playwright test -c playwright.smoke.config.ts",
     "test:release-smoke": "npm run test:smoke",
-    "validate:env": "node scripts/validate-env.mjs"
+    "validate:env": "node scripts/validate-env.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "health:daily": "node tests/health/runner.mjs --mode=daily",
+    "health:deep": "node tests/health/runner.mjs --mode=deep"
   },
   "dependencies": {
     "@sentry/react": "^10.50.0",
