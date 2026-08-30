@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
+import { verify as retellVerify } from 'retell-sdk';
 import { z } from 'zod';
 import { supabase } from '../../services/supabase';
+import { logEvent, requestId } from '../../lib/observability';
 import {
   bookingErrorDetails,
   createBookingForClient,
@@ -21,21 +22,54 @@ interface RetellToolEnvelope<TArgs> {
   args?: TArgs;
 }
 
-function verifySignature(rawBody: Buffer, signature: string): boolean {
-  const secret = process.env.RETELL_API_KEY ?? '';
-  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expected);
+/**
+ * Verify a Retell custom-function call.
+ *
+ * Retell signs these exactly as it signs webhooks: the `X-Retell-Signature`
+ * header is `v={unix_ms},d={HMAC-SHA256(rawBody + timestamp, apiKey)}`, with a
+ * five-minute replay window enforced inside the SDK's verify().
+ *
+ * This used to compute a plain `HMAC-SHA256(rawBody)` and compare it to the raw
+ * header — the same mistake BUG-002a fixed in the webhook route on 2026-06-10
+ * (`4233cf1`). The webhook route was corrected; this one was never touched, so
+ * the bug survived here. A real header is 82 characters and our digest is 64, so
+ * the length guard rejected every request before comparing anything: **every
+ * mid-call check_calendar_availability and create_calendar_booking returned 401
+ * from 2026-05-21 until 2026-08-30.** The agent could never read the diary or
+ * book a job. Confirmed against production by signing a probe with the SDK.
+ *
+ * Never hand-roll this. Use the SDK so the two stay in agreement across
+ * upgrades.
+ */
+async function verifySignature(rawBody: Buffer, signature: string): Promise<boolean> {
+  const secret = (process.env.RETELL_API_KEY ?? '').trim();
+  if (!secret) return false;
 
-  if (sigBuf.length !== expBuf.length) return false;
-  return crypto.timingSafeEqual(sigBuf, expBuf);
+  try {
+    return await retellVerify(rawBody.toString('utf8'), secret, signature.trim());
+  } catch {
+    return false;
+  }
 }
 
-function readEnvelope<TArgs>(req: Request, res: Response): RetellToolEnvelope<TArgs> | null {
+async function readEnvelope<TArgs>(
+  req: Request,
+  res: Response,
+): Promise<RetellToolEnvelope<TArgs> | null> {
   const rawBody = req.body as Buffer;
   const signature = req.headers['x-retell-signature'];
 
-  if (!(rawBody instanceof Buffer) || typeof signature !== 'string' || !verifySignature(rawBody, signature)) {
+  if (!(rawBody instanceof Buffer)
+      || typeof signature !== 'string'
+      || !(await verifySignature(rawBody, signature))) {
+    // Error-level: a rejection here is the agent being unable to use the diary
+    // mid-call, which is silent to us and looks to the caller like the
+    // receptionist simply cannot book.
+    logEvent('error', 'retell_tools.invalid_signature', {
+      requestId: requestId(req),
+      path: req.path,
+      hasSignature: typeof signature === 'string',
+    });
     res.status(401).json({ success: false, error: 'Invalid Retell signature' });
     return null;
   }
@@ -78,7 +112,7 @@ const createBookingArgsSchema = z.object({
 });
 
 router.post('/check-availability', async (req: Request, res: Response) => {
-  const envelope = readEnvelope<unknown>(req, res);
+  const envelope = await readEnvelope<unknown>(req, res);
   if (!envelope) return;
 
   const parsed = availabilityArgsSchema.safeParse(envelope.args ?? {});
@@ -136,7 +170,7 @@ router.post('/check-availability', async (req: Request, res: Response) => {
 });
 
 router.post('/create-booking', async (req: Request, res: Response) => {
-  const envelope = readEnvelope<unknown>(req, res);
+  const envelope = await readEnvelope<unknown>(req, res);
   if (!envelope) return;
 
   const parsed = createBookingArgsSchema.safeParse(envelope.args ?? {});
