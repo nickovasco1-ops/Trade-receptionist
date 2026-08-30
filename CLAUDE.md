@@ -672,6 +672,27 @@ server/src/
 - RLS policies exist on all six (added incrementally — `transcripts` had none until migration 015, a real bug that shipped: the dashboard silently showed zero transcripts for months). Any new table needs RLS policies **in the same migration**, not a follow-up.
 - **RLS only governs the browser client.** `src/lib/supabase.ts` uses the anon key + user JWT, so RLS (`owner_email = auth.jwt() ->> 'email'`) is the real tenant boundary there. `server/src/services/supabase.ts` uses the **service-role key**, which bypasses RLS completely — every server route that returns tenant data must filter by `owner_email`/`client_id` in application code. There is no database-level backstop for a missing `.eq('client_id', ...)` in a server route.
 
+### 8.4a — API authentication (added 2026-08-30)
+
+`server/src/middleware/auth.ts` is the only auth boundary on the data plane. The
+server uses the service-role key and bypasses RLS (§8.4), so a route without a
+guard here is world-readable.
+
+| Guard | Applies to | Mechanism |
+|---|---|---|
+| `requireAdmin` | Ops/provisioning: `GET/POST /clients`, `PATCH/DELETE /clients/:id`, `/provision`, `/:id/assign-number`, `/connect-number`, `/calls/backfill/:id` | `x-admin-key` vs `ADMIN_API_KEY`. **Fails closed** when the env var is unset. |
+| `requireUser` | Dashboard surface: `GET /clients/:id`, `/:id/activation-code`, `/rebuild-agent`, `GET /calls`, `/calls/:id` | Supabase JWT → `res.locals.ownerEmail`. A valid admin key also satisfies it and sets `res.locals.isAdmin`. |
+| `requireClientOwnership` | Any `:id` client route after `requireUser` | Confirms the row's `owner_email` matches the caller. Returns **404, not 403**, so another tenant's row is not confirmed to exist. |
+
+List endpoints must additionally scope by `ownedClientIds(res)` — a guard proves
+*who* is calling, not *which rows* they may read. `GET /calls` leaked every
+tenant's calls precisely because it authenticated nobody and scoped nothing.
+
+The dashboard reads `clients`/`calls` **directly from Supabase under RLS**, not
+through these routes; only `PATCH /clients/:id/settings` and
+`POST /clients/rebuild-agent` are called from the browser. Both send the user's
+JWT — if you add a third, send `Authorization: Bearer <access_token>` or it 401s.
+
 ### 8.5 Integration boundaries (do not break)
 
 | Integration | Where | What it does | Don't break |
@@ -873,6 +894,8 @@ Lazy-load below-fold components (`AudioPlayer`, `Calculator`, `Testimonials`, `B
 | `components/WaitlistModal.tsx` | **Corrected 2026-08-06 — earlier versions of this file had this backwards.** It `POST`s to a live, hardcoded `script.google.com/macros/s/...` Google Apps Script URL. This **is** current production behaviour, not stale legacy — no Supabase-backed waitlist table exists. | If you migrate the waitlist to Supabase, update this row (and §8.5) in the same PR. Don't assume the Apps Script reference is dead code without checking. |
 | Twilio number flows | Two modes: provision new number, **or** keep customer's existing number (`clients.own_number`, migration 003). | Onboarding and call routing must handle both branches — `buildProvisionResponse()` in `routes/clients/index.ts` branches on this. `POST /clients/connect-number` is the repair path for numbers provisioned before the SIP-trunk-attach step existed. |
 | Retell phone-number agent fields | Retell **removed** the single-agent fields (`inbound_agent_id`, `outbound_agent_id`, `*_sms_agent_id`, and their `_version` siblings) on 2026-03-31 in favour of weighted lists (`inbound_agents: [{agent_id, weight}]`). `importTwilioNumber()` and `assignAgentToNumber()` still sent the old shape, so **every number import hard-failed** — the tenant got a purchased Twilio number that routed nowhere. Fixed 2026-08-30. | Retell ships breaking deprecations on a dated schedule; a working provisioning path can rot without any code change. When number routing breaks, check the deprecation notices before debugging our own code. Audit with `GET /list-phone-numbers` — any `clients.twilio_number` absent from that list is a tenant whose calls do not route. |
+| Data plane shipped unauthenticated | Until 2026-08-30 `GET /clients` returned every tenant (emails, mobiles, Stripe ids) and `GET /calls` returned every call — both unauthenticated on the public internet. `DELETE /clients/:id`, `/provision` and `/:id/assign-number` were open too, the last two able to spend money buying Twilio numbers. Nobody noticed because the dashboard reads Supabase directly, so the routes had no visible consumer. | Guards now live in §8.4a. **A new route on `/clients` or `/calls` is public until you add one** — there is no default-deny and no RLS backstop. Probe any new endpoint unauthenticated before shipping. |
+| Stripe lifecycle drift | `customer.subscription.deleted` never landed for several tenants: three churned customers still had `is_active: true` and a genuinely active payer was still labelled `trialing` (found 2026-08-30, not yet reconciled). Churned users therefore keep service. | `clients.subscription_status` is not self-healing — no reconciliation job exists. Trust Stripe, not the DB, and periodically diff the two. |
 | Webhook backfill | `POST /calls/backfill/:retell_call_id` and `POST /admin/sync-calls` replay missed Retell events by re-pulling from Retell's API. | When changing `routes/webhooks/retell.ts`, keep it idempotent — replays are a real, designed-for recovery path, not a hypothetical. |
 | Supabase migrations | Append-only, 18 files as of 2026-08-30 (see §8.9). Migration 001 created a schema that 002 immediately drops — don't treat 001 as representative of the live schema. | Never edit a committed migration. Add a new one. |
 | `clients.plan` check constraint drifted from `Plan` | The four-tier scheme shipped in `shared/types.ts`, `src/lib/plans.ts` and `PRODUCT_TO_PLAN`, but the DB check still only allowed `starter\|pro\|agency`. **Every Business-tier (£159) checkout failed** at the `clients` insert in `provisionClient()` — customer charged, no tenant row, no agent, no number, no welcome email. Shipped undetected until a paying customer reported it 2026-08-30 (Sentry `TRADE-RECEPTIONIST-API-A`). Fixed by migration 018. | TypeScript union widening is invisible to Postgres. When adding a `Plan`/status/enum value, grep `pg_constraint` for a matching `CHECK` and write the migration in the same PR. |
@@ -1059,6 +1082,7 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
+*v3.5 · 2026-08-30 — added §8.4a (API auth guards) after finding the entire data plane unauthenticated in production; two new §10 landmines (public data plane, Stripe lifecycle drift); Business/Agency Payment Links given the 14-day trial they had always been advertised with.*
 *v3.4 · 2026-08-30 — fixed `importTwilioNumber()`/`assignAgentToNumber()` for Retell's 2026-03-31 weighted-agent-list migration (the old `inbound_agent_id` field was failing every number import); exported `welcomeHtml` and added `server/src/scripts/send-welcome.ts` to re-send a welcome email out-of-band, since replaying a Stripe event hits the idempotency path and skips it; new §10 landmine for the Retell deprecation.*
 *v3.3 · 2026-08-30 — migration 018 widens `clients_plan_check` to include the `'business'` tier, which had been silently failing every £159 checkout since the four-tier scheme shipped; two new §10 landmines (type-vs-CHECK-constraint drift, and `provisionClient()`'s silent-failure mode); §8.4/§8.9 updated to 18 migrations.*
 *v3.2 · 2026-08-11 — added §1.1 (claims & substantiation: DMCC Act 2024 / CAP Code floor) after removing "500+", "98.7%" ×3 and "UK's #1" from source; §5.2 primary CTA label changed `text-white` → `text-void` (white measured 2.80:1 / 2.06:1 on the CTA gradient, failing AA) and swept across all 8 CTA sites; two new §10 landmines (undocumented CTA gradient `#F97316`/`#F4A261`, and `CLAUDE_CODE_PROMPT.md` re-seeding fabricated claims).*
