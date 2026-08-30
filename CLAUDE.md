@@ -742,6 +742,7 @@ No scheduler exists inside this repo — these are designed to be hit by an exte
 
 | Endpoint | Purpose |
 |---|---|
+| `POST /admin/check-tenant-integrity` | Diffs Stripe ↔ Supabase ↔ Retell ↔ Twilio per tenant and reports anyone whose product is not actually working (no agent, no number, number off the SIP trunk, number not imported into Retell, bound to the wrong agent, missing `business_config`, billing drift, churned-but-active). Read-only. Emails critical findings when `INTEGRITY_ALERT_EMAIL` is set. **Intended daily** — this is the only thing between a half-provisioned tenant and a customer complaint. |
 | `POST /admin/send-trial-reminders` | Emails clients 8–10 days into a `trialing` subscription. Intended daily. |
 | `POST /admin/run-lead-followup` | Runs `services/lead-followup.ts` — 48h–7day "we missed you" SMS to uncontacted leads. Intended recurring. |
 | `POST /admin/sync-calls` | Pulls recent calls from Retell per-agent, backfills any missing from Supabase. Webhook-delivery-failure recovery. |
@@ -789,7 +790,8 @@ Full reference: `docs/ENVIRONMENT.md` + `npm run validate:env -- --env=<local|te
 | `NOTION_API_KEY` + 3 DB IDs | Fully optional | No-ops when absent — never blocks the call pipeline. |
 | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Optional | Backend Sentry is a genuine no-op without `SENTRY_DSN`. Frontend DSN is hardcoded (not env-driven). |
 | `VITE_CRISP_WEBSITE_ID` | Optional | Blank disables the widget. |
-| `ADMIN_API_KEY` | Required only for the §8.8 admin endpoints | Not a boot check. |
+| `ADMIN_API_KEY` | Required only for the §8.8 admin endpoints | Not a boot check. **Fails closed** in `middleware/auth.ts` — an unset value authorises nothing. |
+| `INTEGRITY_ALERT_EMAIL` | Optional | Where `/admin/check-tenant-integrity` emails critical findings. Unset = report is returned and logged only, nobody is told. |
 | `GEMINI_API_KEY` | Not needed for `npm run dev` | Server-side only, used solely by `scripts/generate-sample-call.mjs` at build/content time — never set as `VITE_GEMINI_API_KEY`. |
 
 ### 8.12 Current state / open work (inferred from code, 2026-08-06)
@@ -1005,6 +1007,7 @@ Don't. Use existing tokens. If genuinely missing, propose a token addition in **
 - [ ] If touching webhooks: idempotency preserved.
 - [ ] If touching Supabase schema: new migration, RLS policies updated.
 - [ ] Build passes (`npm run build`); server build passes if server changed (`npm run build:api`).
+- [ ] `npm run test:e2e` is green and `npm test --prefix server` passes — CI runs both, and both were dark for months.
 - [ ] Manually exercised the change. Type-checking is not feature-checking.
 
 ### Useful commands
@@ -1017,7 +1020,8 @@ npm run build                  # vite production build → dist/
 npm run build:api              # tsc for server → server/dist/
 npm run preview                # preview the vite production build
 
-npm run test:e2e                # Playwright, full suite
+npm test --prefix server        # server unit tests (node:test via tsx) — 44 tests
+npm run test:e2e                # Playwright, full suite (what CI runs)
 npm run test:e2e:ui             # Playwright UI mode
 npm run test:e2e:debug          # Playwright debug mode
 npm run test:smoke              # Playwright, playwright.smoke.config.ts (release smoke subset)
@@ -1090,6 +1094,7 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
+*v3.6 · 2026-08-30 — reconciled tenant lifecycle state against Stripe (three churned tenants were still `is_active`); added `/admin/check-tenant-integrity`; `DELETE /clients/:id` now releases the Twilio number and Retell agent instead of orphaning them; corrected the false "No card required" claim in 7 places and gave Business/Agency Payment Links their advertised 14-day trial; repaired the e2e suite (20 hard failures → 0, incl. two real bugs: a query-dropping redirect and webhook tests that were signing wrongly and asserting nothing) and widened CI to run it all.*
 *v3.5 · 2026-08-30 — added §8.4a (API auth guards) after finding the entire data plane unauthenticated in production; two new §10 landmines (public data plane, Stripe lifecycle drift); Business/Agency Payment Links given the 14-day trial they had always been advertised with.*
 *v3.4 · 2026-08-30 — fixed `importTwilioNumber()`/`assignAgentToNumber()` for Retell's 2026-03-31 weighted-agent-list migration (the old `inbound_agent_id` field was failing every number import); exported `welcomeHtml` and added `server/src/scripts/send-welcome.ts` to re-send a welcome email out-of-band, since replaying a Stripe event hits the idempotency path and skips it; new §10 landmine for the Retell deprecation.*
 *v3.3 · 2026-08-30 — migration 018 widens `clients_plan_check` to include the `'business'` tier, which had been silently failing every £159 checkout since the four-tier scheme shipped; two new §10 landmines (type-vs-CHECK-constraint drift, and `provisionClient()`'s silent-failure mode); §8.4/§8.9 updated to 18 migrations.*
