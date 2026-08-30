@@ -86,14 +86,13 @@ Twilio number (real money), creates a Retell agent, and creates a Supabase auth 
 for an attacker-chosen email address.** `verifyStripeSignature` also has **no timestamp
 tolerance check**, so a captured genuine webhook can be replayed indefinitely.
 
-**C2b — `retell-tools` uses the hand-rolled algorithm that BUG-002a proved wrong (LIVE, UNVERIFIED).**
+**C2b — `retell-tools` used the algorithm BUG-002a proved wrong. CONFIRMED, then FIXED 2026-08-30** (PR #4). No longer a suspicion: a probe signed with `retell-sdk` against production returned `401 Invalid Retell signature`, and Retell's custom-function docs confirm the `v=,d=` scheme applies to tool URLs. **Every mid-call availability check and booking was rejected from 2026-05-21 to 2026-08-30** — the agent could never read a diary or book a job on a real call. Corroborated by the database: the only call-linked booking in the entire history is a synthetic `auto_test_*` row. Original defect:
 `retell-tools/index.ts:26` computes `HMAC-SHA256(rawBody)` and compares it to the
 raw header. That is precisely the scheme `4233cf1` replaced in the webhook route
 after it rejected 100% of traffic. If Retell signs custom function calls the same way
 it signs webhooks, **every mid-call `check-availability` and `create-booking` returns
-401** and the agent can never book. Consistent with — but *not proven by* — the fact
-that only one booking has ever been created from a call. **Flagged for a Phase 1
-check, not asserted as broken.**
+401** and the agent can never book. This was flagged for verification rather than asserted;
+verification confirmed it.
 
 ### C3 — Provisioning fails part-way, silently, after the customer has paid 🔴
 | | |
@@ -258,4 +257,4 @@ Stated plainly, per the Phase 1 instruction to say so rather than write a check 
 | C15 Stale chunks | 🟡 | 2 | Partial |
 | C17 Marketing claims | 🟡 | 11+ | Partial |
 
-**17 classes. 6 critical.** C2a is fixed (2026-08-30). **C2b remains open and unverified.**
+**17 classes. 6 critical.** C2a (PR #3) and C2b (PR #4) both confirmed and fixed on 2026-08-30.
