@@ -199,6 +199,35 @@ export async function findNumberSid(phoneNumber: string): Promise<string | null>
 }
 
 /** Release a purchased number by its SID. Used during provisioning rollback. */
+/**
+ * Look up a purchased number by E.164 address, including its trunk binding.
+ * A number with `trunkSid: null` never routes inbound PSTN into Retell — it
+ * just answers "incorrect number" (§8.5).
+ */
+export async function getNumberDetails(phoneNumber: string): Promise<{
+  sid: string;
+  phoneNumber: string;
+  trunkSid: string | null;
+} | null> {
+  if (isE2ETestMode()) {
+    return { sid: 'PNe2e', phoneNumber, trunkSid: 'TKe2e' };
+  }
+
+  const url = `${baseUrl()}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(phoneNumber)}`;
+  const res = await fetch(url, { headers: authHeader() });
+  if (!res.ok) throw new Error(`Twilio number lookup failed: ${await res.text()}`);
+
+  const body = await res.json() as { incoming_phone_numbers?: Array<Record<string, unknown>> };
+  const match = body.incoming_phone_numbers?.[0];
+  if (!match) return null;
+
+  return {
+    sid:         String(match['sid']),
+    phoneNumber: String(match['phone_number']),
+    trunkSid:    typeof match['trunk_sid'] === 'string' ? match['trunk_sid'] : null,
+  };
+}
+
 export async function releaseNumber(phoneNumberSid: string): Promise<void> {
   if (isE2ETestMode()) {
     return;

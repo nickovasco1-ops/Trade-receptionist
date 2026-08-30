@@ -21,7 +21,8 @@ import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
-import { sendTrialReminderEmail } from './services/resend';
+import { sendTrialReminderEmail, sendEmail } from './services/resend';
+import { runTenantIntegrityCheck } from './services/tenant-integrity';
 import type { Call, Client } from '../../shared/types';
 
 const app  = express();
@@ -158,6 +159,58 @@ app.use('/bookings',     bookingsRouter);
 app.use('/auth',         authRouter);
 app.use('/billing',      billingRouter);
 app.use('/retell-tools', retellToolsRouter);
+
+// ── POST /admin/check-tenant-integrity ───────────────────────────────────────
+// Diffs Stripe <-> Supabase <-> Retell <-> Twilio and reports tenants whose
+// product is not actually working: no agent, no number, number not on the SIP
+// trunk, number not imported into Retell, or a churned subscription still being
+// served. Read-only — it never repairs, because repairs differ per fault and
+// some spend money.
+//
+// Intended to run daily via the same external cron as the other /admin routes.
+// Set INTEGRITY_ALERT_EMAIL to have critical findings emailed; without it the
+// report is returned and logged only.
+//
+// Provisioning has no transaction across the four systems and provisionClient()
+// fails silently to the customer, so this is the only thing standing between a
+// half-provisioned tenant and a customer complaint.
+app.post('/admin/check-tenant-integrity', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const report = await runTenantIntegrityCheck();
+    const critical = report.findings.filter((f) => f.severity === 'critical');
+
+    const alertTo = process.env.INTEGRITY_ALERT_EMAIL;
+    if (critical.length && alertTo) {
+      const rows = critical
+        .map((f) => `<li><strong>${f.businessName}</strong> (${f.ownerEmail}) — ${f.code}: ${f.detail}</li>`)
+        .join('');
+      try {
+        await sendEmail({
+          to:      alertTo,
+          subject: `[Trade Receptionist] ${critical.length} tenant(s) not working`,
+          html:    `<p>${critical.length} critical finding(s) across ${report.tenantsChecked} serviceable tenant(s):</p><ul>${rows}</ul>`,
+        });
+      } catch (err: unknown) {
+        logEvent('error', 'integrity.alert_email_failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    res.json({ success: true, data: report });
+  } catch (err: unknown) {
+    logEvent('error', 'integrity.check_failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    res.status(500).json({ success: false, error: 'Integrity check failed' });
+  }
+});
 
 // ── POST /admin/send-trial-reminders ─────────────────────────────────────────
 // Queries trialing clients whose account is 8–10 days old and emails a card-add

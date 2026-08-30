@@ -454,6 +454,48 @@ export async function importTwilioNumber(
  * Assign (or reassign) a Retell-managed phone number to a different agent.
  * Useful if the number was imported without an agent ID, or to re-assign later.
  */
+/**
+ * Fetch an agent by id. Returns null on 404 so callers can distinguish
+ * "agent missing at Retell" from "request failed" — used by the tenant
+ * integrity check to spot a client whose retell_agent_id points at nothing.
+ */
+export async function getRetellAgent(agentId: string): Promise<Record<string, unknown> | null> {
+  if (isE2ETestMode()) return { agent_id: agentId };
+
+  const res = await fetch(`${BASE_URL}/get-agent/${encodeURIComponent(agentId)}`, {
+    headers: headers(),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Retell getAgent failed: ${await res.text()}`);
+  return await res.json() as Record<string, unknown>;
+}
+
+/**
+ * Every phone number Retell knows about, with the agents bound to each.
+ * A `clients.twilio_number` absent from this list is a tenant whose calls do
+ * not route — the exact state Derbyshire Renewables sat in from 2026-07-02.
+ */
+export async function listRetellPhoneNumbers(): Promise<Array<{
+  phone_number: string;
+  inbound_agent_ids: string[];
+}>> {
+  if (isE2ETestMode()) return [];
+
+  const res = await fetch(`${BASE_URL}/list-phone-numbers`, { headers: headers() });
+  if (!res.ok) throw new Error(`Retell listPhoneNumbers failed: ${await res.text()}`);
+
+  const body = await res.json() as Array<Record<string, unknown>>;
+  return body.map((n) => {
+    const agents = Array.isArray(n['inbound_agents']) ? n['inbound_agents'] as Array<Record<string, unknown>> : [];
+    return {
+      phone_number: String(n['phone_number'] ?? ''),
+      inbound_agent_ids: agents
+        .map((a) => a['agent_id'])
+        .filter((id): id is string => typeof id === 'string'),
+    };
+  });
+}
+
 export async function assignAgentToNumber(
   phoneNumber: string,
   agentId:     string

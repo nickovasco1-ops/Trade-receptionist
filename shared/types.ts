@@ -23,6 +23,14 @@ export type BookingStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 
 export type NumberMode = 'new_number' | 'keep_existing';
 
+/** Mirrors the clients_subscription_status_check constraint. */
+export type SubscriptionStatus =
+  | 'trialing' | 'active' | 'past_due' | 'canceled'
+  | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'paused';
+
+/** Mirrors the clients_payment_status_check constraint. */
+export type PaymentStatus = 'current' | 'failed' | 'canceled';
+
 export interface Client {
   id: string;
   business_name: string;
@@ -36,6 +44,16 @@ export interface Client {
   google_refresh_token: string | null;
   plan: Plan;
   is_active: boolean;
+  onboarding_complete: boolean;
+  // Stripe lifecycle (migration 011). These existed in the DB but not on this
+  // type, so server code touching them had to cast around the gap.
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_status: SubscriptionStatus | null;
+  payment_status: PaymentStatus | null;
+  current_period_end: string | null;
+  last_payment_at: string | null;
+  last_payment_failed_at: string | null;
   created_at: string;
   updated_at: string;
 }
