@@ -102,8 +102,15 @@ export default [
     title: 'Every tenant-scoped table has RLS enabled AND at least one policy',
     fn: async () => {
       const db = admin();
-      if (!db) {
-        return { status: BLOCKED, evidence: evidence('supabase client', 'SUPABASE_URL / SERVICE_ROLE_KEY not set', 1) };
+      const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '';
+      if (!db || !anonKey) {
+        // Without an anon key every request 401s and returns no rows, which
+        // would read as perfect isolation. Refuse to draw that conclusion.
+        return {
+          status: BLOCKED,
+          evidence: evidence('supabase client', 'SUPABASE_URL / SERVICE_ROLE_KEY / ANON_KEY not all set — an absent anon key makes every read return nothing, which would pass for the wrong reason', 1),
+          detail: 'Needs an anon key to distinguish "RLS denied it" from "the request was never authorised at all".',
+        };
       }
 
       // pg_policies is not reachable over PostgREST, so probe behaviourally
@@ -115,7 +122,7 @@ export default [
 
       for (const table of TABLES) {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&limit=1`, {
-          headers: { apikey: process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '' },
+          headers: { apikey: anonKey },
         }).catch(() => null);
         if (!res) { lines.push(`${table}: request failed`); continue; }
         const body = await res.text();
@@ -123,6 +130,14 @@ export default [
         const n = Array.isArray(rows) ? rows.length : 'n/a';
         lines.push(`${table}: HTTP ${res.status}, rows=${n}`);
         if (Array.isArray(rows) && rows.length > 0) leaks.push(table);
+      }
+
+      if (lines.every((l) => l.includes('request failed'))) {
+        return {
+          status: BLOCKED,
+          evidence: evidence(`GET ${SUPABASE_URL}/rest/v1/<table> (anon key, no JWT)`, lines.join('\n'), 1),
+          detail: 'Every request failed, so no isolation conclusion can be drawn.',
+        };
       }
 
       return {

@@ -22,7 +22,7 @@ const PRODUCT_BROKEN = new Set([
 
 async function integrityReport() {
   if (!ADMIN_KEY) return { blocked: 'ADMIN_API_KEY not set' };
-  const { res, ev } = await httpProbe(`${API_BASE}/admin/check-tenant-integrity`, {
+  const { res, body, ev } = await httpProbe(`${API_BASE}/admin/check-tenant-integrity`, {
     method: 'POST',
     headers: { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' },
     body: '{}',
@@ -30,7 +30,7 @@ async function integrityReport() {
   }, 'POST /admin/check-tenant-integrity');
   if (!res || !res.ok) return { blocked: `endpoint returned ${res?.status ?? 'nothing'}`, ev };
   try {
-    const json = JSON.parse(ev.output.split('\n').slice(1).join('\n'));
+    const json = JSON.parse(body);
     return { report: json.report ?? json, ev };
   } catch (err) {
     return { blocked: `unparseable response: ${err.message}`, ev };
@@ -116,10 +116,10 @@ export default [
     id: 'providers.credentials_live', cls: 'C9', severity: HIGH,
     title: 'Provider credentials are configured and accepted',
     fn: async () => {
-      const { res, ev } = await httpProbe(`${API_BASE}/health/integrations`, {}, 'GET /health/integrations');
+      const { res, body, ev } = await httpProbe(`${API_BASE}/health/integrations`, {}, 'GET /health/integrations');
       if (!res || !res.ok) return { status: BLOCKED, evidence: ev, detail: 'API unreachable.' };
 
-      const live = JSON.parse(ev.output.split('\n').slice(1).join('\n'));
+      const live = JSON.parse(body);
       const flat = [];
       for (const [group, vals] of Object.entries(live)) {
         for (const [name, set] of Object.entries(vals)) flat.push([`${group}.${name}`, set]);
@@ -130,6 +130,7 @@ export default [
       // weeks (143 Sentry events), so exercise it if we hold one.
       let resendLine = 'resend liveness: not checked (no RESEND_API_KEY available here)';
       let resendDead = false;
+      let resendUnverified = !process.env.RESEND_API_KEY;
       if (process.env.RESEND_API_KEY) {
         const probe = await httpProbe('https://api.resend.com/domains', {
           headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
@@ -142,11 +143,22 @@ export default [
       const out = [...flat.map(([k, v]) => `${k}: ${v ? 'set' : 'UNSET'}`), resendLine].join('\n');
       const bad = unset.length > 0 || resendDead;
 
+      if (bad) {
+        return {
+          status: FAIL,
+          evidence: evidence('GET /health/integrations + provider liveness probe', out, 1),
+          detail: [unset.length ? `unset: ${unset.join(', ')}` : '', resendDead ? 'Resend key rejected' : ''].filter(Boolean).join('; '),
+        };
+      }
+
+      // Presence is not liveness. A Resend key sat present-and-401ing for 11
+      // weeks (143 Sentry events); reporting "configured" as PASS would repeat
+      // exactly that blind spot.
       return {
-        status: bad ? FAIL : PASS,
-        evidence: evidence('GET /health/integrations + provider liveness probe', out, bad ? 1 : 0),
-        detail: bad
-          ? [unset.length ? `unset: ${unset.join(', ')}` : '', resendDead ? 'Resend key rejected' : ''].filter(Boolean).join('; ')
+        status: resendUnverified ? BLOCKED : PASS,
+        evidence: evidence('GET /health/integrations + provider liveness probe', out, resendUnverified ? 1 : 0),
+        detail: resendUnverified
+          ? 'All credentials are configured, but none was exercised: no RESEND_API_KEY here to prove a key is still accepted. Configured is not the same as working.'
           : 'All integration credentials configured; Resend accepted our key.',
       };
     },

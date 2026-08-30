@@ -125,11 +125,11 @@ export default [
         `grep -rhoE "process\\.env\\.[A-Z0-9_]+" ${repoRoot}/server/src | sed 's/process\\.env\\.//' | sort -u`]);
       const referenced = grep.output.split('\n').map((s) => s.trim()).filter(Boolean);
 
-      const { res, ev } = await httpProbe(`${API_BASE}/health/integrations`, {}, `GET ${API_BASE}/health/integrations`);
+      const { res, body, ev } = await httpProbe(`${API_BASE}/health/integrations`, {}, `GET ${API_BASE}/health/integrations`);
       if (!res || !res.ok) {
         return { status: BLOCKED, evidence: ev, detail: 'Could not reach the production API to read configured integrations.' };
       }
-      const live = JSON.parse(ev.output.split('\n').slice(1).join('\n'));
+      const live = JSON.parse(body);
 
       // Map the booleans the endpoint exposes onto the env var names they represent.
       const COVERED = {

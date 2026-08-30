@@ -112,8 +112,10 @@ export async function httpProbe(url, init = {}, label) {
   try {
     const res = await fetch(url, { ...init, signal: AbortSignal.timeout(init.timeoutMs ?? 20_000) });
     const body = await res.text();
-    return { res, ev: evidence(command, `HTTP ${res.status}\n${body.slice(0, 1200)}`, res.ok ? 0 : 1) };
+    // `body` is returned untruncated alongside the display-capped evidence:
+    // callers that parse JSON must never be defeated by the display cap.
+    return { res, body, ev: evidence(command, `HTTP ${res.status}\n${body.slice(0, 1200)}`, res.ok ? 0 : 1) };
   } catch (err) {
-    return { res: null, ev: evidence(command, `request failed: ${err.message}`, 1) };
+    return { res: null, body: '', ev: evidence(command, `request failed: ${err.message}`, 1) };
   }
 }

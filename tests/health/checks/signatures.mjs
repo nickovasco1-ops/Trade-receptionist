@@ -24,8 +24,24 @@ export default [
     id: 'sig.retell_tools_rejects_forged', cls: 'C2', severity: CRITICAL,
     title: 'retell-tools rejects unsigned and legacy-HMAC requests',
     fn: async () => {
-      const legacy = crypto.createHmac('sha256', process.env.RETELL_API_KEY ?? 'unknown')
-        .update(toolBody).digest('hex');
+      // The decisive case is the legacy scheme, and forging it needs the real
+      // key. Without it we would send a signature that is wrong under *both*
+      // schemes, production would reject it for the wrong reason, and the check
+      // would report a false green — which is the failure mode this whole
+      // system exists to prevent. So: no key, no verdict.
+      const key = (process.env.RETELL_API_KEY ?? '').trim();
+      if (!key) {
+        return {
+          status: BLOCKED,
+          evidence: evidence('POST /retell-tools/check-availability (legacy-HMAC forgery)',
+            'RETELL_API_KEY not available, so a legacy-scheme signature cannot be constructed. '
+            + 'Sending an arbitrary digest would be rejected regardless of whether the bug is present, '
+            + 'so this would pass for the wrong reason.', 1),
+          detail: 'Needs RETELL_API_KEY to forge a legacy signature. Refusing to report a pass that would not distinguish a fixed server from a broken one.',
+        };
+      }
+
+      const legacy = crypto.createHmac('sha256', key).update(toolBody).digest('hex');
 
       const cases = [
         ['no signature header', {}],
