@@ -148,7 +148,9 @@ export default [
 
       const offenders = scan.split('\n').map((s) => s.trim()).filter(Boolean)
         .map((f) => path.relative(repoRoot, f))
-        .filter((f) => !ALLOWED.has(f));
+        // Test files legitimately construct signatures in order to forge them;
+        // the rule is about what the *server* trusts, not what tests build.
+        .filter((f) => !ALLOWED.has(f) && !/\.test\.ts$/.test(f));
 
       return {
         status: offenders.length ? FAIL : PASS,
