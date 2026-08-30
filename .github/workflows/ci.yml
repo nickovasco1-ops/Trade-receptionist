@@ -85,6 +85,10 @@ jobs:
           STRIPE_EXPIRY=12/34
           STRIPE_CVC=123
           STRIPE_ZIP=SW1A1AA
+          # The API now FAILS CLOSED without this (failure catalogue C2a): an
+          # unsigned request used to skip verification entirely. The value only
+          # has to match what the test process signs with — both load this file.
+          STRIPE_WEBHOOK_SECRET=whsec_ci_signing_secret
           SUPABASE_URL=${{ secrets.TEST_SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.TEST_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}

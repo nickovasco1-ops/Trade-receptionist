@@ -135,6 +135,52 @@ test.describe('Stripe webhooks', () => {
     await expect(response.json()).resolves.toMatchObject({ received: true });
   });
 
+  /**
+   * Failure catalogue C2a. The route guarded with
+   * `secret && sigHeader && !verify(...)`, so omitting the header skipped
+   * verification altogether — even with STRIPE_WEBHOOK_SECRET correctly set.
+   * An unauthenticated caller could therefore drive provisionClient(), which
+   * buys a Twilio number and creates a Supabase auth user.
+   *
+   * These two assert the *side effect*, not the status code. Stripe always gets
+   * a 200 (we ack before verifying, to stop retry storms), so a status
+   * assertion alone cannot tell acceptance from rejection.
+   */
+  test('unsigned checkout.session.completed provisions nothing', async () => {
+    const email = uniqueEmail('stripe-unsigned');
+    const event = checkoutSessionCompleted(email, 'pro');
+
+    try {
+      // No stripe-signature header at all — the forgery path.
+      const response = await postJsonWebhook('/webhooks/stripe', event, {});
+      expect(response.status).toBe(200);
+
+      // Give the fire-and-forget handler room to do the wrong thing.
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      expect(await getClientByEmail(email)).toBeNull();
+    } finally {
+      await cleanupTestUserAndData(email);
+    }
+  });
+
+  test('checkout.session.completed signed with the wrong secret provisions nothing', async () => {
+    const email = uniqueEmail('stripe-wrongsecret');
+    const event = checkoutSessionCompleted(email, 'pro');
+    const raw = JSON.stringify(event);
+
+    try {
+      const response = await postJsonWebhook('/webhooks/stripe', event, {
+        'stripe-signature': stripeSignature(raw, 'whsec_not_the_real_secret'),
+      });
+      expect(response.status).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      expect(await getClientByEmail(email)).toBeNull();
+    } finally {
+      await cleanupTestUserAndData(email);
+    }
+  });
+
   test('signed harmless event is acknowledged without provisioning side effects', async () => {
     const event = {
       id: uniqueId('evt_harmless'),
