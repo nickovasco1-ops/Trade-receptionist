@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabase';
 import { getCall, postCallWorkflow } from '../../services/retell';
 import type { ApiResponse, Call, Client, LeadInsert } from '../../../../shared/types';
 import { logEvent, errorMessage } from '../../lib/observability';
+import { requireAdmin, requireUser, ownedClientIds } from '../../middleware/auth';
 
 function bearerToken(req: Request): string | null {
   const auth = req.headers.authorization;
@@ -28,7 +29,7 @@ async function getOwnerEmail(req: Request, res: Response): Promise<string | null
 
 const router = Router();
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', requireUser, async (req: Request, res: Response) => {
   const { client_id, limit = '50', page = '1' } = req.query as Record<string, string>;
 
   const pageNum = Math.max(1, parseInt(page, 10));
@@ -42,7 +43,16 @@ router.get('/', async (req: Request, res: Response) => {
     .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (client_id) {
+  // Without this scoping a caller omitting client_id received every tenant's
+  // calls — the service-role key bypasses RLS, so this is the only boundary.
+  if (!res.locals.isAdmin) {
+    const ids = await ownedClientIds(res);
+    if (!ids.length) {
+      res.json({ success: true, data: [], meta: { total: 0, page: pageNum, limit: limitNum } } satisfies ApiResponse<Call[]>);
+      return;
+    }
+    query = query.in('client_id', client_id && ids.includes(client_id) ? [client_id] : ids);
+  } else if (client_id) {
     query = query.eq('client_id', client_id);
   }
 
@@ -60,12 +70,22 @@ router.get('/', async (req: Request, res: Response) => {
   } satisfies ApiResponse<Call[]>);
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
-  const { data, error } = await supabase
+router.get('/:id', requireUser, async (req: Request, res: Response) => {
+  let detailQuery = supabase
     .from('calls')
     .select('*')
-    .eq('id', String(req.params['id']))
-    .single();
+    .eq('id', String(req.params['id']));
+
+  if (!res.locals.isAdmin) {
+    const ids = await ownedClientIds(res);
+    if (!ids.length) {
+      res.status(404).json({ success: false, error: 'Call not found' } satisfies ApiResponse);
+      return;
+    }
+    detailQuery = detailQuery.in('client_id', ids);
+  }
+
+  const { data, error } = await detailQuery.maybeSingle();
 
   if (error || !data) {
     res.status(404).json({ success: false, error: 'Call not found' } satisfies ApiResponse);
@@ -152,7 +172,7 @@ router.get('/:id/recording', async (req: Request, res: Response) => {
 // POST /calls/backfill/:retell_call_id
 // Fetch a call from Retell API and process it as if the call_ended webhook had fired.
 // Use this to recover any call that didn't get processed (e.g. webhook delivery failure).
-router.post('/backfill/:retell_call_id', async (req: Request, res: Response) => {
+router.post('/backfill/:retell_call_id', requireAdmin, async (req: Request, res: Response) => {
   const retell_call_id = req.params['retell_call_id'] as string;
 
   // Check if already processed

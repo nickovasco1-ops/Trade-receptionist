@@ -877,9 +877,19 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
       if (configErr) throw new Error(configErr.message);
 
+      // /clients/rebuild-agent is tenant-scoped server-side, so it needs the
+      // caller's Supabase JWT — without it the activation step 401s.
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        throw new Error('Your session has expired. Please sign in again to finish activation.');
+      }
+
       const rebuildResponse = await fetch('/api/clients/rebuild-agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ clientId }),
       });
 

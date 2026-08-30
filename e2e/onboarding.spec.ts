@@ -244,6 +244,11 @@ test('receptionist, business, services, hours, contact, and ready steps can be c
     );
     await page.getByRole('button', { name: /activate trade receptionist/i }).click();
     await rebuildRequest;
+
+    // Activation ends on a "receptionist is live" confirmation offering a
+    // 15-minute setup call — the dashboard is one click away, not automatic.
+    await expect(page.getByText(/your receptionist is live/i)).toBeVisible();
+    await page.getByRole('button', { name: /skip for now/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
     expect(rebuildBody).toMatchObject({ clientId: account.clientId });
@@ -261,7 +266,9 @@ test('receptionist, business, services, hours, contact, and ready steps can be c
       service_areas: ['South London'],
       business_hours_start: '07:30:00',
       business_hours_end: '17:30:00',
-      working_days: [1, 2, 3, 4, 5],
+      // Onboarding defaults to the 24/7 preset (ALL_DAYS) since b118e05; the
+      // hours step here only sets start/end, so the default day set persists.
+      working_days: [1, 2, 3, 4, 5, 6, 0],
     });
 
     const config = await getBusinessConfig(account.clientId!);
@@ -348,6 +355,8 @@ test('provider failure during rebuild-agent shows a user-facing error and retry 
     });
 
     await page.getByRole('button', { name: /activate trade receptionist/i }).click();
+    await expect(page.getByText(/your receptionist is live/i)).toBeVisible();
+    await page.getByRole('button', { name: /skip for now/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     expect(attempts).toBe(2);
 

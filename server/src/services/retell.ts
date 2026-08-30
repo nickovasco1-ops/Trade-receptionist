@@ -432,13 +432,19 @@ export async function importTwilioNumber(
     throw new Error('RETELL_SIP_TERMINATION_URI required for number import');
   }
 
+  // Retell removed the single-agent phone-number fields (`inbound_agent_id` et al)
+  // on 2026-03-31 in favour of weighted agent lists. Sending the old field now
+  // hard-fails the import, which left tenants with a purchased Twilio number that
+  // never routed into an agent. Omitting `agent_version` binds the number to the
+  // agent's latest version, so prompt rebuilds apply without re-importing.
+  // https://docs.retellai.com/deprecation-notice/2026/03-31_phone_number_agent_fields
   const res = await fetch(`${BASE_URL}/import-phone-number`, {
     method:  'POST',
     headers: headers(),
     body:    JSON.stringify({
-      phone_number:     phoneNumber,
-      termination_uri:  terminationUri,
-      inbound_agent_id: agentId,
+      phone_number:    phoneNumber,
+      termination_uri: terminationUri,
+      inbound_agents:  [{ agent_id: agentId, weight: 1 }],
     }),
   });
   if (!res.ok) throw new Error(`Retell importPhoneNumber failed: ${await res.text()}`);
@@ -456,11 +462,13 @@ export async function assignAgentToNumber(
     return;
   }
 
+  // Same weighted-agent-list migration as importTwilioNumber above — the old
+  // single-agent field is rejected outright, so this repair path failed too.
   const encoded = encodeURIComponent(phoneNumber);
   const res = await fetch(`${BASE_URL}/update-phone-number/${encoded}`, {
     method:  'PATCH',
     headers: headers(),
-    body:    JSON.stringify({ agent_id: agentId }),
+    body:    JSON.stringify({ inbound_agents: [{ agent_id: agentId, weight: 1 }] }),
   });
   if (!res.ok) throw new Error(`Retell assignAgent failed: ${await res.text()}`);
 }

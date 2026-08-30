@@ -60,6 +60,55 @@ The visual metaphor is **a master craftsman's workshop**: warm industrial lighti
 | Trust signal | "14-day free trial. No card required." | "Free trial available" |
 | Urgency line | "While you read this, a competitor is answering their calls." | "Don't miss out!" |
 
+### §1.1 — Claims & substantiation (legal floor, not a style preference)
+
+UK consumer law applies to every number on the marketing site. The **DMCC Act 2024**
+gave the CMA direct enforcement powers from April 2025 — fines up to **10% of global
+turnover, without going to court**. Fake reviews and fake consumer-volume claims are
+listed in Schedule 20 as *automatically unfair* practices. The **CAP Code** separately
+requires the advertiser to *hold documentary evidence* for any objective claim.
+
+**The rule: every number on a marketing surface must be checkable against either
+(a) `src/lib/plans.ts` / shipped product behaviour, or (b) a named, independent,
+citable source. If it is neither, it does not ship.**
+
+Prohibited without evidence in hand:
+
+| Class | Examples | Why |
+|---|---|---|
+| Performance metrics | "98.7% answer rate" | Needs a real denominator. As of 2026-08-11 the DB holds 29 calls total — no basis for 3-sig-fig precision. |
+| Customer volume | "500+ UK tradespeople", "Join 500+" | DB holds **7 clients, 0 paying**. |
+| Superlatives | "The UK's #1…", "Britain's best" | Unsubstantiable comparative — needs market-share evidence. |
+| Aggregate outcomes | "£4,200 revenue recovered/yr" | Implies a customer result we have not measured. |
+| Third-party statistics | "27% never ring back", "3 in 5 jobs" | Must cite a named independent source. **Vendor/agency marketing blogs are not evidence** — most "missed call cost" figures online trace back to competitors' own press releases. |
+
+**Testimonials**: only from real customers who have given permission, quoted
+accurately, with their actual trade. Never invent a name, company or location.
+Never attach a star rating the customer did not give.
+
+**Preferred alternative to a fabricated statistic** — a transparent worked example
+whose assumptions are visible on screen (this is what `Calculator.tsx` does). An
+arithmetic model the visitor can check is not a claim about the world, and carries
+no substantiation burden. State the inputs, never present the output as research.
+
+> Swept on 2026-08-11: removed "500+", "98.7%" (×3, incl. a customer-facing Resend
+> template) and "UK's #1". `CLAUDE_CODE_PROMPT.md` was also corrected — it had been
+> *prescribing* these figures, which is how they entered the codebase.
+
+**The £4,200 figure** is now a *stated assumption*, not a statistic: "miss one £350
+job a month and that's £4,200 a year" (£350 × 12 = £4,200). Keep that framing — the
+bare number with an "avg. UK tradesperson" label is a research claim we cannot
+evidence. `Calculator.tsx` defaults were retuned from 6 missed calls/week (~£30,600/yr,
+7× the headline) to 1/week (~£5,040/yr) so the two figures agree; if you change one,
+change the other. Searched 2026-08-11: **no independent source for £4,200 exists**,
+and the £24k–£45k figures circulating online all trace back to competitors' own
+marketing blogs — do not cite them.
+
+> ⚠️ **Still outstanding**: `PAIN_STATS` and `ROI_STATS` in `App.tsx` carry
+> "27% of callers never ring back" and "3 in 5 jobs go to whoever answers first",
+> both uncited third-party statistics. They need a named independent source or the
+> same worked-example treatment. Not yet actioned as of v3.2.
+
 ---
 
 ## §2 — Surface Map (the repo holds three things)
@@ -333,7 +382,7 @@ If a section would look at home on a basic Webflow template, it needs more motio
   inline-flex items-center gap-2.5
   px-7 py-4
   bg-gradient-to-r from-orange to-orange-glow
-  text-white font-semibold text-[15px] tracking-[-0.01em]
+  text-void font-semibold text-[15px] tracking-[-0.01em]
   rounded-button
   shadow-orange-glow
   hover:shadow-orange-glow-lg hover:-translate-y-0.5
@@ -345,6 +394,14 @@ If a section would look at home on a basic Webflow template, it needs more motio
   Start Free Trial
 </button>
 ```
+
+> **The label is `text-void`, not `text-white` — do not "fix" this back.** White on
+> the orange CTA gradient measures **2.80:1** at the dark stop and **2.06:1** at the
+> light stop; both fail WCAG AA (15px semibold is normal text, so the floor is 4.5:1).
+> Void gives **6.98:1 / 9.49:1** with the brand orange completely unchanged, and
+> dark-on-orange is the hi-vis safety convention — more on-brand for trades, not less.
+> Swept across all 8 CTA sites on 2026-08-11 (marketing `Button`, dashboard `Button`,
+> `ErrorFallback`, `NotFoundPage`, `LoginPage`, `PartnerPage` ×3, pricing toggle).
 
 ### 5.3 Secondary CTA
 
@@ -609,7 +666,8 @@ server/src/
 
 ### 8.4 Supabase
 
-- Schema lives in `supabase/migrations/*.sql` (17 migrations as of 2026-08-06). Treat migrations as append-only; never edit a committed migration — write a new one.
+- Schema lives in `supabase/migrations/*.sql` (18 migrations as of 2026-08-30). Treat migrations as append-only; never edit a committed migration — write a new one.
+- **A `CHECK (col IN (...))` constraint is part of the type.** Widening a union in `shared/types.ts` without a matching migration produces a runtime insert failure, not a compile error. See the 018 landmine in §10.
 - Six tables: `clients`, `business_config`, `calls`, `transcripts`, `leads`, `bookings`. Full list + purpose in §8.9.
 - RLS policies exist on all six (added incrementally — `transcripts` had none until migration 015, a real bug that shipped: the dashboard silently showed zero transcripts for months). Any new table needs RLS policies **in the same migration**, not a follow-up.
 - **RLS only governs the browser client.** `src/lib/supabase.ts` uses the anon key + user JWT, so RLS (`owner_email = auth.jwt() ->> 'email'`) is the real tenant boundary there. `server/src/services/supabase.ts` uses the **service-role key**, which bypasses RLS completely — every server route that returns tenant data must filter by `owner_email`/`client_id` in application code. There is no database-level backstop for a missing `.eq('client_id', ...)` in a server route.
@@ -669,7 +727,7 @@ Six tables (`supabase/migrations/002_revised_schema.sql` onward — `001_initial
 
 | Table | Purpose | Notable columns added later |
 |---|---|---|
-| `clients` | One row per tenant | `own_number` (003), `onboarding_complete` (005), Stripe lifecycle columns — `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `payment_status`, `current_period_end` (011), lowercased-email trigger (012) |
+| `clients` | One row per tenant | `own_number` (003), `onboarding_complete` (005), Stripe lifecycle columns — `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `payment_status`, `current_period_end` (011), lowercased-email trigger (012), `plan` check widened to include `'business'` (018) |
 | `business_config` | Per-tenant hours/tone/pricing | `receptionist_tone` (006), `after_hours_message` (007), `avg_job_value` (013, default 250 — feeds dashboard missed-revenue estimates) |
 | `calls` | One row per Retell call | — |
 | `transcripts` | Full call transcript | RLS policy only added in 015 (see §8.4) |
@@ -809,11 +867,16 @@ Lazy-load below-fold components (`AudioPlayer`, `Calculator`, `Testimonials`, `B
 | `App.tsx` | ~2,000 lines / 85KB. Violates the 800-line ceiling in §9.5. Splitting is desirable but high-risk because it owns hero, sections, and routing wiring. | Don't bulk-add to it. When you must touch it, propose extracting one section at a time into `components/sections/<Section>.tsx`. Never rewrite wholesale in a single PR. |
 | `tailwind.config.ts` vs `index.css` `@theme` | Two sources of token truth. Tailwind v4 reads CSS; the TS file is legacy. | Treat `index.css` as canonical. Mirror any token change into `tailwind.config.ts` so legacy tooling stays consistent. Do not delete the TS file without an audit. |
 | Legacy color aliases (`brand-*`, `tradeBlue.*`) | Older components still reference them. | Keep them. Don't "clean up" without a grep + replace pass. |
+| CTA gradient is **not** the documented brand orange | `components/UI.tsx` `Button` primary paints `linear-gradient(135deg, #F97316 0%, #F4A261 100%)` — neither stop is a §3.1 token (`#FF6B2B` → `#FF8C55`). The dashboard `Button` and the §5.2 recipe *do* use the tokens, so the primary CTA renders a different orange on marketing vs. dashboard. Found 2026-08-11 during the contrast audit. | Don't assume the documented token is what's on screen — measure the rendered value. Reconciling the two is desirable but is a visible brand change across every CTA, so it needs an explicit decision, not a drive-by edit. |
+| Marketing claims re-seeding from `CLAUDE_CODE_PROMPT.md` | That file used to *instruct* an agent to ship "98.7% answer rate", "500+ trades served" and "£4,200 avg. savings" as animated counters. Corrected 2026-08-11, but it is the reason those figures existed at all. | Treat `CLAUDE_CODE_PROMPT.md` as a live input to future sessions. If you remove a claim from code, remove it there too or it comes straight back. See §1.1. |
 | `components/AudioPlayer.tsx` | **Corrected 2026-08-06 — earlier versions of this file had this backwards.** It plays a static pre-generated `public/assets/generated/sample-call.wav` via `<audio>` + Web Audio API. It has **no runtime API dependency** — `@google/genai`/Gemini only runs at content-generation time via `npm run generate:demo-audio` (`scripts/generate-sample-call.mjs`), using a server-side `GEMINI_API_KEY`, never `VITE_GEMINI_API_KEY`. | Don't reintroduce a live browser-side Gemini call. To refresh the demo audio, regenerate the file and commit it; don't wire the player to a live API. |
 | `components/WaitlistModal.tsx` | **Corrected 2026-08-06 — earlier versions of this file had this backwards.** It `POST`s to a live, hardcoded `script.google.com/macros/s/...` Google Apps Script URL. This **is** current production behaviour, not stale legacy — no Supabase-backed waitlist table exists. | If you migrate the waitlist to Supabase, update this row (and §8.5) in the same PR. Don't assume the Apps Script reference is dead code without checking. |
 | Twilio number flows | Two modes: provision new number, **or** keep customer's existing number (`clients.own_number`, migration 003). | Onboarding and call routing must handle both branches — `buildProvisionResponse()` in `routes/clients/index.ts` branches on this. `POST /clients/connect-number` is the repair path for numbers provisioned before the SIP-trunk-attach step existed. |
+| Retell phone-number agent fields | Retell **removed** the single-agent fields (`inbound_agent_id`, `outbound_agent_id`, `*_sms_agent_id`, and their `_version` siblings) on 2026-03-31 in favour of weighted lists (`inbound_agents: [{agent_id, weight}]`). `importTwilioNumber()` and `assignAgentToNumber()` still sent the old shape, so **every number import hard-failed** — the tenant got a purchased Twilio number that routed nowhere. Fixed 2026-08-30. | Retell ships breaking deprecations on a dated schedule; a working provisioning path can rot without any code change. When number routing breaks, check the deprecation notices before debugging our own code. Audit with `GET /list-phone-numbers` — any `clients.twilio_number` absent from that list is a tenant whose calls do not route. |
 | Webhook backfill | `POST /calls/backfill/:retell_call_id` and `POST /admin/sync-calls` replay missed Retell events by re-pulling from Retell's API. | When changing `routes/webhooks/retell.ts`, keep it idempotent — replays are a real, designed-for recovery path, not a hypothetical. |
-| Supabase migrations | Append-only, 17 files as of 2026-08-06 (see §8.9). Migration 001 created a schema that 002 immediately drops — don't treat 001 as representative of the live schema. | Never edit a committed migration. Add a new one. |
+| Supabase migrations | Append-only, 18 files as of 2026-08-30 (see §8.9). Migration 001 created a schema that 002 immediately drops — don't treat 001 as representative of the live schema. | Never edit a committed migration. Add a new one. |
+| `clients.plan` check constraint drifted from `Plan` | The four-tier scheme shipped in `shared/types.ts`, `src/lib/plans.ts` and `PRODUCT_TO_PLAN`, but the DB check still only allowed `starter\|pro\|agency`. **Every Business-tier (£159) checkout failed** at the `clients` insert in `provisionClient()` — customer charged, no tenant row, no agent, no number, no welcome email. Shipped undetected until a paying customer reported it 2026-08-30 (Sentry `TRADE-RECEPTIONIST-API-A`). Fixed by migration 018. | TypeScript union widening is invisible to Postgres. When adding a `Plan`/status/enum value, grep `pg_constraint` for a matching `CHECK` and write the migration in the same PR. |
+| `provisionClient()` fails silently to the customer | On any DB failure it logs to Sentry and `return`s. Stripe already got its `200`, so there is no retry and **no customer-facing signal** — the buyer is charged and simply gets nothing. Recovery is a manual webhook replay (sign `t.rawBody` with `STRIPE_WEBHOOK_SECRET` and POST the stored event to `/webhooks/stripe`; the `owner_email` idempotency check makes replay safe). | Treat any `stripe.webhook.db_persistence_failed` as a paying customer with a dead account, not a background error. It needs a same-day alert, not a dashboard someone reads later. |
 | Lenis | Initialised once in `index.tsx`, marketing route (`/`) only. | Don't re-initialise per page. Don't replace with native scroll. |
 | Float animation tax | `animate-float-*` runs forever. | Cap at 3 floating elements per section. Never on the dashboard. |
 | Stripe live key not in Railway | `STRIPE_SECRET_KEY_LIVE` is in `.env` locally but Railway still uses the old key. | Add `STRIPE_SECRET_KEY=sk_live_...` to Railway environment variables so production payments go live. |
@@ -996,6 +1059,9 @@ When this file disagrees with the code, the code is right. Reflect reality, then
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
+*v3.4 · 2026-08-30 — fixed `importTwilioNumber()`/`assignAgentToNumber()` for Retell's 2026-03-31 weighted-agent-list migration (the old `inbound_agent_id` field was failing every number import); exported `welcomeHtml` and added `server/src/scripts/send-welcome.ts` to re-send a welcome email out-of-band, since replaying a Stripe event hits the idempotency path and skips it; new §10 landmine for the Retell deprecation.*
+*v3.3 · 2026-08-30 — migration 018 widens `clients_plan_check` to include the `'business'` tier, which had been silently failing every £159 checkout since the four-tier scheme shipped; two new §10 landmines (type-vs-CHECK-constraint drift, and `provisionClient()`'s silent-failure mode); §8.4/§8.9 updated to 18 migrations.*
+*v3.2 · 2026-08-11 — added §1.1 (claims & substantiation: DMCC Act 2024 / CAP Code floor) after removing "500+", "98.7%" ×3 and "UK's #1" from source; §5.2 primary CTA label changed `text-white` → `text-void` (white measured 2.80:1 / 2.06:1 on the CTA gradient, failing AA) and swept across all 8 CTA sites; two new §10 landmines (undocumented CTA gradient `#F97316`/`#F4A261`, and `CLAUDE_CODE_PROMPT.md` re-seeding fabricated claims).*
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence

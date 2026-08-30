@@ -18,6 +18,11 @@ import {
   findNumberSid,
 } from '../../services/twilio';
 import { logEvent } from '../../lib/observability';
+import {
+  requireAdmin,
+  requireUser,
+  requireClientOwnership,
+} from '../../middleware/auth';
 import type {
   ApiResponse,
   Client,
@@ -169,7 +174,7 @@ function buildProvisionResponse(
 
 // ── Standard CRUD ─────────────────────────────────────────────────────────────
 
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', requireAdmin, async (_req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .select('*')
@@ -182,7 +187,7 @@ router.get('/', async (_req: Request, res: Response) => {
   res.json({ success: true, data } satisfies ApiResponse<Client[]>);
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', requireUser, requireClientOwnership, async (req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('clients')
     .select('*')
@@ -196,7 +201,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json({ success: true, data } satisfies ApiResponse<Client>);
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireAdmin, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, error: parsed.error.message } satisfies ApiResponse);
@@ -216,7 +221,7 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ success: true, data } satisfies ApiResponse<Client>);
 });
 
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', requireAdmin, async (req: Request, res: Response) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, error: parsed.error.message } satisfies ApiResponse);
@@ -424,7 +429,7 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   } satisfies ApiResponse);
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
   const { error } = await supabase.from('clients').delete().eq('id', req.params.id);
   if (error) {
     res.status(500).json({ success: false, error: error.message } satisfies ApiResponse);
@@ -450,7 +455,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 // If step 9 (Supabase update) fails, infrastructure is intact — the response
 // includes a warning and the IDs so the caller can patch manually.
 
-router.post('/provision', async (req: Request, res: Response) => {
+router.post('/provision', requireAdmin, async (req: Request, res: Response) => {
   const parsed = provisionSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, error: parsed.error.message } satisfies ApiResponse);
@@ -618,7 +623,7 @@ router.post('/provision', async (req: Request, res: Response) => {
 //                         Response includes activation_code with the USSD string.
 //   (omitted)           — new Twilio number becomes their advertised number.
 
-router.post('/:id/assign-number', async (req: Request, res: Response) => {
+router.post('/:id/assign-number', requireAdmin, async (req: Request, res: Response) => {
   const own_number: string | undefined = typeof req.body?.own_number === 'string'
     ? req.body.own_number
     : undefined;
@@ -721,7 +726,7 @@ router.post('/:id/assign-number', async (req: Request, res: Response) => {
 // Returns the USSD divert activation code for a client that has both a
 // twilio_number and an own_number set. Safe to call any time — idempotent.
 
-router.get('/:id/activation-code', async (req: Request, res: Response) => {
+router.get('/:id/activation-code', requireUser, requireClientOwnership, async (req: Request, res: Response) => {
   const { data: clientRow, error } = await supabase
     .from('clients')
     .select('id, twilio_number, own_number, business_name, owner_email')
@@ -766,15 +771,22 @@ router.get('/:id/activation-code', async (req: Request, res: Response) => {
 // Called by the frontend after onboarding saves new business_config data.
 // Fetches the latest client + config and pushes a fresh prompt to Retell.
 
-router.post('/rebuild-agent', async (req: Request, res: Response) => {
+router.post('/rebuild-agent', requireUser, async (req: Request, res: Response) => {
   const { clientId } = req.body as { clientId?: string };
   if (!clientId) {
     res.status(400).json({ success: false, error: 'clientId required' } satisfies ApiResponse);
     return;
   }
 
+  // clientId arrives in the body, so requireClientOwnership (which reads
+  // req.params.id) cannot guard this route — scope the lookup by owner instead.
+  let clientQuery = supabase.from('clients').select('*').eq('id', clientId);
+  if (!res.locals.isAdmin) {
+    clientQuery = clientQuery.eq('owner_email', res.locals.ownerEmail as string);
+  }
+
   const [{ data: client }, { data: config }] = await Promise.all([
-    supabase.from('clients').select('*').eq('id', clientId).single(),
+    clientQuery.maybeSingle(),
     supabase.from('business_config').select('*').eq('client_id', clientId).single(),
   ]);
 
@@ -988,7 +1000,7 @@ router.get('/:id/test-calendar', async (req: Request, res: Response) => {
 // step existed (their inbound calls fail with "incorrect number"). Idempotent —
 // the trunk attach treats "already attached" as success.
 
-router.post('/connect-number', async (req: Request, res: Response) => {
+router.post('/connect-number', requireAdmin, async (req: Request, res: Response) => {
   const { clientId } = req.body as { clientId?: string };
   if (!clientId) {
     res.status(400).json({ success: false, error: 'clientId required' } satisfies ApiResponse);

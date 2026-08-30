@@ -243,7 +243,12 @@ function verifyStripeSignature(rawBody: Buffer, signature: string, secret: strin
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
 
-function welcomeHtml(opts: {
+/**
+ * Exported so the welcome email can be re-sent out-of-band for a tenant whose
+ * provisioning failed part-way (see the `provisionClient()` landmine in §10) —
+ * replaying the Stripe event hits the idempotency path and will not re-send it.
+ */
+export function welcomeHtml(opts: {
   firstName:   string;
   plan:        string;
   phoneNumber: string | null;
