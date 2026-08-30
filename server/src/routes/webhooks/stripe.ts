@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
 import { supabase } from '../../services/supabase';
 import { sendEmail } from '../../services/resend';
 import { buildSystemPrompt, buildBeginMessage } from '../../lib/prompt-builder';
@@ -7,6 +6,7 @@ import { createRetellAgent, importTwilioNumber } from '../../services/retell';
 import { searchUkNumbers, buyUkNumber, attachNumberToTrunk } from '../../services/twilio';
 import { logSubscriber } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
+import { verifyStripeSignature } from './stripe-signature';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
@@ -216,28 +216,6 @@ async function planFromStripeSession(sessionId: string): Promise<Plan> {
     return PRODUCT_TO_PLAN[productId ?? ''] ?? 'starter';
   } catch {
     return 'starter';
-  }
-}
-
-// ── Signature verification ────────────────────────────────────────────────────
-
-function verifyStripeSignature(rawBody: Buffer, signature: string, secret: string): boolean {
-  const parts: Record<string, string> = {};
-  for (const part of signature.split(',')) {
-    const idx = part.indexOf('=');
-    if (idx > 0) parts[part.slice(0, idx)] = part.slice(idx + 1);
-  }
-
-  const { t: timestamp, v1 } = parts;
-  if (!timestamp || !v1) return false;
-
-  const payload  = `${timestamp}.${rawBody.toString('utf8')}`;
-  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
-  } catch {
-    return false;
   }
 }
 
@@ -658,8 +636,24 @@ router.post('/', async (req: Request, res: Response) => {
   // Always ack Stripe first — they retry on non-2xx
   res.status(200).json({ received: true });
 
-  if (secret && sigHeader && !verifyStripeSignature(rawBody, sigHeader, secret)) {
-    logEvent('warn', 'stripe.webhook.invalid_signature', { requestId: reqId, hasSignature: true });
+  // Fail closed. No configuration state and no absent header waves a request
+  // through — this endpoint provisions tenants and spends money on Twilio
+  // numbers, so an unverified caller must never reach the switch below.
+  if (!secret) {
+    // Error-level: this is a deployment fault that silently stops all billing
+    // events (signups, renewals, cancellations) from being processed.
+    logEvent('error', 'stripe.webhook.secret_missing', {
+      requestId: reqId,
+      action: 'set STRIPE_WEBHOOK_SECRET — all Stripe webhooks are being rejected',
+    });
+    return;
+  }
+
+  if (!sigHeader || !verifyStripeSignature(rawBody, sigHeader, secret)) {
+    logEvent('warn', 'stripe.webhook.invalid_signature', {
+      requestId: reqId,
+      hasSignature: Boolean(sigHeader),
+    });
     return;
   }
 

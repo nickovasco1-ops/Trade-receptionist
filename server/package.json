@@ -9,7 +9,7 @@
     "dev": "tsx watch --env-file=../.env src/index.ts",
     "build": "tsc",
     "start": "node dist/server/src/index.js",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
