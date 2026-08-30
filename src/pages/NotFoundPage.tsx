@@ -31,7 +31,7 @@ export default function NotFoundPage() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-btn font-semibold text-[14px] text-white font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 ease-mechanical"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-btn font-semibold text-[14px] text-void font-body bg-gradient-to-r from-orange to-orange-glow shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 transition-all duration-300 ease-mechanical"
           >
             Back to homepage
           </Link>

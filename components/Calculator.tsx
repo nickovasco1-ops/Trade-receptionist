@@ -144,7 +144,13 @@ function Divider() {
 const STARTER_MONTHLY = 49;
 
 export function Calculator() {
-  const [missedPerWeek, setMissedPerWeek] = useState(6);
+  // Defaults are deliberately conservative so the opening figure sits near the
+  // £4,200/yr the page opens with (1 × 280 × 0.35 × 4.33 ≈ £420/mo ≈ £5,040/yr).
+  // They previously defaulted to 6 missed calls/week, which output ~£30,600/yr —
+  // 7× the headline. A visitor who spots that gap reads the whole page as invented,
+  // which costs more trust than the bigger number buys. Only raise these with a
+  // matching change to the headline figure in App.tsx. §1.1
+  const [missedPerWeek, setMissedPerWeek] = useState(1);
   const [jobValue, setJobValue] = useState(280);
   const [conversionPct, setConversionPct] = useState(35);
 

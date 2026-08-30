@@ -33,7 +33,7 @@ export default function ErrorFallback({ onReset }: ErrorFallbackProps) {
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-2.5 rounded-button bg-gradient-to-r from-orange to-orange-glow px-7 py-4 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-orange-glow transition-all duration-300 ease-mechanical hover:-translate-y-0.5 hover:shadow-orange-glow-lg active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+          className="inline-flex items-center gap-2.5 rounded-button bg-gradient-to-r from-orange to-orange-glow px-7 py-4 text-[15px] font-semibold tracking-[-0.01em] text-void shadow-orange-glow transition-all duration-300 ease-mechanical hover:-translate-y-0.5 hover:shadow-orange-glow-lg active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
         >
           Try again
         </button>

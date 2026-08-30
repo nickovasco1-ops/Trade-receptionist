@@ -354,7 +354,7 @@ function trialReminderHtml(data: TrialReminderEmailData): string {
         <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
           <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6B7280;letter-spacing:0.08em;text-transform:uppercase;font-family:sans-serif">What you keep</p>
           <ul style="margin:0;padding-left:0;list-style:none">
-            ${['98.7% of calls answered — not missed', 'Job details texted straight to your phone', 'Spam and time-wasters filtered automatically', 'No new number needed — works with your existing line'].map(item =>
+            ${['Every call answered, 24/7 — not missed', 'Job details texted straight to your phone', 'Spam and time-wasters filtered automatically', 'No new number needed — works with your existing line'].map(item =>
               `<li style="padding:6px 0;font-size:14px;color:#374151;font-family:sans-serif">✓ &nbsp;${item}</li>`
             ).join('')}
           </ul>

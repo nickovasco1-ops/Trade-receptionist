@@ -20,7 +20,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    'text-white bg-[linear-gradient(135deg,#FF6B2B_0%,#FF8C55_100%)] shadow-[0_16px_34px_rgba(249,115,22,0.26),inset_0_1px_0_rgba(255,255,255,0.12)] hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(249,115,22,0.30),inset_0_1px_0_rgba(255,255,255,0.16)] active:translate-y-0',
+    'text-void bg-[linear-gradient(135deg,#FF6B2B_0%,#FF8C55_100%)] shadow-[0_16px_34px_rgba(249,115,22,0.26),inset_0_1px_0_rgba(255,255,255,0.12)] hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(249,115,22,0.30),inset_0_1px_0_rgba(255,255,255,0.16)] active:translate-y-0',
   secondary:
     'text-offwhite/84 bg-white/[0.05] shadow-[0_0_0_1px_rgba(255,255,255,0.09),0_12px_24px_rgba(2,13,24,0.18)] hover:-translate-y-0.5 hover:bg-white/[0.08] hover:text-offwhite',
   ghost:

@@ -83,7 +83,7 @@ function PartnerNav() {
         </Link>
         <a
           href="#apply"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange to-orange-glow text-white font-semibold text-sm tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange to-orange-glow text-void font-semibold text-sm tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
         >
           Apply to partner
           <ArrowRight size={14} aria-hidden="true" />
@@ -145,7 +145,7 @@ function PartnerHero() {
             <div className="flex flex-wrap gap-4 items-center">
               <a
                 href="#apply"
-                className="inline-flex items-center gap-2.5 px-7 py-4 bg-gradient-to-r from-orange to-orange-glow text-white font-semibold text-[15px] tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                className="inline-flex items-center gap-2.5 px-7 py-4 bg-gradient-to-r from-orange to-orange-glow text-void font-semibold text-[15px] tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
               >
                 Apply to partner
                 <ArrowRight size={15} aria-hidden="true" />
@@ -176,7 +176,7 @@ function PartnerHero() {
               {[
                 { figure: '15%', label: 'Referral Partner commission', sub: 'Recurring · 12 months · no minimum' },
                 { figure: '20%', label: 'Growth Partner commission', sub: 'After 5 active referred clients' },
-                { figure: '14d', label: 'Free trial for your clients', sub: 'No card required · low barrier to yes' },
+                { figure: '14d', label: 'Free trial for your clients', sub: 'No charge for 14 days · low barrier to yes' },
                 { figure: '£0', label: 'Cost to join the programme', sub: 'Apply in under 3 minutes' },
               ].map(({ figure, label, sub }) => (
                 <div key={label} className="flex items-start gap-5">
@@ -493,7 +493,7 @@ function WhyItConverts() {
               The maths sells itself.
             </h2>
             <p className="font-body text-lg text-offwhite/55 max-w-[44ch] leading-[1.70]">
-              UK tradespeople lose an average of <strong className="text-offwhite font-semibold">£4,200 a year</strong> to missed calls. That's the number you open with. Everything else is supporting evidence.
+              A trade who misses one £350 job a month is down <strong className="text-offwhite font-semibold">£4,200 a year</strong>. That's the number you open with — it's their own arithmetic, so they can't argue with it. Everything else is supporting evidence.
             </p>
           </FadeUp>
 
@@ -505,7 +505,7 @@ function WhyItConverts() {
                   detail: 'Your client is live and answering calls before their first coffee. No technical complexity, no lengthy onboarding.',
                 },
                 {
-                  label: '14-day free trial, no card required',
+                  label: '14-day free trial, no charge today',
                   detail: "Low barrier for the first yes. They try it, it works, they convert. You haven't had to push.",
                 },
                 {
@@ -922,7 +922,7 @@ function ApplicationForm() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center gap-2.5 px-7 py-4 bg-gradient-to-r from-orange to-orange-glow text-white font-semibold text-[15px] tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                    className="inline-flex items-center gap-2.5 px-7 py-4 bg-gradient-to-r from-orange to-orange-glow text-void font-semibold text-[15px] tracking-[-0.01em] rounded-button shadow-orange-glow hover:shadow-orange-glow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-mechanical font-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {submitting ? 'Submitting…' : 'Submit application'}
                     {!submitting && <ArrowRight size={15} aria-hidden="true" />}

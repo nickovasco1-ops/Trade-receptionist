@@ -107,7 +107,7 @@ function PlanConfirmation({ plan, onClose }: { plan: PlanConfig; onClose: () => 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-[11px] text-offwhite/58 font-body">
         <span>14-day free trial</span>
         <span aria-hidden="true">·</span>
-        <span>No card required</span>
+        <span>No charge for 14 days</span>
         <span aria-hidden="true">·</span>
         <span>Cancel anytime</span>
       </div>
@@ -174,7 +174,7 @@ function PlanSelector({ onSelect }: { onSelect: (plan: PlanConfig) => void }) {
       </div>
 
       <p className="mt-5 text-center text-[11px] text-offwhite/56 font-body">
-        14-day free trial · No card required · Cancel anytime
+        14-day free trial · No charge today · Cancel anytime
       </p>
     </>
   );

@@ -154,7 +154,7 @@ export const Testimonials: React.FC = () => {
         </div>
 
         <p className="testimonial-section__intro">
-          500+ professionals who&apos;ve stopped missing calls and started booking more work.
+          Early customers who&apos;ve stopped missing calls and started booking more work.
         </p>
       </div>
 

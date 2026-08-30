@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 interface StatusGaugeProps {
   value: number;       // 0–100
   label: string;       // e.g. "Calls Answered"
-  metric: string;      // e.g. "98.7%"
+  metric: string;      // e.g. "24/7"
   size?: 'sm' | 'md' | 'lg';
   color?: 'orange' | 'blue';
 }
@@ -137,8 +137,11 @@ export const Button: React.FC<ButtonProps> = ({
     'active:scale-[0.985] will-change-transform';
 
   const variants: Record<string, string> = {
+    // Label is void, not white: white on this orange gradient measures 2.80:1 at
+    // the dark stop and 2.06:1 at the light stop — both fail WCAG AA. Void gives
+    // 6.98:1 / 9.49:1 with the brand orange unchanged.
     primary:
-      'rounded-btn text-white ring-1 ring-[#ffc49f]/10 ' +
+      'rounded-btn text-void ring-1 ring-[#ffc49f]/10 ' +
       'shadow-[0_16px_36px_rgba(249,115,22,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]',
     secondary:
       'rounded-btn bg-[linear-gradient(180deg,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.06)_100%)] text-accent ' +

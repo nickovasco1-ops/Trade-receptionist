@@ -387,7 +387,7 @@ export default function LoginPage() {
                       <button
                         type="submit"
                         disabled={loading || !email}
-                        className="inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-btn px-7 py-3.5 text-[15px] font-semibold tracking-[-0.015em] text-white transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                        className="inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-btn px-7 py-3.5 text-[15px] font-semibold tracking-[-0.015em] text-void transition-all duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
                         style={{
                           background: 'linear-gradient(135deg, #FF6B2B 0%, #FF8C55 100%)',
                           boxShadow: '0 16px 34px rgba(249,115,22,0.28), inset 0 1px 0 rgba(255,255,255,0.14)',

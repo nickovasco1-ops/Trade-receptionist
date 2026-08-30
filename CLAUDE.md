@@ -57,7 +57,7 @@ The visual metaphor is **a master craftsman's workshop**: warm industrial lighti
 | How-it-works eyebrow | "THREE STEPS TO ZERO MISSED CALLS" | "HOW IT WORKS" |
 | Pricing heading | "Simple, Honest Pricing" | "Pricing" |
 | Testimonials eyebrow | "WHAT UK TRADESPEOPLE SAY" | "TESTIMONIALS" |
-| Trust signal | "14-day free trial. No card required." | "Free trial available" |
+| Trust signal | "14-day free trial. No charge today." | "Free trial available", "No card required" (false — Stripe Payment Links are `payment_method_collection=always`) |
 | Urgency line | "While you read this, a competitor is answering their calls." | "Don't miss out!" |
 
 ### §1.1 — Claims & substantiation (legal floor, not a style preference)
@@ -90,6 +90,14 @@ Never attach a star rating the customer did not give.
 whose assumptions are visible on screen (this is what `Calculator.tsx` does). An
 arithmetic model the visitor can check is not a claim about the world, and carries
 no substantiation burden. State the inputs, never present the output as research.
+
+> **"No card required" was false and shipped in 7 places** (including the Stripe
+> checkout modal itself) until 2026-08-30. Every Payment Link is
+> `payment_method_collection=always` — Stripe demands a card before the trial
+> starts. Corrected to "No charge today" / "No charge for 14 days", which is
+> true and keeps the risk reversal. If you ever want the literal claim back, the
+> product has to change first: set `payment_method_collection=if_required` on all
+> four links. Copy follows behaviour, never the reverse.
 
 > Swept on 2026-08-11: removed "500+", "98.7%" (×3, incl. a customer-facing Resend
 > template) and "UK's #1". `CLAUDE_CODE_PROMPT.md` was also corrected — it had been
@@ -554,7 +562,7 @@ interface StatusGaugeProps {
 | Loss aversion over gain | "Stop losing £4,200/year" not "Earn more" |
 | Specificity over vagueness | "14 minutes setup" not "quick setup" |
 | Social normalisation | "Join 500+ UK tradespeople" |
-| Risk reversal | "14-day free trial. No card required." |
+| Risk reversal | "14-day free trial. No charge today." |
 | Urgency without desperation | "While you read this, a competitor is answering their calls." |
 | Outcome in every feature | "Smart scheduling — so you wake up to a full diary" |
 | UK trades vocabulary | call-out, quote, job, booking, diary |
@@ -1057,7 +1065,7 @@ CLIs installed on this machine for deploy/DB operations (not npm scripts): `supa
 | Locale | `en-GB` (numbers, dates, currency) |
 | Currency | £ |
 | Phone format | UK |
-| Trial length | 14 days, no card required |
+| Trial length | 14 days. A card **is** collected at checkout (`payment_method_collection=always` on every Payment Link); nothing is charged until day 14 |
 | Pricing | Starter £49 / Pro £89 / Business £159 / Agency £249 (monthly; annual = −20%, approx 2.4 months free) |
 | Reduced-motion fallback | Mandatory |
 | Touch-target floor | 48×48px |

@@ -105,7 +105,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
               You're in — check your email
             </h3>
             <p className="text-offwhite/66 mb-8 leading-relaxed text-[15px]">
-              We'll send your login details and setup guide within 1 hour. No card required.
+              We'll send your login details and setup guide within 1 hour. No charge for 14 days.
             </p>
             <Button variant="outline" fullWidth onClick={onClose}>
               Close
@@ -118,7 +118,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
                 Set up your free trial — takes 2 minutes
               </h3>
               <p className="text-offwhite/62 text-[14px] leading-relaxed">
-                We'll set up your account straight away. No card needed to start.
+                We'll set up your account straight away. No charge for 14 days.
               </p>
             </div>
 
@@ -218,7 +218,7 @@ export const WaitlistModal: React.FC<WaitlistModalProps> = ({ isOpen, onClose })
             </form>
 
             <p className="mt-5 text-center text-[12px] text-offwhite/56">
-              We'll send your login details within 1 hour. No card needed to start.
+              We'll send your login details within 1 hour. No charge for 14 days.
             </p>
           </div>
         )}

@@ -103,11 +103,13 @@ The hero must feel alive the moment the page loads. It has two halves:
 - Headline: "Never Miss A *Call.* Never Lose A *Job.*" — the words "Call" and "Job" are italic + orange gradient text (see CLAUDE.md §2.1 for gradient text recipe)
 - Subheadline: "While you're on the tools, Sarah answers every call, books every job, and sends you a WhatsApp summary. 24/7. Never misses."
 - Dual CTAs: "Start Free Trial" (orange) + "Hear a Live Demo" (glass blue)
-- Stat bar beneath CTAs: three counters that count up from 0 on load:
-  - "12,847 calls answered this month"
-  - "98.7% answer rate"
-  - "£4,200 avg. annual savings"
-  All three use `useCounter` hook with easeOutExpo, 1200ms duration
+- Stat bar beneath CTAs: counters that count up from 0 on load, using the
+  `useCounter` hook with easeOutExpo, 1200ms duration.
+  **Product facts only — never invent performance or customer-volume figures.**
+  Every number must be checkable against `src/lib/plans.ts` or the shipped
+  product (e.g. "24/7", "14 min avg. setup", "£0 setup fee", "£49/mo").
+  Answer rates, revenue-recovered and "N+ tradespeople" claims are prohibited
+  unless substantiated — see CLAUDE.md §1.1.
 
 **Right half (40% on desktop):**
 - Phone mockup (use existing or a styled div with phone proportions)
@@ -225,11 +227,14 @@ If there's a stats/social proof bar (calls answered, trades served, etc.), repla
 
 Trigger via IntersectionObserver. Format with `toLocaleString('en-GB')`.
 
-Existing stats to animate:
-- Total calls answered (e.g. 847,293)
-- Trades served (e.g. 500+)
-- Average savings per tradesperson (£4,200)
-- Answer rate (98.7%)
+Stats to animate — product facts only, never fabricated metrics:
+- Availability ("24/7")
+- Avg. setup time ("14 min")
+- Setup fee ("£0")
+- Entry price ("£49" — from `src/lib/plans.ts`)
+
+Do NOT animate invented totals, trades-served counts, answer rates or
+revenue-recovered figures. See CLAUDE.md §1.1.
 
 ---
 

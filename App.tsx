@@ -9,6 +9,7 @@ import {
   Wrench, Zap, Hammer, Droplets,
   ChevronDown, Star, XCircle,
   Instagram, Facebook, Mic, Play,
+  type LucideIcon,
 } from 'lucide-react';
 
 // ─── Scroll Animation Hook ────────────────────────────────────────────────────
@@ -448,11 +449,25 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
 };
 
 // ─── Social Proof Strip ───────────────────────────────────────────────────────
-const SOCIAL_STATS = [
-  { endValue: 98.7, decimals: 1, suffix: '%', label: 'Answer rate', icon: Phone },
-  { endValue: 4200, prefix: '£', label: 'Revenue recovered/yr', icon: Banknote },
-  { endValue: 500,  suffix: '+', label: 'UK tradespeople', icon: Wrench },
-  { endValue: 14,   suffix: ' min', label: 'Avg. setup time', icon: Clock },
+// Product facts only. Every figure here must be checkable against src/lib/plans.ts
+// or the shipped product — no performance or customer-volume claims, which we
+// cannot substantiate and which the CAP Code / DMCC Act 2024 require evidence for.
+// Explicitly typed: the render below destructures `decimals`, which no current
+// entry sets. Without this the inferred union omits the field and tsc errors.
+interface SocialStat {
+  endValue: number;
+  label: string;
+  icon: LucideIcon;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+}
+
+const SOCIAL_STATS: SocialStat[] = [
+  { endValue: 24, suffix: '/7',   label: 'Answered, day or night', icon: Phone },
+  { endValue: 14, suffix: ' min', label: 'Avg. setup time',        icon: Clock },
+  { endValue: 0,  prefix: '£',    label: 'Setup fee',              icon: Wrench },
+  { endValue: 49, prefix: '£',    label: 'Plans from, per month',  icon: Banknote },
 ];
 
 const SocialProof = () => (
@@ -478,7 +493,7 @@ const SocialProof = () => (
 
       {/* Label */}
       <p className="text-center text-[11px] font-bold tracking-[0.14em] uppercase text-offwhite/56 mb-10 font-body">
-        Trusted by UK tradespeople
+        Built for UK trades
       </p>
 
       {/* Stats grid */}
@@ -532,9 +547,11 @@ const SocialProof = () => (
 // ─── Pain Points ──────────────────────────────────────────────────────────────
 const PAIN_STATS = [
   {
+    // Stated assumption, not a researched statistic: £350 × 12 = £4,200 exactly.
+    // The visitor can check the arithmetic, so there is nothing to substantiate. §1.1
     value: '£4,200',
-    label: 'lost every year to missed calls',
-    sub: 'avg. UK tradesperson',
+    label: 'Miss one £350 job a month',
+    sub: "and that's your year",
     detail: "That's a van service, a week's holiday, or new tools. Gone.",
   },
   {
@@ -881,7 +898,7 @@ const HowItWorks = () => (
 
 // ─── ROI Section ──────────────────────────────────────────────────────────────
 const ROI_STATS = [
-  { value: '£4,200', label: 'avg. annual loss', sub: 'to missed calls' },
+  { value: '£4,200', label: 'one £350 job a month', sub: 'over a year' },
   { value: '27%', label: 'of callers', sub: 'never ring back' },
   { value: '3 in 5', label: 'jobs go to whoever', sub: 'answers first' },
 ];
@@ -910,7 +927,7 @@ const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
           Every missed call is a job that goes to whoever picks up.
         </h2>
         <p className="mt-5 max-w-[34rem] text-[16px] leading-[1.75] text-offwhite/66">
-          Use the calculator to see exactly what unanswered calls are costing you. Most trades businesses lose £3k–£15k a year — often without realising it.
+          Use the calculator to see what unanswered calls are costing you. Miss one £350 job a month and that's £4,200 a year — often without realising it.
         </p>
 
         {/* Editorial stat strip — no cards, just typography */}
@@ -1159,7 +1176,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               onClick={() => setBilling(b)}
               className={`px-7 py-3 min-h-[44px] rounded-full text-[13px] font-bold transition-colors duration-300 ${
                 billing === b
-                  ? 'bg-orange text-white shadow-orange-glow'
+                  ? 'bg-orange text-void shadow-orange-glow'
                   : 'text-offwhite/62 hover:text-offwhite/70'
               }`}
             >
@@ -1178,7 +1195,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
         style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
       >
         {[
-          { icon: CheckCircle2, text: '98.7% of calls answered' },
+          { icon: CheckCircle2, text: 'Every call answered, 24/7' },
           { icon: CheckCircle2, text: '14-day free trial · setup call included' },
           { icon: CheckCircle2, text: 'Set up in under 14 minutes' },
         ].map(({ icon: Icon, text }) => (
@@ -1262,7 +1279,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
               style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
             >
               <p className="text-[11px] text-offwhite/56">
-              14-day free trial · Setup call included · No card
+              14-day free trial · Setup call included · No charge today
               </p>
             </div>
 
@@ -1536,7 +1553,7 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
             <Logo height={100} />
           </div>
           <p className="text-[15px] text-offwhite/58 leading-relaxed max-w-sm">
-            The UK's #1 AI receptionist for tradespeople. Never miss a call. Never lose a job.
+            An AI receptionist built for UK tradespeople. Never miss a call. Never lose a job.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {['Plumbers', 'Electricians', 'Builders', 'HVAC', 'Carpenters'].map((trade) => (
