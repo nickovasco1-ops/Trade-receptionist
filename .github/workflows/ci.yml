@@ -38,8 +38,14 @@ jobs:
       - name: Build web (vite)
         run: npm run build
 
+      # emergency.test.ts existed but was written for bun:test, and Bun is not
+      # part of this toolchain — so it had never run anywhere. Ported to
+      # node:test and wired in here.
+      - name: Server unit tests
+        run: npm test --prefix server
+
   e2e:
-    name: E2E (accessibility + release smoke)
+    name: E2E (full suite)
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 20
@@ -86,11 +92,12 @@ jobs:
 
       # CI=true (set automatically by GitHub Actions) makes the Playwright
       # webServer start fresh web + API processes instead of reusing one.
-      - name: Accessibility checks
-        run: npx playwright test e2e/accessibility.spec.ts
-
-      - name: Release smoke checks
-        run: npm run test:smoke
+      # The full suite, not a two-spec subset. CI previously ran only
+      # accessibility + smoke, which is how 20 failures accumulated unnoticed
+      # across settings, billing, auth, webhooks, mobile and dashboard — two of
+      # them real product bugs. A suite nobody runs is a suite nobody trusts.
+      - name: E2E suite
+        run: npm run test:e2e
 
       - name: Upload Playwright report on failure
         if: failure()

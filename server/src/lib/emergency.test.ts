@@ -1,4 +1,32 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+
+/**
+ * Minimal expect shim over node:assert.
+ *
+ * These tests were written against `bun:test`, but the toolchain is Node 24 +
+ * tsx (§8.1) and Bun is not installed anywhere — locally or in CI — so all 216
+ * lines had never once executed. Only three matchers are used, so a shim keeps
+ * every assertion intact rather than rewriting them into assert calls.
+ */
+function expect(actual: unknown) {
+  return {
+    toBe(expected: unknown) {
+      assert.strictEqual(actual, expected);
+    },
+    toContain(needle: unknown) {
+      if (typeof actual === 'string') {
+        assert.ok(actual.includes(String(needle)), `expected "${actual}" to contain "${String(needle)}"`);
+        return;
+      }
+      assert.ok(Array.isArray(actual) && actual.includes(needle),
+        `expected ${JSON.stringify(actual)} to contain ${JSON.stringify(needle)}`);
+    },
+    toBeGreaterThan(n: number) {
+      assert.ok(typeof actual === 'number' && actual > n, `expected ${String(actual)} > ${n}`);
+    },
+  };
+}
 import {
   BASE_EMERGENCY_KEYWORDS,
   detectEmergency,
