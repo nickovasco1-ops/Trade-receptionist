@@ -232,7 +232,11 @@ test('/dashboard/calls renders seeded call fields and outcome filter works', asy
     await expect(page.getByText('20 May 2026').filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText('2m 22s').filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText('Lead').filter({ visible: true }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /play/i }).first()).toHaveAttribute('href', /recordings/);
+    // Recordings stream through /api/calls/:id/recording so the Retell CDN URL
+    // stays private and the content-type is corrected. This previously asserted
+    // the raw CDN path appeared in an href — i.e. it asserted the leak.
+    await expect(page.getByText('Recording').first()).toBeVisible();
+    await expect(page.locator('body')).not.toContainText('example.test/recordings');
 
     await page.getByLabel(/filter by outcome/i).selectOption('lead_captured');
     await expect(page.getByText(primaryPhone).filter({ visible: true }).first()).toBeVisible();

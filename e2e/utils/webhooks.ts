@@ -1,9 +1,18 @@
 import { createHmac } from 'crypto';
+import { sign as retellSign } from 'retell-sdk';
 import { apiBaseURL } from './env';
 import { pollUntil } from './polling';
 
+/**
+ * Retell's signature is NOT a plain HMAC of the body — it carries a timestamp
+ * and is checked against a replay window inside retell-sdk's verify(). Signing
+ * by hand here produced a valid-looking header the server always rejected, so
+ * every signed-webhook test was asserting against `invalid_signature` rather
+ * than the handler. Use the SDK's own sign() so the test and the server agree
+ * by construction, and stay agreeing across SDK upgrades.
+ */
 export function retellSignature(body: string, secret = process.env.RETELL_API_KEY || '') {
-  return createHmac('sha256', secret).update(Buffer.from(body)).digest('hex');
+  return retellSign(body, secret);
 }
 
 export function stripeSignature(body: string, secret = process.env.STRIPE_WEBHOOK_SECRET || '') {

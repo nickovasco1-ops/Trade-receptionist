@@ -33,21 +33,26 @@ async function switchPlan(page: Page) {
   await expect(page.getByRole('heading', { name: /start your free trial/i })).toBeVisible();
 }
 
-test('pricing CTA opens modal and shows starter, pro, and agency plan choices', async ({ page }) => {
+// Prices are asserted against src/lib/plans.ts, the single source of truth
+// (§14). This previously encoded the dead three-tier £29/£59/£119 scheme and
+// had no Business tier at all — the same tier whose DB constraint was missing.
+test('pricing CTA opens modal and shows all four plan choices', async ({ page }) => {
   await openPricingModal(page);
 
   await expect(page.getByTestId('stripe-plan-starter')).toContainText('Starter');
-  await expect(page.getByTestId('stripe-plan-starter')).toContainText('£29');
+  await expect(page.getByTestId('stripe-plan-starter')).toContainText('£49');
   await expect(page.getByTestId('stripe-plan-pro')).toContainText('Pro');
-  await expect(page.getByTestId('stripe-plan-pro')).toContainText('£59');
+  await expect(page.getByTestId('stripe-plan-pro')).toContainText('£89');
+  await expect(page.getByTestId('stripe-plan-business')).toContainText('Business');
+  await expect(page.getByTestId('stripe-plan-business')).toContainText('£159');
   await expect(page.getByTestId('stripe-plan-agency')).toContainText('Agency');
-  await expect(page.getByTestId('stripe-plan-agency')).toContainText('£119');
+  await expect(page.getByTestId('stripe-plan-agency')).toContainText('£249');
 });
 
 test('E2E billing modal uses only Stripe test Payment Links for all plans', async ({ page }) => {
   await openPricingModal(page);
 
-  for (const planId of ['stripe-plan-starter', 'stripe-plan-pro', 'stripe-plan-agency']) {
+  for (const planId of ['stripe-plan-starter', 'stripe-plan-pro', 'stripe-plan-business', 'stripe-plan-agency']) {
     await choosePlan(page, planId);
     const href = await page.getByTestId('stripe-checkout-cta').getAttribute('href');
 

@@ -43,7 +43,17 @@ const e2eEnv = {
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
-  retries: 0,
+  // Every spec authenticates through one shared Supabase project, so magic-link
+  // navigation and fixture seeding intermittently hit rate limits or dropped
+  // connections under parallel load — failures that pass in isolation. Retries
+  // absorb that without hiding real breakage: Playwright reports a pass-on-retry
+  // as "flaky", so genuine regressions still fail the run.
+  retries: process.env.CI ? 2 : 1,
+  // Every spec authenticates against a single Supabase project, and its auth
+  // endpoints rate-limit per project — not per worker. Unbounded parallelism
+  // therefore produced failures that all passed in isolation. Cap concurrency
+  // so the suite is reliable on its own rather than dependent on retries.
+  workers: process.env.CI ? 2 : 3,
   reporter: [['html', { open: 'never' }], ['list']],
   globalTeardown: './e2e/global-teardown.ts',
   expect: {

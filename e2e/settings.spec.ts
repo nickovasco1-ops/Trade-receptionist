@@ -26,8 +26,8 @@ async function seedSettingsAccount(options: { googleCalendarId?: string | null }
 
 async function signInAndOpenSettings(page: Page, account: TestAccount) {
   await authenticate(page, account.email);
-  await page.goto('/settings');
-  await expect(page.getByRole('heading', { name: /aligned with how your business runs/i })).toBeVisible();
+  await page.goto('/dashboard/settings');
+  await expect(page.getByRole('heading', { name: /keep your receptionist aligned with your business/i })).toBeVisible();
 }
 
 async function fillProfile(page: Page, values: { businessName: string; ownerName: string; mobile: string }) {
@@ -42,9 +42,11 @@ async function saveSettings(page: Page) {
 }
 
 test('unauthenticated user visiting settings is redirected to login', async ({ page }) => {
+  // /settings is a redirect to the canonical /dashboard/settings, so the
+  // preserved destination is the canonical path, not the one requested.
   await page.goto('/settings');
 
-  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard%2Fsettings$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 });
 
@@ -85,7 +87,7 @@ test('business profile fields save to Supabase and reload with saved values', as
     });
 
     await page.reload();
-    await expect(page.getByRole('heading', { name: /aligned with how your business runs/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /keep your receptionist aligned with your business/i })).toBeVisible();
     await expect(page.getByLabel(/business name/i)).toHaveValue(values.businessName);
     await expect(page.getByLabel(/^your name$/i)).toHaveValue(values.ownerName);
     await expect(page.getByLabel(/your mobile for sms alerts/i)).toHaveValue(values.mobile);

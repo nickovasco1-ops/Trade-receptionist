@@ -133,6 +133,17 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Redirect that carries the query string and hash across.
+ * A bare <Navigate> drops them, so a deep link like /settings?tab=billing lost
+ * its tab — and when unauthenticated the auth guard then captured the stripped
+ * path as redirectTo, so the destination was lost through login as well.
+ */
+function RedirectPreservingQuery({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${to}${search}${hash}`} replace />;
+}
+
 function LenisInit() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -206,7 +217,7 @@ ReactDOM.createRoot(rootElement, {
           </RequireAuth>
         } />
         {/* Legacy redirect — keep old /settings URL working */}
-        <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
+        <Route path="/settings" element={<RedirectPreservingQuery to="/dashboard/settings" />} />
         <Route path="/onboarding" element={
           <RequireAuth>
             <React.Suspense fallback={null}>

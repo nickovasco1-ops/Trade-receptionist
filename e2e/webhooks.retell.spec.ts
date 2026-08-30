@@ -6,20 +6,21 @@ import { eventually, postJsonWebhook, retellSignature } from './utils/webhooks';
 
 type RetellPayload = Record<string, unknown>;
 
-async function postRawRetellWebhook(raw: string, signature = retellSignature(raw)) {
+async function postRawRetellWebhook(raw: string, signature?: string) {
+  const sig = signature ?? await retellSignature(raw);
   return fetch(`${apiBaseURL}/webhooks/retell`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-retell-signature': signature,
+      'x-retell-signature': sig,
     },
     body: raw,
   });
 }
 
-function signedHeaders(payload: RetellPayload) {
+async function signedHeaders(payload: RetellPayload) {
   const raw = JSON.stringify(payload);
-  return { 'x-retell-signature': retellSignature(raw) };
+  return { 'x-retell-signature': await retellSignature(raw) };
 }
 
 async function seedRetellClient(): Promise<TestAccount & { agentId: string }> {
@@ -39,7 +40,7 @@ async function postStarted(agentId: string, callId = uniqueId('call_retell'), fr
     from_number: fromNumber,
     to_number: '+442045719023',
   };
-  const response = await postJsonWebhook('/webhooks/retell', payload, signedHeaders(payload));
+  const response = await postJsonWebhook('/webhooks/retell', payload, await signedHeaders(payload));
   expect(response.status).toBe(200);
   await expect(response.json()).resolves.toMatchObject({ received: true });
   return { callId, fromNumber };
@@ -82,7 +83,7 @@ async function postEnded(
       },
     },
   };
-  const response = await postJsonWebhook('/webhooks/retell', payload, signedHeaders(payload));
+  const response = await postJsonWebhook('/webhooks/retell', payload, await signedHeaders(payload));
   expect(response.status).toBe(200);
   await expect(response.json()).resolves.toMatchObject({ received: true });
 }
@@ -200,7 +201,7 @@ test.describe('Retell webhooks', () => {
           },
         },
       };
-      const response = await postJsonWebhook('/webhooks/retell', analyzed, signedHeaders(analyzed));
+      const response = await postJsonWebhook('/webhooks/retell', analyzed, await signedHeaders(analyzed));
       expect(response.status).toBe(200);
 
       await eventually(

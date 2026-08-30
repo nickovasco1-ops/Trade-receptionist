@@ -429,13 +429,70 @@ router.patch('/:id/settings', async (req: Request, res: Response) => {
   } satisfies ApiResponse);
 });
 
+// Deleting a client must also hand back the infrastructure it owns. Deleting
+// only the row orphans a *paid* Twilio number and a live Retell agent with
+// nothing pointing at them — that is where the unattached numbers on the
+// account came from. Provider teardown is best-effort and logged: a Twilio
+// failure must not block the delete, or the row becomes undeletable.
 router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
-  const { error } = await supabase.from('clients').delete().eq('id', req.params.id);
+  const clientId = String(req.params.id);
+
+  const { data: existing } = await supabase
+    .from('clients')
+    .select('id,twilio_number,retell_agent_id')
+    .eq('id', clientId)
+    .maybeSingle();
+
+  if (!existing) {
+    res.status(404).json({ success: false, error: 'Client not found' } satisfies ApiResponse);
+    return;
+  }
+
+  const client = existing as Pick<Client, 'id' | 'twilio_number' | 'retell_agent_id'>;
+  const released: string[] = [];
+
+  if (client.twilio_number) {
+    try {
+      await releaseRetellNumber(client.twilio_number);
+      released.push('retell_number');
+    } catch (err: unknown) {
+      logEvent('warn', 'client_delete.retell_number_release_failed', {
+        clientId, error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    try {
+      const sid = await findNumberSid(client.twilio_number);
+      if (sid) {
+        await releaseNumber(sid);
+        released.push('twilio_number');
+      }
+    } catch (err: unknown) {
+      logEvent('warn', 'client_delete.twilio_release_failed', {
+        clientId, error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (client.retell_agent_id) {
+    try {
+      await deleteRetellAgent(client.retell_agent_id);
+      released.push('retell_agent');
+    } catch (err: unknown) {
+      logEvent('warn', 'client_delete.agent_delete_failed', {
+        clientId, error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const { error } = await supabase.from('clients').delete().eq('id', clientId);
   if (error) {
     res.status(500).json({ success: false, error: error.message } satisfies ApiResponse);
     return;
   }
-  res.json({ success: true } satisfies ApiResponse);
+
+  logEvent('info', 'client_delete.complete', { clientId, released: released.join(',') || 'none' });
+  res.json({ success: true, data: { released } } satisfies ApiResponse);
 });
 
 // ── POST /clients/provision ───────────────────────────────────────────────────

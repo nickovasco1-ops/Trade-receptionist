@@ -107,7 +107,7 @@ test('settings has no critical axe violations and supports keyboard form navigat
   const account = await seedAccessibleAccount({ onboardingComplete: true });
 
   try {
-    await signInAndOpen(page, account, '/settings');
+    await signInAndOpen(page, account, '/dashboard/settings');
 
     await expect(page.getByLabel(/business name/i)).toBeVisible();
     await expect(page.getByLabel(/your mobile for sms alerts/i)).toBeVisible();

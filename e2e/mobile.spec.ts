@@ -70,7 +70,14 @@ async function completeMobileOnboarding(page: Page) {
   await page.getByRole('button', { name: /^continue$/i }).click();
 
   await expectMobileStep(page, 'business');
-  await page.getByLabel(/business name/i).fill(`Mobile Ready ${uniqueId('biz').slice(-8)} Plumbing`);
+  // Wait for the async prefill to land before typing. Onboarding hydrates the
+  // form from Supabase after mount, so filling immediately gets silently
+  // overwritten — business name survived but trade type and city were reset,
+  // leaving Continue disabled and the test timing out. Mirrors the desktop helper.
+  const mobileBusinessName = page.getByLabel(/business name/i);
+  await expect(mobileBusinessName).toBeVisible();
+  await expect.poll(async () => mobileBusinessName.inputValue()).not.toBe('');
+  await mobileBusinessName.fill(`Mobile Ready ${uniqueId('biz').slice(-8)} Plumbing`);
   await page.getByLabel(/trade type/i).selectOption('Plumber');
   await page.getByLabel(/city \/ area/i).fill('South London');
   await page.getByRole('button', { name: /^continue$/i }).click();
@@ -91,6 +98,11 @@ async function completeMobileOnboarding(page: Page) {
 
   await expectMobileStep(page, 'ready');
   await page.getByRole('button', { name: /activate trade receptionist/i }).click();
+  // Activation lands on the "receptionist is live" confirmation, which offers a
+  // setup call; the dashboard is one tap away rather than automatic.
+  await expect(page.getByText(/your receptionist is live/i)).toBeVisible();
+  await expectNoCriticalHorizontalOverflow(page);
+  await page.getByRole('button', { name: /skip for now/i }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expectNoCriticalHorizontalOverflow(page);
 }

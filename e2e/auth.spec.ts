@@ -92,15 +92,17 @@ test('deep link to an auth-gated page preserves intended destination after login
   const account = await seedClient(undefined, { onboardingComplete: true });
 
   try {
+    // /settings redirects to /dashboard/settings before the auth guard runs,
+    // so the canonical path (query string preserved) is what round-trips.
     await page.goto('/settings?tab=billing');
-    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings%3Ftab%3Dbilling$/);
+    await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard%2Fsettings%3Ftab%3Dbilling$/);
 
     const redirectTo = new URL(page.url()).searchParams.get('redirectTo');
-    expect(redirectTo).toBe('/settings?tab=billing');
+    expect(redirectTo).toBe('/dashboard/settings?tab=billing');
 
     await page.goto(await magicLinkFor(account.email, `${baseURL}${redirectTo}`));
     await expect(page).toHaveURL(/\/settings\?tab=billing#?$/);
-    await expect(page.getByRole('heading', { name: /aligned with how your business runs/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /keep your receptionist aligned with your business/i })).toBeVisible();
   } finally {
     await cleanupAccount(account);
   }
@@ -130,7 +132,7 @@ test('missing session redirects cleanly without white screen', async ({ page }) 
 
   await page.goto('/settings');
 
-  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fsettings$/);
+  await expect(page).toHaveURL(/\/login\?redirectTo=%2Fdashboard%2Fsettings$/);
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   await expect(page.locator('body')).toContainText(/send magic link/i);
 });
