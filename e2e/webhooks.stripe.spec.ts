@@ -211,7 +211,7 @@ test.describe('Stripe webhooks', () => {
 
       const client = await eventually(
         () => getClientByEmail(email),
-        (row) => row?.plan === 'pro' && row?.retell_agent_id && row?.twilio_number,
+        (row) => Boolean(row?.plan === 'pro' && row?.retell_agent_id && row?.twilio_number),
         'checkout provisioned client'
       );
       expect(client).toMatchObject({

@@ -85,7 +85,11 @@ export default function TestCallPage() {
   const toggleMute = useCallback(() => {
     if (!clientRef.current) return;
     const next = !isMuted;
-    clientRef.current.mute(next);
+    // The SDK exposes mute()/unmute(), both zero-argument. Calling mute(next)
+    // type-checked as an error and, worse, muted on the unmute path because the
+    // argument was ignored.
+    if (next) clientRef.current.mute();
+    else clientRef.current.unmute();
     setIsMuted(next);
   }, [isMuted]);
 
