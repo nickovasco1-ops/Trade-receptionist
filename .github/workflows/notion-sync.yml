@@ -1,0 +1,38 @@
+name: Notion Sync
+
+# Every 2 hours. The sync reconciles rather than appends, so running it often is
+# cheap and running it twice changes nothing.
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Reconcile Supabase into Notion
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run sync
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            https://trade-receptionist-production.up.railway.app/admin/sync-notion \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json" -d '{}')
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          STATUS=$(echo "$RESPONSE" | tail -n 1)
+          echo "$BODY"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Notion sync failed — HTTP $STATUS"
+            exit 1
+          fi
+
+          # A row-level failure returns 200 with a non-zero failed count, which
+          # is exactly how the old fire-and-forget logging stayed invisible.
+          FAILED=$(echo "$BODY" | grep -o '"failed":[0-9]*' | grep -o '[0-9]*' | paste -sd+ - | bc)
+          if [ "${FAILED:-0}" -gt 0 ]; then
+            echo "::error::Notion sync completed with $FAILED failed rows — check the integration has access to every database."
+            exit 1
+          fi
+          echo "Notion sync clean"

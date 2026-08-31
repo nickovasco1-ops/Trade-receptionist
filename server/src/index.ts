@@ -17,6 +17,7 @@ import bookingsRouter from './routes/bookings';
 import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
+import { syncAll } from './services/notion-sync';
 import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
@@ -209,6 +210,31 @@ app.post('/admin/check-tenant-integrity', async (req, res) => {
       error: err instanceof Error ? err.message : String(err),
     });
     res.status(500).json({ success: false, error: 'Integrity check failed' });
+  }
+});
+
+// ── POST /admin/sync-notion ──────────────────────────────────────────────────
+// Reconciles Supabase into the Notion workspace so the business can be run from
+// there. Idempotent — safe to run on a cron and safe to re-run by hand.
+app.post('/admin/sync-notion', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const results = await syncAll();
+    const failed = results.reduce((n, r) => n + r.failed, 0);
+    logEvent(failed ? 'error' : 'info', 'notion_sync.finished', {
+      results: JSON.stringify(results),
+    });
+    res.json({ success: true, data: results });
+  } catch (err: unknown) {
+    logEvent('error', 'notion_sync.failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    res.status(500).json({ success: false, error: 'Notion sync failed' });
   }
 });
 
