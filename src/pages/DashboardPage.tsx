@@ -132,6 +132,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
   const [calBannerVisible, setCalBannerVisible] = useState(false);
+  // No calendar means buildRetellTools() never attaches the booking tools, so
+  // the receptionist can capture a lead but cannot book a job at all.
+  const [calendarMissing, setCalendarMissing] = useState(false);
 
   // Show a banner when the Google Calendar was silently auto-connected during sign-in.
   // index.tsx sets this sessionStorage flag after a successful save-calendar-token call.
@@ -158,7 +161,7 @@ export default function DashboardPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id, onboarding_complete, subscription_status, payment_status, plan')
+        .select('id, onboarding_complete, subscription_status, payment_status, plan, google_cal_id')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -168,6 +171,7 @@ export default function DashboardPage() {
       }
 
       setSubscriptionAlert(subscriptionMessage(clientRow.subscription_status, clientRow.payment_status));
+      setCalendarMissing(!clientRow.google_cal_id);
 
       // Rolling 30-day window for quota calculation
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -300,6 +304,35 @@ export default function DashboardPage() {
               <div>
                 <p className="text-[14px] font-semibold text-offwhite">{subscriptionAlert.title}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">{subscriptionAlert.copy}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {calendarMissing ? (
+          <div
+            data-testid="calendar-setup-banner"
+            role="alert"
+            className="mb-5 rounded-[24px] px-5 py-4"
+            style={{ background: 'rgba(255,107,43,0.10)', boxShadow: '0 0 0 1px rgba(255,107,43,0.22)' }}
+          >
+            <div className="flex items-start gap-3">
+              <Calendar size={17} className="mt-0.5 text-orange-soft" aria-hidden="true" />
+              <div>
+                <p className="text-[14px] font-semibold text-offwhite">
+                  Your receptionist can&rsquo;t book jobs yet
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-orange-soft/88">
+                  Connect your diary and it will book callers straight into it while you work.
+                  Until then it takes a message and sends you the lead.
+                </p>
+                <Link
+                  to="/dashboard/settings"
+                  className="mt-3 inline-flex min-h-[48px] items-center gap-1.5 text-[13px] font-semibold text-orange transition-colors duration-300 hover:text-orange-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange focus-visible:outline-offset-[3px]"
+                >
+                  Connect my diary
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>
