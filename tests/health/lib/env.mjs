@@ -33,6 +33,27 @@ export const SEED_DOMAIN = '@health.tradereceptionist.test';
 export const SEED_A = `health-tenant-a${SEED_DOMAIN}`;
 export const SEED_B = `health-tenant-b${SEED_DOMAIN}`;
 
+/**
+ * Accounts that belong to us, not to customers. Vasco's Plumbing is the owner's
+ * own test tenant: real Stripe subscription, real number, real agent — and so
+ * indistinguishable from a customer to every check.
+ *
+ * Excluded from customer-health checks, never from security checks. The
+ * exclusion is listed in every report by name, because a filter you cannot see
+ * is how a system goes blind.
+ */
+export const INTERNAL_ACCOUNTS = (process.env.HEALTH_INTERNAL_ACCOUNTS
+  ?? 'nickosuji21@gmail.com')
+  .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+export const TEST_DOMAIN = 'tradereceptionist.test';
+
+/** True for anything that is ours: automated tests or an internal account. */
+export function isOurs(email) {
+  const e = (email ?? '').toLowerCase();
+  return e.endsWith(TEST_DOMAIN) || INTERNAL_ACCOUNTS.includes(e);
+}
+
 export function assertSeedTenant(email) {
   if (typeof email !== 'string' || !email.endsWith(SEED_DOMAIN)) {
     throw new Error(
