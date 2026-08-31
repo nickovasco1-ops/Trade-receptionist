@@ -215,6 +215,16 @@ verification confirmed it.
 | **Evidence** | Found 2026-08-30 via `tenant-integrity.ts`: three churned customers still had `is_active: true`. `customer.subscription.deleted` never landed. **No reconciliation job exists** — `clients.subscription_status` is not self-healing. |
 | **Deterministically checkable?** | **Yes** — already implemented in `tenant-integrity.ts` (`billing_drift`, `churned_still_active`); needs scheduling. |
 
+### C18 — Provisioned but inert: paying for silence 🔴
+| | |
+|---|---|
+| **Recurrence** | **2 of 2 real customers**, found 2026-08-31 |
+| **Blast radius** | Total, and invisible. The customer pays, receives nothing, and churns without telling you why. Every other check in this suite passes while it happens. |
+| **Files / services** | `src/pages/OnboardingPage.tsx` (no calendar step exists), `server/src/services/retell.ts` (`buildRetellTools` gates calendar tools on `google_cal_id`), carrier divert activation |
+| **Evidence** | **Derbyshire Renewables**: `active` and paying since 2026-07-02, **zero calls in 59 days**. Their number passed every integrity check — on the SIP trunk, imported into Retell, bound to the correct agent · **Neither paying tenant has `google_cal_id` set**, so `calendarBookingEnabled` is false and the booking tools are never attached to their agent · all 29 calls, 13 leads and 4 bookings in the database belong to `Vasco's Plumbing`, the owner's own tenant — **no real customer call has ever been handled** · the onboarding wizard's six steps are receptionist, business, services, hours, contact, ready: **it never asks for a calendar**, so a customer only gets one by happening to sign in with Google |
+| **Why it is invisible** | `onboarding_complete` means "walked the wizard", not "has a working product", and it is the only completion signal the dashboard has. A tenant can be fully provisioned, fully green on integrity, and completely inert. |
+| **Deterministically checkable?** | **Yes** — `activation.tenants_receive_calls` and `activation.booking_is_possible`. |
+
 ### C17 — Unsubstantiated marketing claims 🟡
 | | |
 |---|---|
@@ -239,6 +249,7 @@ Stated plainly, per the Phase 1 instruction to say so rather than write a check 
 
 | Class | Severity | Recurrence | Deterministic check possible? |
 |---|---|---|---|
+| **C18 Provisioned but inert** | 🔴 | **2 of 2 customers** | Yes |
 | C1 Retell contract drift | 🔴 | 11 | Yes |
 | C2 Webhook signature / fail-open | 🔴 | 4 + **2 live** | Yes (C2b partial) |
 | C3 Silent partial provisioning | 🔴 | 5 | Yes (already built) |
@@ -257,4 +268,6 @@ Stated plainly, per the Phase 1 instruction to say so rather than write a check 
 | C15 Stale chunks | 🟡 | 2 | Partial |
 | C17 Marketing claims | 🟡 | 11+ | Partial |
 
-**17 classes. 6 critical.** C2a (PR #3) and C2b (PR #4) both confirmed and fixed on 2026-08-30.
+**18 classes. 7 critical.** C2a (PR #3) and C2b (PR #4) both confirmed and fixed on 2026-08-30.
+
+**C18 is the one that matters most right now**, and it is the only class here that no amount of code correctness would have prevented. The plumbing is right; nobody is using it.
