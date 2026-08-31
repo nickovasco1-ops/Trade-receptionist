@@ -73,10 +73,13 @@ async function seedLead(
   });
 }
 
-async function seedDashboardAccount(options: { withActivity?: boolean; manyCalls?: boolean } = {}) {
+async function seedDashboardAccount(
+  options: { withActivity?: boolean; manyCalls?: boolean; withCalendar?: boolean } = {}
+) {
   const account = await seedClient(undefined, {
     onboardingComplete: true,
     businessName: `Dashboard ${uniqueId('biz').slice(-8)} Plumbing`,
+    ...(options.withCalendar ? { googleCalendarId: 'primary' } : {}),
   });
 
   if (!options.withActivity && !options.manyCalls) return account;
@@ -308,4 +311,43 @@ test('call detail opens transcript and details if implemented', async () => {
 
 test('pagination or load-more works with 50 plus records if implemented', async () => {
   test.skip(true, 'Calls and leads pages load up to 200 records directly and expose no pagination/load-more controls. Documented in e2e/BUGS.md.');
+});
+
+/**
+ * Catalogue C18. buildRetellTools() attaches the calendar tools only when
+ * google_cal_id is set, so a tenant without one has an agent that can capture a
+ * lead but can never book a job. Both paying customers were in exactly that
+ * state while onboarding_complete was true and the dashboard said nothing —
+ * the onboarding wizard has no calendar step at all.
+ */
+test('dashboard tells a tenant with no diary that it cannot book jobs', async ({ page }) => {
+  const account = await seedDashboardAccount();
+
+  try {
+    await signInAndGo(page, account, '/dashboard');
+
+    const banner = page.getByTestId('calendar-setup-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText(/can.t book jobs yet/i);
+
+    // The banner has to lead somewhere, or it is just a scold.
+    const cta = banner.getByRole('link', { name: /connect my diary/i });
+    await expect(cta).toBeVisible();
+    await cta.click();
+    await expect(page).toHaveURL(/\/dashboard\/settings$/);
+  } finally {
+    await cleanupAccount(account);
+  }
+});
+
+test('dashboard shows no diary prompt once a calendar is connected', async ({ page }) => {
+  const account = await seedDashboardAccount({ withCalendar: true });
+
+  try {
+    await signInAndGo(page, account, '/dashboard');
+    await expect(page.getByRole('heading', { name: /covering the phones/i })).toBeVisible();
+    await expect(page.getByTestId('calendar-setup-banner')).toHaveCount(0);
+  } finally {
+    await cleanupAccount(account);
+  }
 });
