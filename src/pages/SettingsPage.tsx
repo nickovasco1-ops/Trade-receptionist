@@ -6,6 +6,7 @@ import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
 import { supabase } from '../lib/supabase';
 import type { ReceptionistTone, Plan } from '../../shared/types';
+import { divertActivationCode } from '../../shared/phone';
 
 interface ClientSettings {
   business_name: string;
@@ -37,7 +38,8 @@ interface ClientSettings {
 }
 
 function buildActivationCode(twilioNumber: string) {
-  return `**004*${twilioNumber}#`;
+  // National format, not E.164 — see shared/phone.ts.
+  return divertActivationCode(twilioNumber);
 }
 
 function SettingsSection({

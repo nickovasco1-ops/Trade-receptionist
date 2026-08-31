@@ -28,6 +28,7 @@ import EmptyState from '../components/dashboard/ui/EmptyState';
 import Button from '../components/dashboard/ui/Button';
 import { OUTCOME_TONE } from '../components/dashboard/ui/outcomeTone';
 import type { CallOutcome, LeadStatus, LeadUrgency } from '../../shared/types';
+import { divertActivationCode } from '../../shared/phone';
 
 type PreviewCall = {
   id: string;
@@ -938,7 +939,7 @@ export function DashboardPreviewSettingsPage() {
   const [saved, setSaved] = useState(false);
 
   const isKeepExisting = !!form.own_number && !!form.twilio_number;
-  const activationCode = isKeepExisting ? `**004*${form.twilio_number}#` : null;
+  const activationCode = isKeepExisting ? divertActivationCode(form.twilio_number) : null;
 
   function setField<K extends keyof typeof PREVIEW_SETTINGS>(key: K, value: (typeof PREVIEW_SETTINGS)[K]) {
     setForm(prev => ({ ...prev, [key]: value }));

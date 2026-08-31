@@ -30,6 +30,7 @@ import type {
   ClientProvisionResponse,
   NumberMode,
 } from '../../../../shared/types';
+import { divertActivationCode } from '../../../../shared/phone';
 
 const router = Router();
 
@@ -145,11 +146,15 @@ async function rollback(state: CleanupState): Promise<void> {
 
 // ── Number mode helpers ───────────────────────────────────────────────────────
 
-function buildActivationCode(twilioNumber: string): string {
+function buildActivationCode(twilioNumber: string): string | null {
   // UK carrier universal divert (busy + no answer + unreachable) — one dial activates all three.
   // Works on EE, Vodafone, O2, Three, BT Mobile, Sky Mobile.
   // giffgaff users: set via My giffgaff app instead.
-  return `**004*${twilioNumber}#`;
+  //
+  // Returns null for a number that cannot be expressed in national dialling
+  // format. Emitting no code is correct; emitting an E.164 one produced a code
+  // that silently never registered. See shared/phone.ts.
+  return divertActivationCode(twilioNumber);
 }
 
 function buildProvisionResponse(
@@ -603,6 +608,12 @@ router.post('/provision', requireAdmin, async (req: Request, res: Response) => {
       ownerNumber:  owner_mobile ?? null,
       calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: buildBeginMessage(client, config),
+      // The tenant's own words, so the recogniser expects them.
+      boostedKeywords: [
+        business_name,
+        ...(config.services ?? []),
+        ...(config.service_areas ?? []),
+      ].filter(Boolean),
     });
     state.llmId   = agentIds.llmId;
     state.agentId = agentIds.agentId;
