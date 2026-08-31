@@ -225,6 +225,16 @@ verification confirmed it.
 | **Why it is invisible** | `onboarding_complete` means "walked the wizard", not "has a working product", and it is the only completion signal the dashboard has. A tenant can be fully provisioned, fully green on integrity, and completely inert. |
 | **Deterministically checkable?** | **Yes** — `activation.tenants_receive_calls` and `activation.booking_is_possible`. |
 
+### C19 — Cost leakage: paying for what nobody uses 🟡
+| | |
+|---|---|
+| **Recurrence** | Ongoing, found 2026-08-31 |
+| **Blast radius** | Silent margin erosion. Nothing alerts on it, because every individual charge is small and correct. |
+| **Files / services** | Twilio number inventory, `routes/webhooks/stripe.ts` (`handleSubscriptionDeleted`), Retell per-call billing |
+| **Evidence** | 5 Twilio numbers rented against 3 tenants — `+447400466554` and a US number `+12292228395` belong to nobody, £3.78/month for air · `handleSubscriptionDeleted` sets `is_active: false` and never releases the number, so every churned tenant leaves a rental behind · at full allowance usage gross margin is flat at roughly £33 across all four plans, and on Fast Tier Business (−£3.19) and Agency (−£27.69) are loss-making · verified per-call cost is £0.357 for two minutes, against per-call pricing that ignores duration |
+| **Why it is invisible** | Twilio and Retell both bill correctly and quietly. There is no per-tenant cost view anywhere in the product, so a customer who uses their whole allowance looks identical to one who never calls. |
+| **Deterministically checkable?** | **Yes** — `cost.no_orphan_numbers` and `cost.tenant_spend_within_plan`. |
+
 ### C17 — Unsubstantiated marketing claims 🟡
 | | |
 |---|---|
@@ -267,7 +277,8 @@ Stated plainly, per the Phase 1 instruction to say so rather than write a check 
 | C12 Time / timezone | 🟡 | 5 | Yes |
 | C15 Stale chunks | 🟡 | 2 | Partial |
 | C17 Marketing claims | 🟡 | 11+ | Partial |
+| **C19 Cost leakage** | 🟡 | ongoing | Yes |
 
-**18 classes. 7 critical.** C2a (PR #3) and C2b (PR #4) both confirmed and fixed on 2026-08-30.
+**19 classes. 7 critical.** C2a (PR #3) and C2b (PR #4) both confirmed and fixed on 2026-08-30.
 
 **C18 is the one that matters most right now**, and it is the only class here that no amount of code correctness would have prevented. The plumbing is right; nobody is using it.

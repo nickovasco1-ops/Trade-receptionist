@@ -16,7 +16,7 @@
  * between finding that out now and finding out from a cancellation.
  */
 import { check, evidence, PASS, FAIL, BLOCKED, HIGH, MEDIUM } from '../lib/check.mjs';
-import { admin, SEED_DOMAIN } from '../lib/env.mjs';
+import { admin, isOurs } from '../lib/env.mjs';
 
 /** Grace period before a live tenant with no calls is worth raising. */
 const SILENT_DAYS = 14;
@@ -38,7 +38,7 @@ async function liveTenants() {
   // the signal about real customers.
   return (data ?? []).filter((c) =>
     c.is_active
-    && !c.owner_email.endsWith(SEED_DOMAIN)
+    && !isOurs(c.owner_email)
     && SERVICEABLE.has(c.subscription_status ?? 'trialing'));
 }
 
