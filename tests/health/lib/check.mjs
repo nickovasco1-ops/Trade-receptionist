@@ -15,6 +15,14 @@ const execFileAsync = promisify(execFile);
 export const PASS = 'PASS';
 export const FAIL = 'FAIL';
 export const BLOCKED = 'BLOCKED';
+/**
+ * A real failure that a human has seen, decided about, and accepted for now.
+ * It stays in the report and it comes back on its own — an acknowledgement has
+ * a required reason and a required review date, and lapses silently into a
+ * normal failure the moment that date passes. It is never a way to delete a
+ * finding.
+ */
+export const ACKNOWLEDGED = 'ACKNOWLEDGED';
 
 export const CRITICAL = 'critical';
 export const HIGH = 'high';
@@ -101,6 +109,13 @@ export function finalise(def, result) {
     ...base,
     status: result.status,
     detail: result.detail ?? '',
+    /**
+     * The specific things this check is complaining about — tenant names,
+     * route names, file paths. An acknowledgement covers named entities only,
+     * so if a *new* one appears the check escalates again instead of hiding
+     * behind an ack written for something else.
+     */
+    entities: Array.isArray(result.entities) ? result.entities : [],
     evidence: hasEvidence ? ev : evidence('(none)', '', 1),
   };
 }
