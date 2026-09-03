@@ -7,7 +7,7 @@ import { searchUkNumbers, buyUkNumber, attachNumberToTrunk } from '../../service
 import { logSubscriber } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import { verifyStripeSignature } from './stripe-signature';
-import { divertActivationCode, toNationalDialling, DIVERT_CANCEL_ALL, DIVERT_CHECK } from '../../../../shared/phone';
+import { forwardingInstructionsHtml } from '../../lib/forwarding-email';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
@@ -242,19 +242,6 @@ export function welcomeHtml(opts: {
   const displayNumber = /^\+?44(7\d{3})(\d{6})$/.test(e164)
     ? e164.replace(/^\+?44(7\d{3})(\d{6})$/, '+44 $1 $2')
     : (opts.phoneNumber ?? '');
-  // UK divert codes take the destination in NATIONAL format with the leading
-  // zero. Interpolating the stored E.164 value produced `**004*+4473...#`,
-  // which never registers — see shared/phone.ts.
-  const dialCode = divertActivationCode(opts.phoneNumber);
-
-  // Show the same national format everywhere. Settings fields accept either,
-  // but the dial code only accepts national — one format across the whole email
-  // removes any chance of a customer typing the wrong one into the keypad.
-  const national = toNationalDialling(opts.phoneNumber);
-  const enterNumber = national
-    ? national.replace(/^(\d{5})(\d{6})$/, '$1 $2')
-    : displayNumber;
-
   const numberBlock = opts.phoneNumber
     ? `<tr><td style="padding:28px 44px 8px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#161313;background-image:linear-gradient(180deg,rgba(255,107,43,0.10),rgba(255,107,43,0.04));border:1px solid rgba(255,107,43,0.28);border-radius:18px;">
@@ -267,78 +254,14 @@ export function welcomeHtml(opts: {
       </td></tr>`
     : `<tr><td style="padding:28px 44px 8px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A1A2E;border:1px solid rgba(255,255,255,0.10);border-radius:18px;">
-          <tr><td style="padding:20px 26px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.62);font-family:${MN};">Your dedicated number is being provisioned — you'll get a follow-up email within a few minutes with your number and divert code.</td></tr>
+          <tr><td style="padding:20px 26px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.62);font-family:${MN};">We&rsquo;re finishing your setup by hand and a real person is on it. You&rsquo;ll get your number and forwarding instructions as soon as it&rsquo;s ready — if you&rsquo;d rather chase it, just reply to this email.</td></tr>
         </table>
       </td></tr>`;
 
-  // ── Call-forwarding instructions ────────────────────────────────────────
-  // Two Settings-based routes (recommended, because they are visual and the
-  // customer can see the state afterwards), plus the dial code as a shortcut.
-  const numberChip = (n: string) =>
-    `<span style="display:inline-block;background:#020D18;border:1px solid rgba(255,255,255,0.14);border-radius:7px;padding:3px 9px;font-family:'SF Mono','Courier New',monospace;font-size:14px;font-weight:700;color:#ffffff;white-space:nowrap;">${n}</span>`;
-
-  const miniStep = (n: number, text: string) =>
-    `<tr>
-      <td valign="top" width="26" style="padding:0 0 9px;">
-        <div style="width:19px;height:19px;border-radius:50%;background:rgba(110,231,183,0.16);color:#6ee7b7;font-size:11px;font-weight:700;text-align:center;line-height:19px;font-family:${MN};">${n}</div>
-      </td>
-      <td valign="top" style="padding:0 0 9px;font-size:14px;line-height:1.45;color:rgba(240,244,248,0.80);font-family:${MN};">${text}</td>
-    </tr>`;
-
-  const deviceCard = (label: string, steps: string[], note: string) =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020D18;border:1px solid rgba(255,255,255,0.09);border-radius:14px;margin:0 0 12px;">
-      <tr><td style="padding:18px 20px;">
-        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:#6ee7b7;font-family:${MN};">${label}</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          ${steps.map((t, i) => miniStep(i + 1, t)).join('')}
-        </table>
-        <p style="margin:10px 0 0;font-size:12.5px;line-height:1.5;color:rgba(240,244,248,0.50);font-family:${MN};">${note}</p>
-      </td></tr>
-    </table>`;
-
+  // Forwarding instructions live in lib/forwarding-email.ts so the welcome
+  // email and the "your number is ready" email cannot drift apart.
   const divertBlock = opts.phoneNumber
-    ? `<tr><td style="padding:18px 44px 4px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0F2C24;background-image:linear-gradient(180deg,#10322A,#0C2620);border:1px solid rgba(110,231,183,0.22);border-radius:18px;">
-          <tr><td style="padding:22px 26px;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#6ee7b7;font-family:${MN};">Send your calls over</p>
-            <p style="margin:0 0 16px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.66);font-family:${MN};">Use one of the methods below on the mobile you want covered.</p>
-
-            ${deviceCard(
-              'iPhone (Settings method &ndash; recommended)',
-              [
-                'Open <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Settings</strong>',
-                'Tap <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Phone</strong>',
-                'Tap <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Call Forwarding</strong>',
-                'Turn <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Call Forwarding</strong> on',
-                `Tap <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Forward To</strong> and enter: ${numberChip(enterNumber)}`,
-              ],
-              'This forwards all incoming calls to your Trade Receptionist number.',
-            )}
-
-            ${deviceCard(
-              'Android (Settings method &ndash; recommended)',
-              [
-                'Open the <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Phone</strong> app',
-                'Tap the <strong style="color:rgba(240,244,248,0.95);font-weight:600;">three dots</strong> or <strong style="color:rgba(240,244,248,0.95);font-weight:600;">More</strong>, then <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Settings</strong>',
-                'Tap <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Calling accounts</strong> (or <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Calls</strong>)',
-                'Choose your <strong style="color:rgba(240,244,248,0.95);font-weight:600;">O2 SIM</strong> (or main mobile line)',
-                'Tap <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Call forwarding</strong>',
-                'Choose <strong style="color:rgba(240,244,248,0.95);font-weight:600;">Always forward</strong> (or <strong style="color:rgba(240,244,248,0.95);font-weight:600;">When busy</strong> / <strong style="color:rgba(240,244,248,0.95);font-weight:600;">When unanswered</strong> if you prefer)',
-                `Enter your Trade Receptionist number: ${numberChip(enterNumber)}`,
-              ],
-              'Menu names can vary slightly by phone. If you don&rsquo;t see these options, search &lsquo;call forwarding&rsquo; in Settings.',
-            )}
-
-            ${dialCode ? `<p style="margin:16px 0 8px;font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:rgba(240,244,248,0.42);font-family:${MN};">Or use the shortcut code</p>` : ''}
-            <p style="margin:0 0 10px;font-size:13.5px;line-height:1.55;color:rgba(240,244,248,0.62);font-family:${MN};">Open the keypad, dial this exactly, then press call. This forwards only the calls you don&rsquo;t pick up.</p>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020D18;border:1px solid rgba(255,255,255,0.10);border-radius:12px;">
-              <tr><td align="center" style="padding:15px 14px;font-family:'SF Mono','Courier New',monospace;font-size:21px;font-weight:700;letter-spacing:0.02em;color:#ffffff;">${dialCode ?? ''}</td></tr>
-            </table>
-            <p style="margin:12px 0 0;font-size:12.5px;line-height:1.55;color:rgba(240,244,248,0.50);font-family:${MN};">Works on EE, O2, Vodafone &amp; Three. Dial it from your phone&rsquo;s own keypad, not a third-party app, and turn Wi&#8209;Fi calling off first &mdash; with it on, some networks show a success message without actually setting the divert.</p>
-            <p style="margin:8px 0 0;font-size:12.5px;line-height:1.55;color:rgba(240,244,248,0.50);font-family:${MN};">Check it worked by dialling <span style="color:rgba(240,244,248,0.80);font-weight:600;">${DIVERT_CHECK}</span>. To switch forwarding off at any time, dial <span style="color:rgba(240,244,248,0.80);font-weight:600;">${DIVERT_CANCEL_ALL}</span>.</p>
-          </td></tr>
-        </table>
-      </td></tr>`
+    ? `<tr><td style="padding:18px 44px 4px;">${forwardingInstructionsHtml(opts.phoneNumber)}</td></tr>`
     : '';
 
   const step2 = opts.phoneNumber
@@ -577,13 +500,24 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
 
   if (agentId) {
     try {
-      const available = await searchUkNumbers(5);
+      // Two attempts. Number purchase failing is usually transient — an account
+      // hiccup or a number taken between search and buy — and a single failure
+      // used to cost the whole customer.
+      let available = await searchUkNumbers(5);
       if (!available.length) {
-        logEvent('warn', 'stripe.webhook.provider_failure', {
+        logEvent('warn', 'stripe.webhook.twilio_search_retry', {
+          eventType: 'checkout.session.completed', clientId: client.id,
+        });
+        await new Promise((r) => setTimeout(r, 1500));
+        available = await searchUkNumbers(5);
+      }
+
+      if (!available.length) {
+        logEvent('error', 'stripe.webhook.provider_failure', {
           eventType: 'checkout.session.completed',
           clientId: client.id,
           provider: 'twilio',
-          error: 'no UK numbers available',
+          error: 'no UK numbers available after retry',
         });
       } else {
         const purchased = await buyUkNumber(available[0].phoneNumber);
@@ -633,6 +567,40 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
         provider: 'twilio',
         error: errorMessage(err),
       });
+    }
+  }
+
+  // In new-number mode the Twilio number IS the customer's business number, so
+  // finishing without one means they have paid for nothing. This used to pass
+  // silently: the customer got a welcome email, no number, and no way to know.
+  // Three cancelled inside a fortnight, one of them writing "is not working
+  // cause not had my divert number".
+  //
+  // It cannot be repaired here — buying a number is what just failed — so the
+  // job is to make sure a human finds out the same day.
+  if (!phoneNumber && !client.own_number) {
+    logEvent('error', 'stripe.webhook.provisioned_without_number', {
+      eventType:   'checkout.session.completed',
+      clientId:    client.id,
+      ownerEmail:  ownerEmail,
+      action:      'customer has no number and no product — assign one via POST /clients/:id/assign-number',
+    });
+
+    const alertTo = process.env.INTEGRITY_ALERT_EMAIL;
+    if (alertTo) {
+      try {
+        await sendEmail({
+          to:      alertTo,
+          subject: `[Trade Receptionist] ${client.business_name} has no number — signup incomplete`,
+          html: `<p><strong>${client.business_name}</strong> (${ownerEmail}) completed checkout but no Twilio number could be bought.</p>`
+              + '<p>They have an agent and an account, and no way to receive a call. They will churn quickly and quietly if this is not fixed today.</p>'
+              + `<p>Fix: <code>POST /clients/${client.id}/assign-number</code> — it buys the number, wires it up, and emails them the forwarding instructions.</p>`,
+        });
+      } catch (alertErr: unknown) {
+        logEvent('error', 'stripe.webhook.alert_failed', {
+          clientId: client.id, error: errorMessage(alertErr),
+        });
+      }
     }
   }
 

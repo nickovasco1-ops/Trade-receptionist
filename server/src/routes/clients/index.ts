@@ -31,6 +31,7 @@ import type {
   NumberMode,
 } from '../../../../shared/types';
 import { divertActivationCode } from '../../../../shared/phone';
+import { sendNumberReadyEmail } from '../../services/resend';
 
 const router = Router();
 
@@ -783,6 +784,17 @@ router.post('/:id/assign-number', requireAdmin, async (req: Request, res: Respon
 
   const updatedClient = updated as Client;
   logEvent('info', 'assign_number.complete', { clientId: client.id, number: phoneNumber, mode: updatedClient.own_number ? 'keep_existing' : 'new_number' });
+
+  // The follow-up the welcome email used to promise and nothing ever sent.
+  // Only for tenants who had no number before — this route is also used to
+  // swap a working number, and that does not warrant a "your number is ready".
+  if (!client.twilio_number && updatedClient.owner_email) {
+    void sendNumberReadyEmail({
+      to:          updatedClient.owner_email,
+      firstName:   (updatedClient.owner_name ?? 'there').split(' ')[0],
+      phoneNumber: phoneNumber,
+    });
+  }
   res.json({
     success: true,
     data: buildProvisionResponse(updatedClient, phoneNumber),
