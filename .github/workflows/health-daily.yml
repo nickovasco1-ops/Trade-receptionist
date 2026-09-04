@@ -59,8 +59,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+          # NB: ALWAYS_CHECK_EMAILS is deliberately NOT here. The always-check
+          # logic lives in tenant-integrity.ts, which runs on Railway — this
+          # runner only calls /admin/check-tenant-integrity over HTTP. Set it in
+          # Railway, not as a repo secret.
           ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
-          ALWAYS_CHECK_EMAILS: ${{ secrets.ALWAYS_CHECK_EMAILS }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RETELL_API_KEY: ${{ secrets.RETELL_API_KEY }}
           GH_TOKEN: ${{ github.token }}
