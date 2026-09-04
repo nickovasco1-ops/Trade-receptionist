@@ -3,9 +3,10 @@
  * and C14 (PII in logs).
  *
  * C13 is the meta-class and the reason this system exists. Every automated
- * check this project has built has been broken at some point: a cron red for
- * 29 days with nobody acting, 44 unit tests written for a runner that was never
- * installed, a Playwright suite excluded from CI while 20 failures piled up.
+ * check this project has built has been broken at some point: a cron that
+ * reported success for 20 consecutive runs while the notifications it checked
+ * were failing, 44 unit tests written for a runner that was never installed, a
+ * Playwright suite excluded from CI while 20 failures piled up.
  * If these checks pass, silence can be trusted. If they do not, nothing else in
  * this report can be.
  */
@@ -38,8 +39,16 @@ export default [
       try { runs = JSON.parse(gh.raw ?? gh.output); } catch { return { status: BLOCKED, evidence: gh, detail: 'unparseable gh output' }; }
 
       // Group by workflow, newest first, and count the leading failure streak.
+      // The health workflows exit non-zero whenever they FIND something, so
+      // judging them by their own exit code would flag a working check as a
+      // broken one. Their health is the report, not the job status — and if the
+      // job never got far enough to run this check, this check did not run either.
+      const SELF = new Set(['Health (daily)', 'Health (deep)']);
+
       const byName = new Map();
       for (const r of runs) {
+        if (SELF.has(r.name)) continue;
+        if (r.conclusion === null) continue;   // still in progress — no verdict yet
         if (!byName.has(r.name)) byName.set(r.name, []);
         byName.get(r.name).push(r);
       }

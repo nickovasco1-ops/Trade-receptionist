@@ -31,7 +31,19 @@ async function integrityReport() {
   if (!res || !res.ok) return { blocked: `endpoint returned ${res?.status ?? 'nothing'}`, ev };
   try {
     const json = JSON.parse(body);
-    return { report: json.report ?? json, ev };
+    // The endpoint answers { success, data: report }. Reading `json.report`
+    // fell through to the envelope itself, so `findings` was undefined, `?? []`
+    // made it empty, and three checks passed vacuously while a real
+    // billing_drift finding sat in the response. Never infer a shape — assert it.
+    const report = json.data ?? json.report ?? json;
+    if (typeof report?.tenantsChecked !== 'number' || !Array.isArray(report?.findings)) {
+      return {
+        blocked: 'response did not match the IntegrityReport shape '
+          + `(tenantsChecked=${typeof report?.tenantsChecked}, findings=${Array.isArray(report?.findings) ? 'array' : typeof report?.findings})`,
+        ev,
+      };
+    }
+    return { report, ev };
   } catch (err) {
     return { blocked: `unparseable response: ${err.message}`, ev };
   }
@@ -51,11 +63,11 @@ export default [
       const r = await report();
       if (r.blocked) return { status: BLOCKED, evidence: r.ev ?? evidence('integrity check', r.blocked, 1), detail: r.blocked };
 
-      const broken = (r.report.findings ?? []).filter((f) => PRODUCT_BROKEN.has(f.code));
+      const broken = r.report.findings.filter((f) => PRODUCT_BROKEN.has(f.code));
       const lines = [
         `tenants checked: ${r.report.tenantsChecked}`,
-        `findings: ${(r.report.findings ?? []).length}`,
-        ...(r.report.findings ?? []).map((f) => `${f.severity.toUpperCase()} ${f.code} — ${f.businessName}: ${f.detail}`),
+        `findings: ${r.report.findings.length}`,
+        ...r.report.findings.map((f) => `${f.severity.toUpperCase()} ${f.code} — ${f.businessName}: ${f.detail}`),
       ];
 
       return {
@@ -76,7 +88,7 @@ export default [
       if (r.blocked) return { status: BLOCKED, evidence: r.ev ?? evidence('integrity check', r.blocked, 1), detail: r.blocked };
 
       const ROUTING = new Set(['number_not_imported_to_retell', 'number_bound_to_wrong_agent', 'number_not_on_trunk']);
-      const bad = (r.report.findings ?? []).filter((f) => ROUTING.has(f.code));
+      const bad = r.report.findings.filter((f) => ROUTING.has(f.code));
 
       return {
         status: bad.length ? FAIL : PASS,
@@ -97,7 +109,7 @@ export default [
       if (r.blocked) return { status: BLOCKED, evidence: r.ev ?? evidence('integrity check', r.blocked, 1), detail: r.blocked };
 
       const BILLING = new Set(['billing_drift', 'churned_still_active']);
-      const drift = (r.report.findings ?? []).filter((f) => BILLING.has(f.code));
+      const drift = r.report.findings.filter((f) => BILLING.has(f.code));
 
       return {
         status: drift.length ? FAIL : PASS,

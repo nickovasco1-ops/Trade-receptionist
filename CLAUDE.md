@@ -1143,10 +1143,12 @@ New failure class → add the catalogue row **and** the check in the same commit
 catalogue and the suite cannot drift apart.
 
 > `notification-health.yml` was retired on 2026-08-30. It fired a live SMS and
-> email at a real tenant every day, had been failing for 29+ days with nobody
-> acting on it, and was training the owner to ignore the exact email channel
-> this system escalates through. Its useful half is now
-> `providers.credentials_live`.
+> email at a real tenant every day, and — corrected 2026-08-31 — it reported
+> **success on all 20 of its last runs while the notifications it checked were
+> failing**: Sentry logged 59 Twilio `21211` errors over the same window. It only
+> failed on a non-2xx and the endpoint returned 2xx regardless, so a broken
+> pipeline read as green. Its useful half is now `providers.credentials_live`,
+> which probes the provider directly instead of trusting a 2xx.
 
 ---
 
@@ -1154,7 +1156,7 @@ catalogue and the suite cannot drift apart.
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
 *v4.0 · 2026-08-31 — the dashboard now tells a tenant with no connected diary that its receptionist cannot book jobs, and links them to Settings to fix it. Found while auditing activation: **neither paying customer had a calendar**, so `buildRetellTools()` had never attached the booking tools to their agent and the headline feature was inert for them regardless of the `retell-tools` fix — because the onboarding wizard has no calendar step at all. New §10 landmine: `onboarding_complete` means "walked the wizard", not "has a working product".*
 
-*v3.9 · 2026-08-30 — added the health audit system (§16): a 17-class failure catalogue mined from eight months of real history, deterministic checks in `tests/health/`, `health:daily`/`health:deep` runners that refuse to report a pass without a recorded command and exit code, scheduled daily and deep workflows, and the `app-health-auditor` subagent. Added a `typecheck` script and fixed the five pre-existing type errors it surfaced — one a real bug (`TestCallPage` called `mute(next)`, whose argument the SDK ignores, so unmuting muted). Retired `notification-health.yml`, which had been red for 29 days while texting a live tenant daily.*
+*v3.9 · 2026-08-30 — added the health audit system (§16): a 17-class failure catalogue mined from eight months of real history, deterministic checks in `tests/health/`, `health:daily`/`health:deep` runners that refuse to report a pass without a recorded command and exit code, scheduled daily and deep workflows, and the `app-health-auditor` subagent. Added a `typecheck` script and fixed the five pre-existing type errors it surfaced — one a real bug (`TestCallPage` called `mute(next)`, whose argument the SDK ignores, so unmuting muted). Retired `notification-health.yml`, which texted a live tenant daily and reported green while the notifications it checked were failing.*
 *v3.8 · 2026-08-30 — fixed `retell-tools` signature verification, which had been rejecting **every** mid-call `check_calendar_availability` and `create_calendar_booking` since 2026-05-21: it hand-rolled a plain `HMAC(body)` while Retell sends the webhook's `v=,d=` scheme, so the agent could never read a diary or book a job on a real call. Confirmed against production with an SDK-signed probe and corroborated by the DB (the only call-linked booking is a synthetic `auto_test_*` row). Now uses `retell-sdk`'s `verify()`; rejections log at error level; 8 e2e tests, all confirmed failing against the pre-fix code.*
 *v3.7 · 2026-08-30 — Stripe webhook signature verification now **fails closed**: the guard `secret && sigHeader && !verify(...)` let any request that omitted the `stripe-signature` header skip verification entirely, even with the secret set, exposing `provisionClient()` (buys Twilio numbers, creates auth users) and `customer.subscription.deleted` to unauthenticated forgery; added the 300s replay window it never had. Extracted the verifier to `stripe-signature.ts` so it is unit-testable without Supabase credentials (11 tests). Fixed the `server` test glob, which had been silently skipping every nested test file.*
 *v3.6 · 2026-08-30 — reconciled tenant lifecycle state against Stripe (three churned tenants were still `is_active`); added `/admin/check-tenant-integrity`; `DELETE /clients/:id` now releases the Twilio number and Retell agent instead of orphaning them; corrected the false "No card required" claim in 7 places and gave Business/Agency Payment Links their advertised 14-day trial; repaired the e2e suite (20 hard failures → 0, incl. two real bugs: a query-dropping redirect and webhook tests that were signing wrongly and asserting nothing) and widened CI to run it all.*
