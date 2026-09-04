@@ -98,9 +98,15 @@ silence must mean healthy and that silence must be trustworthy.
 That has **never been true in this repo before now**. Every automated safety net
 built here has been dark at some point:
 
-- `notification-health.yml` failed daily for 29+ days with no action taken — and
-  fired a live SMS and email at a real tenant on every run. Retired 2026-08-30
-  and folded into `providers.credentials_live`.
+- `notification-health.yml` reported **success on all 20 of its last runs**
+  while the notifications it checked were failing: Sentry logged 59 Twilio
+  `21211` errors over the same period. It only failed on a non-2xx, and the
+  endpoint returned 2xx regardless — so a broken pipeline read as green. It also
+  fired a live SMS and email at a real tenant every run. Retired 2026-08-30 and
+  folded into `providers.credentials_live`, which probes the provider itself.
+  (Corrected 2026-08-31: this was first recorded as "red for 29 days". That was
+  inferred from the Sentry errors and was wrong. Green-while-broken is the worse
+  failure and the more important lesson.)
 - `emergency.test.ts` was written against `bun:test` in a repo with no Bun: 44
   tests that had never once executed.
 - The Playwright suite sat at 20 hard failures while excluded from CI.

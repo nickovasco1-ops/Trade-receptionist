@@ -70,7 +70,12 @@ export async function runTenantIntegrityCheck(): Promise<IntegrityReport> {
     .select('id,business_name,owner_email,plan,twilio_number,retell_agent_id,stripe_subscription_id,subscription_status,is_active');
 
   if (error) throw new Error(`tenant integrity: client fetch failed: ${error.message}`);
-  const clients = (data ?? []) as unknown as Client[];
+
+  // Automated-test tenants are provisioned with stub provider IDs, so they
+  // always look broken. A leaked e2e row produced three critical findings and
+  // would have emailed INTEGRITY_ALERT_EMAIL about a customer that never existed.
+  const clients = ((data ?? []) as unknown as Client[])
+    .filter((c) => !c.owner_email.endsWith('tradereceptionist.test'));
 
   // One call for all numbers rather than one per tenant.
   let retellNumbers: Array<{ phone_number: string; inbound_agent_ids: string[] }> = [];

@@ -34,8 +34,8 @@ async function liveTenants() {
     .select('id,business_name,owner_email,created_at,is_active,subscription_status,google_cal_id,twilio_number');
   if (error) throw new Error(error.message);
 
-  // Health seed tenants are ours and never take calls; excluding them keeps
-  // the signal about real customers.
+  // Test identities are ours and never take calls; excluding them keeps the
+  // signal about real customers.
   return (data ?? []).filter((c) =>
     c.is_active
     && !isOurs(c.owner_email)
