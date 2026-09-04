@@ -85,7 +85,14 @@ export default [
       // dormant for months, and how an unquoted `**` glob hid a whole
       // directory of new ones.
       const server = await run('npm', ['test', '--prefix', 'server'], { cwd: repoRoot });
-      const m = /^ℹ tests (\d+)$/m.exec(server.output) ?? /tests (\d+)/.exec(server.output);
+
+      // Parse the UNTRUNCATED output. node:test uses the compact spec reporter
+      // on a TTY ("ℹ tests 65") and TAP without one ("# tests 65"), and TAP
+      // prints every test before the summary — so on CI the display cap cut the
+      // summary off entirely and this check reported zero tests on a suite that
+      // had just run 65. Third time a truncated-before-parsing bug has bitten.
+      const raw = server.raw ?? server.output;
+      const m = /^[ℹ#]\s*tests\s+(\d+)\s*$/m.exec(raw);
       const count = m ? Number(m[1]) : 0;
 
       const specs = await run('sh', ['-c', `ls ${repoRoot}/e2e/*.spec.ts | wc -l`]);

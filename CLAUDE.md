@@ -680,6 +680,35 @@ server/src/
 - RLS policies exist on all six (added incrementally — `transcripts` had none until migration 015, a real bug that shipped: the dashboard silently showed zero transcripts for months). Any new table needs RLS policies **in the same migration**, not a follow-up.
 - **RLS only governs the browser client.** `src/lib/supabase.ts` uses the anon key + user JWT, so RLS (`owner_email = auth.jwt() ->> 'email'`) is the real tenant boundary there. `server/src/services/supabase.ts` uses the **service-role key**, which bypasses RLS completely — every server route that returns tenant data must filter by `owner_email`/`client_id` in application code. There is no database-level backstop for a missing `.eq('client_id', ...)` in a server route.
 
+### 8.4b — Agent quality tiers (added 2026-09-04)
+
+The receptionist a customer gets is tiered by plan, defined in `AGENT_TIER` in
+`server/src/services/retell.ts`. Only the two levers that cost money vary:
+
+| Plan | Voice | TTS cost | LLM | Fast Tier | Label |
+|---|---|---|---|---|---|
+| Starter £49 | `retell-Willa` | $0.015/min | `gpt-4o-mini` | no | standard |
+| Pro £89 | `11labs-Amy` | $0.040/min | `gpt-5.6-terra` | no | natural |
+| Business £159 | `11labs-Amy` | $0.040/min | `gpt-5.6-terra` | **yes** | natural + priority |
+| Agency £249 | `11labs-Amy` | $0.040/min | `gpt-5.6-terra` | **yes** | natural + priority |
+
+**Everything that makes an agent sound human and costs nothing is given to every
+tier** — the speech-style prompt block, trade vocabulary boosting, backchannels,
+voice temperature, turn-taking. The cheapest plan is not deliberately made worse;
+real money is only spent where the customer is paying for it.
+
+Business and Agency are identical on audio, deliberately. Inventing a difference
+to fill the table would be dishonest — Agency's value is seats and volume.
+
+Fast Tier (`model_high_priority`) bills at roughly 1.5–2× the standard LLM rate.
+At 2× it makes Business and Agency loss-making **at full allowance** — see the
+unit-economics work of 2026-09-01. It is affordable at realistic volumes; the
+allowance ceilings are the outstanding risk, not the feature.
+
+`POST /admin/apply-tiers` brings existing agents up to their entitled tier.
+Retell will not patch a published version, so it branches a draft, applies, and
+publishes — the previous version is retained, so it is reversible.
+
 ### 8.4a — API authentication (added 2026-08-30)
 
 `server/src/middleware/auth.ts` is the only auth boundary on the data plane. The
@@ -1154,6 +1183,8 @@ catalogue and the suite cannot drift apart.
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
 *v3.1 · 2026-08-06 — §8 rewritten against verified source (routes, services, webhook flow, provisioning, DB schema, deploy config, env vars); corrected two backwards §10 entries (AudioPlayer/Gemini, WaitlistModal/Apps Script); added multi-tenancy note to §1.*
+*v4.1 · 2026-09-04 — agent quality is now tiered by plan (§8.4b): Starter gets Retell's native voice, Pro and above get ElevenLabs, Business and Agency add Fast Tier for lowest latency. Everything that sounds human and costs nothing goes to every tier. `POST /admin/apply-tiers` upgrades existing agents — Derbyshire Renewables, a paying Pro customer, was still on the old synthetic voice while a Business customer had ElevenLabs. Also added an `agent_never_published` integrity check, which immediately found Derbyshire's agent had no published version and was therefore answering nothing.*
+
 *v4.0 · 2026-08-31 — the dashboard now tells a tenant with no connected diary that its receptionist cannot book jobs, and links them to Settings to fix it. Found while auditing activation: **neither paying customer had a calendar**, so `buildRetellTools()` had never attached the booking tools to their agent and the headline feature was inert for them regardless of the `retell-tools` fix — because the onboarding wizard has no calendar step at all. New §10 landmine: `onboarding_complete` means "walked the wizard", not "has a working product".*
 
 *v3.9 · 2026-08-30 — added the health audit system (§16): a 17-class failure catalogue mined from eight months of real history, deterministic checks in `tests/health/`, `health:daily`/`health:deep` runners that refuse to report a pass without a recorded command and exit code, scheduled daily and deep workflows, and the `app-health-auditor` subagent. Added a `typecheck` script and fixed the five pre-existing type errors it surfaced — one a real bug (`TestCallPage` called `mute(next)`, whose argument the SDK ignores, so unmuting muted). Retired `notification-health.yml`, which texted a live tenant daily and reported green while the notifications it checked were failing.*

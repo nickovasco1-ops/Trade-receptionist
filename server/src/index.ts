@@ -18,6 +18,7 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { syncAll } from './services/notion-sync';
+import { applyTierToAgent, getRetellAgent } from './services/retell';
 import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
@@ -210,6 +211,61 @@ app.post('/admin/check-tenant-integrity', async (req, res) => {
       error: err instanceof Error ? err.message : String(err),
     });
     res.status(500).json({ success: false, error: 'Integrity check failed' });
+  }
+});
+
+// ── POST /admin/apply-tiers ──────────────────────────────────────────────────
+// Brings every active agent up to the tier its plan entitles it to. Idempotent —
+// re-running changes nothing once each agent already matches. Agents created
+// before tiering existed are stranded on whatever the default was that week.
+app.post('/admin/apply-tiers', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const { data } = await supabase
+      .from('clients')
+      .select('id,business_name,plan,retell_agent_id,is_active')
+      .eq('is_active', true)
+      .not('retell_agent_id', 'is', null);
+
+    const rows = (data ?? []) as unknown as Array<{
+      id: string; business_name: string; plan: string; retell_agent_id: string;
+    }>;
+
+    const results: Array<Record<string, unknown>> = [];
+    for (const c of rows) {
+      try {
+        const agent = await getRetellAgent(c.retell_agent_id);
+        const llmId = (agent?.response_engine as { llm_id?: string } | undefined)?.llm_id;
+        if (!llmId) {
+          results.push({ business: c.business_name, plan: c.plan, error: 'no llm on agent' });
+          continue;
+        }
+        const { applied, version } = await applyTierToAgent(c.retell_agent_id, llmId, c.plan);
+        results.push({
+          business: c.business_name, plan: c.plan,
+          tier: applied.label, voice: applied.voiceId,
+          fastTier: applied.highPriority, version,
+        });
+      } catch (err: unknown) {
+        results.push({
+          business: c.business_name, plan: c.plan,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    logEvent('info', 'apply_tiers.complete', { count: results.length });
+    res.json({ success: true, data: results });
+  } catch (err: unknown) {
+    logEvent('error', 'apply_tiers.failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    res.status(500).json({ success: false, error: 'Apply tiers failed' });
   }
 });
 
