@@ -96,6 +96,46 @@ export default [
   }),
 
   check({
+    id: 'cost.no_stranded_test_tenants', cls: 'C19', severity: MEDIUM,
+    title: 'No automated-test tenants left behind in production',
+    fn: async () => {
+      const db = admin();
+      if (!db) return { status: BLOCKED, evidence: evidence('supabase', 'no service-role key', 1) };
+
+      const { data, error } = await db
+        .from('clients')
+        .select('business_name,owner_email,created_at')
+        .like('owner_email', '%@tradereceptionist.test');
+      if (error) return { status: BLOCKED, evidence: evidence('supabase clients query', error.message, 1) };
+
+      // Two exclusions, both matching the e2e teardown's own rules:
+      //   - health seeds are created and destroyed inside a single check
+      //   - anything under two hours old may still be in use by a running suite,
+      //     and the teardown will sweep it on the next run
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
+      const stranded = (data ?? []).filter((c) => {
+        if (c.owner_email.toLowerCase().endsWith('@health.tradereceptionist.test')) return false;
+        const age = Date.now() - Date.parse(c.created_at ?? '');
+        return Number.isFinite(age) && age > TWO_HOURS;
+      });
+
+      return {
+        status: stranded.length ? FAIL : PASS,
+        evidence: evidence("SELECT ... FROM clients WHERE owner_email LIKE '%@tradereceptionist.test'",
+          stranded.length
+            ? stranded.map((c) => `${c.business_name} — ${c.owner_email} (${String(c.created_at).slice(0, 10)})`).join('\n')
+            : 'none',
+          stranded.length ? 1 : 0),
+        entities: stranded.map((c) => c.owner_email),
+        detail: stranded.length
+          ? `${stranded.length} test tenant(s) stranded in production. The e2e global teardown sweeps these, `
+            + 'so any that survive mean the sweep failed or was skipped — check the last run\'s teardown output.'
+          : 'Production contains no leftover test tenants.',
+      };
+    },
+  }),
+
+  check({
     id: 'cost.tenant_spend_within_plan', cls: 'C19', severity: HIGH,
     title: 'No tenant is costing more to serve than their plan brings in',
     fn: async () => {
