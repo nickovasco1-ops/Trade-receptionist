@@ -539,6 +539,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       ownerNumber:  ownerMobile,
       calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: buildBeginMessage(client, configRow as BusinessConfig),
+      plan,
       boostedKeywords: [ownerName].filter(Boolean),
     });
     agentId = ids.agentId;

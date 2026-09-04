@@ -16,10 +16,73 @@ const BASE_URL = 'https://api.retellai.com';
  * native voice — +$0.025/min, roughly +£0.04 per two-minute call. Deliberate:
  * a receptionist that sounds synthetic is the product failing.
  */
-const CHARLOTTE_VOICE_ID = '11labs-Amy';
+/**
+ * Agent quality by plan.
+ *
+ * Two levers actually cost money, and they are the two that tier:
+ *
+ *   Voice    ElevenLabs bills $0.040/min against $0.015/min for a Retell native
+ *            voice. It is the single most audible difference — this is what a
+ *            prospect hears in the first two seconds.
+ *   Latency  model_high_priority is Retell's Fast Tier, billed at roughly
+ *            1.5–2x the standard LLM rate. Long gaps before the agent speaks
+ *            are the strongest "this is a robot" signal, so latency is a
+ *            realism feature, not just a performance one.
+ *
+ * Everything else that makes an agent sound human — the speech-style prompt
+ * block, trade vocabulary boosting, backchannels, voice temperature, turn
+ * taking — is free, so **every tier gets all of it**. We do not make the
+ * cheapest plan sound worse than it needs to; we spend real money only where
+ * the customer is paying for it.
+ *
+ * Business and Agency are deliberately identical on audio. Inventing a
+ * difference to fill the table would be dishonest — Agency's value is seats and
+ * volume, not a better voice.
+ */
+export interface AgentTier {
+  voiceId:      string;
+  voiceModel?:  string;
+  model:        string;
+  highPriority: boolean;
+  /** For logs and the dashboard, not for the customer. */
+  label:        string;
+}
 
-/** Lowest-latency ElevenLabs model. Only applies to 11labs voices. */
-const VOICE_MODEL = 'eleven_flash_v2_5';
+export const AGENT_TIER: Record<string, AgentTier> = {
+  starter: {
+    voiceId:      'retell-Willa',
+    model:        'gpt-4o-mini',
+    highPriority: false,
+    label:        'standard',
+  },
+  pro: {
+    voiceId:      '11labs-Amy',
+    voiceModel:   'eleven_flash_v2_5',
+    model:        'gpt-5.6-terra',
+    highPriority: false,
+    label:        'natural',
+  },
+  business: {
+    voiceId:      '11labs-Amy',
+    voiceModel:   'eleven_flash_v2_5',
+    model:        'gpt-5.6-terra',
+    highPriority: true,
+    label:        'natural + priority',
+  },
+  agency: {
+    voiceId:      '11labs-Amy',
+    voiceModel:   'eleven_flash_v2_5',
+    model:        'gpt-5.6-terra',
+    highPriority: true,
+    label:        'natural + priority',
+  },
+};
+
+export function tierFor(plan: string | null | undefined): AgentTier {
+  return AGENT_TIER[(plan ?? 'starter').toLowerCase()] ?? AGENT_TIER.starter;
+}
+
+
 
 /**
  * Realism settings, applied to every agent.
@@ -112,6 +175,8 @@ export interface RetellAgentConfig {
    * and service areas. Appended to the shared trade vocabulary.
    */
   boostedKeywords?: string[];
+  /** Drives voice and latency. Defaults to starter if unknown. */
+  plan?: string | null;
 }
 
 export interface ProvisionedAgent {
@@ -277,7 +342,8 @@ export async function createRetellLlm(
   prompt: string,
   ownerNumber?: string | null,
   calendarBookingEnabled = false,
-  beginMessage?: string | null
+  beginMessage?: string | null,
+  tier: AgentTier = AGENT_TIER.starter,
 ): Promise<{ llmId: string }> {
   if (isE2ETestMode()) {
     return { llmId: `llm_e2e_${Date.now()}` };
@@ -288,7 +354,8 @@ export async function createRetellLlm(
   const body: Record<string, unknown> = {
     general_prompt: prompt,
     general_tools:  tools,
-    model:          'gpt-4o-mini',
+    model:               tier.model,
+    model_high_priority: tier.highPriority,
   };
   // begin_message lives on the Retell LLM (NOT the agent — Retell ignores
   // agent-level begin_message for llm-backed agents). When set, Retell speaks
@@ -383,11 +450,14 @@ export async function createRetellAgent(
     };
   }
 
+  const tier = tierFor(config.plan);
+
   const { llmId } = await createRetellLlm(
     config.prompt,
     config.ownerNumber,
     config.calendarBookingEnabled ?? false,
-    config.beginMessage
+    config.beginMessage,
+    tier,
   );
 
   const webhookUrl = process.env.RETELL_WEBHOOK_URL;
@@ -395,8 +465,8 @@ export async function createRetellAgent(
   const agentBody: Record<string, unknown> = {
     agent_name:       config.agentName,
     response_engine:  { type: 'retell-llm', llm_id: llmId },
-    voice_id:         CHARLOTTE_VOICE_ID,
-    voice_model:      VOICE_MODEL,
+    voice_id:         tier.voiceId,
+    ...(tier.voiceModel ? { voice_model: tier.voiceModel } : {}),
     language:         'en-GB',
     enable_backchannel:         true,
     backchannel_frequency:      AGENT_BACKCHANNEL_FREQUENCY,
@@ -518,6 +588,64 @@ export async function getRetellAgent(agentId: string): Promise<Record<string, un
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Retell getAgent failed: ${await res.text()}`);
   return await res.json() as Record<string, unknown>;
+}
+
+/**
+ * Bring an existing agent up to the tier its plan entitles it to.
+ *
+ * Provisioning applies the tier at creation, but agents created before tiering
+ * existed are stranded on whatever was the default that week. Derbyshire
+ * Renewables, a paying Pro customer, was still on the old synthetic Retell voice
+ * while a Business customer had ElevenLabs.
+ *
+ * Retell will not patch a published version, so this branches a draft from the
+ * live one, applies the tier, and publishes. The previous version is retained,
+ * so it is reversible.
+ */
+export async function applyTierToAgent(
+  agentId: string,
+  llmId: string,
+  plan: string | null | undefined,
+): Promise<{ applied: AgentTier; version: number | null }> {
+  const tier = tierFor(plan);
+  if (isE2ETestMode()) return { applied: tier, version: 0 };
+
+  // The LLM has no published/draft split — patch it directly.
+  await fetch(`${BASE_URL}/update-retell-llm/${encodeURIComponent(llmId)}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({ model: tier.model, model_high_priority: tier.highPriority }),
+  });
+
+  const current = await getRetellAgent(agentId);
+  const baseVersion = typeof current?.version === 'number' ? current.version : 0;
+
+  // Branch a draft, since a published version cannot be edited in place.
+  const draft = await fetch(`${BASE_URL}/create-agent-version/${encodeURIComponent(agentId)}`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ base_version: baseVersion }),
+  });
+  const draftBody = draft.ok ? await draft.json() as Record<string, unknown> : null;
+  const version = typeof draftBody?.version === 'number' ? draftBody.version : baseVersion;
+
+  await fetch(`${BASE_URL}/update-agent/${encodeURIComponent(agentId)}?version=${version}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({
+      voice_id: tier.voiceId,
+      ...(tier.voiceModel ? { voice_model: tier.voiceModel } : {}),
+    }),
+  });
+
+  // Publish, or the number keeps routing to the old version.
+  await fetch(`${BASE_URL}/publish-agent/${encodeURIComponent(agentId)}`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ version }),
+  });
+
+  return { applied: tier, version };
 }
 
 /**

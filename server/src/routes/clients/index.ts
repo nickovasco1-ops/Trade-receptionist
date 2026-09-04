@@ -610,6 +610,7 @@ router.post('/provision', requireAdmin, async (req: Request, res: Response) => {
       calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: buildBeginMessage(client, config),
       // The tenant's own words, so the recogniser expects them.
+      plan: client.plan,
       boostedKeywords: [
         business_name,
         ...(config.services ?? []),
