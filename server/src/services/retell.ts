@@ -521,6 +521,28 @@ export async function getRetellAgent(agentId: string): Promise<Record<string, un
 }
 
 /**
+ * The agent's latest **published** version, or null if it has never been
+ * published.
+ *
+ * A number routes to the latest published version, so an agent can exist, be
+ * correctly bound to a number, and still never answer because only a draft was
+ * ever created. That failure is invisible from every other angle — the config
+ * looks perfect and the phone stays silent.
+ */
+export async function getPublishedRetellAgent(agentId: string): Promise<Record<string, unknown> | null> {
+  if (isE2ETestMode()) return { agent_id: agentId, is_published: true };
+
+  const res = await fetch(
+    `${BASE_URL}/get-agent/${encodeURIComponent(agentId)}?version=latest_published`,
+    { headers: headers() },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) return null;
+  const body = await res.json() as Record<string, unknown>;
+  return body.is_published ? body : null;
+}
+
+/**
  * Every phone number Retell knows about, with the agents bound to each.
  * A `clients.twilio_number` absent from this list is a tenant whose calls do
  * not route — the exact state Derbyshire Renewables sat in from 2026-07-02.

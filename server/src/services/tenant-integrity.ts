@@ -16,7 +16,7 @@
  * it repairs nothing, because the repair differs per fault and some cost money.
  */
 import { supabase } from './supabase';
-import { getRetellAgent, listRetellPhoneNumbers } from './retell';
+import { getRetellAgent, getPublishedRetellAgent, listRetellPhoneNumbers } from './retell';
 import { getNumberDetails } from './twilio';
 import { errorMessage, logEvent } from '../lib/observability';
 import type { Client } from '../../../shared/types';
@@ -61,6 +61,18 @@ async function stripeSubscriptionStatus(subscriptionId: string): Promise<string 
  * retried, so a broken agent still matters.
  */
 const SERVICEABLE = new Set(['trialing', 'active', 'past_due']);
+
+/**
+ * Tenants checked regardless of billing status.
+ *
+ * The demo line sat with a deleted agent and no binding for an unknown length
+ * of time because Stripe said "canceled", so the integrity check skipped it as
+ * non-serviceable — and it was excluded from customer-health checks for being
+ * an internal account. Two sensible exclusions, and between them the one number
+ * being handed to prospects had no coverage at all.
+ */
+const ALWAYS_CHECK = (process.env.ALWAYS_CHECK_EMAILS ?? '')
+  .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 
 export async function runTenantIntegrityCheck(): Promise<IntegrityReport> {
   const findings: IntegrityFinding[] = [];
@@ -111,20 +123,28 @@ export async function runTenantIntegrityCheck(): Promise<IntegrityReport> {
       }
     }
 
-    if (stripeStatus && stripeStatus !== client.subscription_status) {
-      add('warning', 'billing_drift',
-        `Stripe says "${stripeStatus}", DB says "${client.subscription_status}"`);
-    }
+    const alwaysCheck = ALWAYS_CHECK.includes((client.owner_email ?? '').toLowerCase());
 
-    // A tenant Stripe considers dead should not still be served.
-    if (stripeStatus && !SERVICEABLE.has(stripeStatus) && client.is_active) {
-      add('critical', 'churned_still_active',
-        `Stripe subscription is "${stripeStatus}" but is_active is true — churned tenant still being served`);
+    // Billing findings are meaningless for an always-check line: it is
+    // deliberately not paying. Raising them daily would train the reader to
+    // ignore the report, which is how the last notification cron died. The
+    // technical checks below still apply in full — those are the point.
+    if (!alwaysCheck) {
+      if (stripeStatus && stripeStatus !== client.subscription_status) {
+        add('warning', 'billing_drift',
+          `Stripe says "${stripeStatus}", DB says "${client.subscription_status}"`);
+      }
+
+      // A tenant Stripe considers dead should not still be served.
+      if (stripeStatus && !SERVICEABLE.has(stripeStatus) && client.is_active) {
+        add('critical', 'churned_still_active',
+          `Stripe subscription is "${stripeStatus}" but is_active is true — churned tenant still being served`);
+      }
     }
 
     // Only tenants who should have a working product are worth checking further.
     const serviceable = stripeStatus ? SERVICEABLE.has(stripeStatus) : client.is_active;
-    if (!serviceable) continue;
+    if (!serviceable && !alwaysCheck) continue;
     checked += 1;
 
     // ── Config ───────────────────────────────────────────────────────────────
@@ -146,6 +166,14 @@ export async function runTenantIntegrityCheck(): Promise<IntegrityReport> {
         if (!agent) {
           add('critical', 'agent_not_found_at_retell',
             `retell_agent_id ${client.retell_agent_id} does not exist at Retell`);
+        } else {
+          // A number routes to the latest PUBLISHED version. An agent with only
+          // a draft is bound correctly and still never answers.
+          const published = await getPublishedRetellAgent(client.retell_agent_id);
+          if (!published) {
+            add('critical', 'agent_never_published',
+              `agent ${client.retell_agent_id} exists but has no published version — calls reach nothing`);
+          }
         }
       } catch (err: unknown) {
         logEvent('warn', 'integrity.agent_lookup_failed', {
