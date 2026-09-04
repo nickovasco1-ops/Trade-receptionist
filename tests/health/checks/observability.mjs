@@ -12,8 +12,8 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { check, run, evidence, PASS, FAIL, BLOCKED, CRITICAL, HIGH } from '../lib/check.mjs';
-import { repoRoot } from '../lib/env.mjs';
+import { check, run, evidence, httpProbe, PASS, FAIL, BLOCKED, CRITICAL, HIGH } from '../lib/check.mjs';
+import { repoRoot, API_BASE } from '../lib/env.mjs';
 
 /** Fields that must never be written to a log or telemetry event verbatim. */
 const PII_FIELDS = [
@@ -138,6 +138,42 @@ export default [
         detail: offenders.length
           ? `${offenders.length} log call(s) may carry PII. UK GDPR applies — caller numbers, names and addresses flow through this system continuously.`
           : '',
+      };
+    },
+  }),
+
+  check({
+    id: 'meta.alert_channel_configured', cls: 'C13', severity: HIGH,
+    title: 'Operational alerts have somewhere to go',
+    fn: async () => {
+      const { res, body, ev } = await httpProbe(`${API_BASE}/health/integrations`, {}, 'GET /health/integrations');
+      if (!res || !res.ok) return { status: BLOCKED, evidence: ev, detail: 'API unreachable.' };
+
+      // The endpoint reports presence booleans only, so read what it exposes
+      // and fall back to naming the gap rather than guessing.
+      const live = JSON.parse(body);
+      const resendOk = Boolean(live.resend?.api_key);
+
+      const lines = [
+        `resend api key configured: ${resendOk}`,
+        'ALERT_EMAIL is not exposed by /health/integrations — see detail',
+      ];
+
+      if (!resendOk) {
+        return {
+          status: FAIL,
+          evidence: evidence(ev.command, lines.join('\n'), 1),
+          detail: 'Resend is not configured in production, so every operational alert is dropped — '
+                + 'signups, failed signups, payment failures and cancellations all go unreported.',
+        };
+      }
+
+      return {
+        status: BLOCKED,
+        evidence: evidence(ev.command, lines.join('\n'), 1),
+        detail: 'Resend works, but ALERT_EMAIL cannot be verified from outside Railway. '
+              + 'Confirm it is set there — unset means alerts are silently dropped and logged as alert.no_address. '
+              + 'A signup that fails without an alert is how three customers churned unnoticed.',
       };
     },
   }),

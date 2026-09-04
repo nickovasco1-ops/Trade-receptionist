@@ -9,6 +9,7 @@ import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import { verifyStripeSignature } from './stripe-signature';
 import { forwardingInstructionsHtml } from '../../lib/forwarding-email';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
+import { fireOpsAlert } from '../../services/alerts';
 
 const router = Router();
 
@@ -24,6 +25,11 @@ const PRODUCT_TO_PLAN: Record<string, Plan> = {
   'prod_UQeX2QnK9ev3bK': 'starter',
   'prod_UQeX0UFytNZhFH': 'pro',
   'prod_UQeXswCVtfNvZq': 'agency',
+};
+
+/** Mirrors src/lib/plans.ts — for alert copy only, never for billing. */
+const PLAN_PRICE: Record<string, number> = {
+  starter: 49, pro: 89, business: 159, agency: 249,
 };
 
 type StripeObject = Record<string, unknown>;
@@ -161,6 +167,20 @@ async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<voi
 }
 
 async function handleInvoicePaymentFailed(invoice: StripeObject): Promise<void> {
+  const email = typeof invoice['customer_email'] === 'string' ? invoice['customer_email'] : null;
+  fireOpsAlert({
+    tone:     'warn',
+    subject:  `Payment failed — ${email ?? 'unknown customer'}`,
+    headline: 'A subscription payment did not go through',
+    facts: [
+      ['Customer', email ?? '—'],
+      ['Amount',   typeof invoice['amount_due'] === 'number' ? `£${(invoice['amount_due'] as number) / 100}` : '—'],
+      ['Invoice',  String(invoice['id'] ?? '—')],
+    ],
+    action: 'Stripe will retry automatically. The account is gated until it clears, '
+          + 'so the receptionist stops answering — worth a message before they notice.',
+  });
+
   await updateClientStripeState(
     'invoice.payment_failed',
     {
@@ -179,6 +199,25 @@ async function handleInvoicePaymentFailed(invoice: StripeObject): Promise<void> 
 }
 
 async function handleSubscriptionDeleted(subscription: StripeObject): Promise<void> {
+  const details = subscription['cancellation_details'] as Record<string, unknown> | null;
+  const comment = typeof details?.['comment'] === 'string' ? details['comment'] : null;
+  const reason  = typeof details?.['feedback'] === 'string' ? details['feedback'] : null;
+
+  fireOpsAlert({
+    tone:     'bad',
+    subject:  `Cancellation — ${String(subscription['id'] ?? '')}`,
+    headline: 'A customer cancelled',
+    facts: [
+      ['Subscription', String(subscription['id'] ?? '—')],
+      ['Customer',     String(stripeId(subscription['customer']) ?? '—')],
+      ['Reason given', comment ? `"${comment}"` : (reason ?? 'none given')],
+    ],
+    action: comment
+      ? 'They told you why in their own words. Three of the last cancellations said the '
+        + 'product did not work, and in every case the fault was at our end.'
+      : 'No reason given. Worth one email asking what went wrong.',
+  });
+
   await updateClientStripeState(
     'customer.subscription.deleted',
     {
@@ -192,6 +231,36 @@ async function handleSubscriptionDeleted(subscription: StripeObject): Promise<vo
       current_period_end: unixSecondsToIso(subscription['current_period_end']),
     },
   );
+}
+
+/**
+ * Someone opened checkout and did not finish.
+ *
+ * Stripe expires an abandoned session after 24 hours. There is nothing to fix
+ * in the product here — it is a sales signal, not a fault — but it is the only
+ * visibility you get into people who tried and did not complete.
+ */
+function handleCheckoutExpired(session: StripeObject): void {
+  const details = session['customer_details'] as Record<string, unknown> | null;
+  const email = typeof details?.['email'] === 'string' ? details['email'] : null;
+
+  logEvent('info', 'stripe.webhook.checkout_expired', { hasEmail: Boolean(email) });
+
+  fireOpsAlert({
+    tone:     'warn',
+    subject:  `Abandoned checkout — ${email ?? 'no email captured'}`,
+    headline: 'Someone started signing up and did not finish',
+    facts: [
+      ['Email',   email ?? 'not captured'],
+      ['Name',    typeof details?.['name'] === 'string' ? details['name'] as string : '—'],
+      ['Plan',    String((session['metadata'] as Record<string, string> | null)?.['plan'] ?? '—')],
+      ['Session', String(session['id'] ?? '—')],
+    ],
+    action: email
+      ? 'They got as far as the payment page. One short email asking whether anything '
+        + 'was unclear is the cheapest lead you will get this week.'
+      : 'No email was captured, so there is nobody to follow up — worth noting if this becomes frequent.',
+  });
 }
 
 /**
@@ -586,22 +655,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       action:      'customer has no number and no product — assign one via POST /clients/:id/assign-number',
     });
 
-    const alertTo = process.env.INTEGRITY_ALERT_EMAIL;
-    if (alertTo) {
-      try {
-        await sendEmail({
-          to:      alertTo,
-          subject: `[Trade Receptionist] ${client.business_name} has no number — signup incomplete`,
-          html: `<p><strong>${client.business_name}</strong> (${ownerEmail}) completed checkout but no Twilio number could be bought.</p>`
-              + '<p>They have an agent and an account, and no way to receive a call. They will churn quickly and quietly if this is not fixed today.</p>'
-              + `<p>Fix: <code>POST /clients/${client.id}/assign-number</code> — it buys the number, wires it up, and emails them the forwarding instructions.</p>`,
-        });
-      } catch (alertErr: unknown) {
-        logEvent('error', 'stripe.webhook.alert_failed', {
-          clientId: client.id, error: errorMessage(alertErr),
-        });
-      }
-    }
+    // The end-of-provisioning summary alert carries the email; no second one.
   }
 
   // ── 5. Supabase auth user + magic link ────────────────────────────────────────
@@ -628,6 +682,8 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     });
   }
 
+  let welcomeSent = true;
+
   // ── 6. Welcome email ──────────────────────────────────────────────────────────
 
   try {
@@ -637,6 +693,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       html:    welcomeHtml({ firstName, plan: plan.charAt(0).toUpperCase() + plan.slice(1), phoneNumber, loginUrl }),
     });
   } catch (err: unknown) {
+    welcomeSent = false;
     logEvent('error', 'stripe.webhook.provider_failure', {
       eventType: 'checkout.session.completed',
       clientId: client.id,
@@ -658,6 +715,45 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
     plan,
     hasPhoneNumber: Boolean(phoneNumber),
     hasAgent: Boolean(agentId),
+  });
+
+  // ── One email per signup, whatever happened ─────────────────────────────
+  // Success or failure, the owner hears about every signup once. Partial
+  // provisioning is the dangerous case: the customer is charged, gets a
+  // welcome email, and has no working product. Three customers churned that
+  // way before anyone noticed.
+  const tick = (ok: boolean) => (ok ? '✅' : '❌');
+  const needsNumber = !phoneNumber && !client.own_number;
+  const broken = [
+    !agentId ? 'no receptionist agent' : null,
+    needsNumber ? 'no phone number' : null,
+    !welcomeSent ? 'welcome email failed' : null,
+  ].filter(Boolean) as string[];
+
+  fireOpsAlert({
+    tone:     broken.length ? 'bad' : 'good',
+    subject:  broken.length
+      ? `⚠ Signup incomplete — ${ownerName} (${plan})`
+      : `New signup — ${ownerName} (${plan})`,
+    headline: broken.length
+      ? `${ownerName} signed up but the setup did not finish`
+      : `${ownerName} just signed up`,
+    facts: [
+      ['Business', ownerName],
+      ['Email',    ownerEmail],
+      ['Plan',     `${plan} · £${PLAN_PRICE[plan] ?? '—'}/month`],
+      ['Mobile',   ownerMobile ?? '—'],
+      ['Receptionist agent', tick(Boolean(agentId))],
+      ['Phone number',       phoneNumber ? `${tick(true)} ${phoneNumber}` : (client.own_number ? '— (keeping own number)' : `${tick(false)} none`)],
+      ['Welcome email',      tick(welcomeSent)],
+    ],
+    action: broken.length
+      ? `This customer cannot use the product: ${broken.join(', ')}. `
+        + (needsNumber
+            ? `Fix the number with <code>POST /clients/${client.id}/assign-number</code> — it buys the number, wires it up and emails them the forwarding instructions. `
+            : '')
+        + 'Do it today: a signup that goes quiet in the first week churns without telling you why.'
+      : undefined,
   });
 }
 
@@ -725,6 +821,9 @@ router.post('/', async (req: Request, res: Response) => {
           break;
         case 'customer.subscription.deleted':
           await handleSubscriptionDeleted(object);
+          break;
+        case 'checkout.session.expired':
+          handleCheckoutExpired(object);
           break;
         default:
           logEvent('info', 'stripe.webhook.ignored_event', { requestId: reqId, eventType });
