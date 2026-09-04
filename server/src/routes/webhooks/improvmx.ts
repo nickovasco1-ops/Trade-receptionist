@@ -106,9 +106,9 @@ function divertTemplate(toName: string): string {
       </p>
       <table cellpadding="0" cellspacing="0" width="100%">
         ${cardRow('Step 1', 'Open your Phone app and go to the keypad')}
-        ${cardRow('Step 2', 'Dial <strong>**004*[YOUR TRADE RECEPTIONIST NUMBER]#</strong> and press call')}
+        ${cardRow('Step 2', 'Dial <strong>**004*[YOUR TRADE RECEPTIONIST NUMBER]# (enter it starting 07, not +44)</strong> and press call')}
         ${cardRow('Step 3', 'You\'ll hear a confirmation tone — divert is active')}
-        ${cardRow('Turn off', 'Dial <strong>##004#</strong> to deactivate anytime')}
+        ${cardRow('Turn off', 'Dial <strong>##002#</strong> to deactivate anytime')}
       </table>
     </div>
   </td></tr>
@@ -269,7 +269,7 @@ function setupTemplate(toName: string): string {
       </p>
       <table cellpadding="0" cellspacing="0" width="100%">
         ${cardRow('Step 1 — Account', 'Sign up at <a href="https://tradereceptionist.com" style="color:#FF6B2B">tradereceptionist.com</a> and complete the onboarding. Takes about 5 minutes. Tell us your trade, business name, and working hours.')}
-        ${cardRow('Step 2 — Divert', 'Dial **004*[your receptionist number]# from your mobile to forward unanswered calls. Your receptionist number is shown in Settings after you sign up.')}
+        ${cardRow('Step 2 — Divert', 'Dial **004*[your receptionist number starting 07]# from your mobile to forward unanswered calls. Your receptionist number is shown in Settings after you sign up.')}
         ${cardRow('Step 3 — Test', 'Call yourself from another phone. Your receptionist will answer, take a message, and WhatsApp you a summary. That\'s it — you\'re live.')}
       </table>
     </div>
@@ -308,7 +308,7 @@ function generalTemplate(toName: string): string {
         Quick answers while you wait
       </p>
       <table cellpadding="0" cellspacing="0" width="100%">
-        ${cardRow('Call divert', 'Dial **004*[your number]# to activate. Turn off with ##004#.')}
+        ${cardRow('Call divert', 'Dial **004*[your number starting 07]# to activate. Turn off with ##002#.')}
         ${cardRow('Dashboard', '<a href="https://tradereceptionist.com/dashboard" style="color:#FF6B2B">tradereceptionist.com/dashboard</a> — view calls, leads, and settings.')}
         ${cardRow('Settings', 'Update your business name, hours, or calendar at <a href="https://tradereceptionist.com/dashboard/settings" style="color:#FF6B2B">Settings</a>.')}
       </table>

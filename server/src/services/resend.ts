@@ -1,4 +1,6 @@
 import { isE2ETestMode } from '../config/e2e';
+import { forwardingInstructionsHtml } from '../lib/forwarding-email';
+import { logEvent } from '../lib/observability';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL     = process.env.RESEND_FROM_EMAIL ?? 'hello@tradereceptionist.com';
@@ -386,4 +388,94 @@ export async function sendTrialReminderEmail(
     subject: `Your free trial ends in ${data.daysLeft} day${data.daysLeft !== 1 ? 's' : ''} — add your card to keep going`,
     html: trialReminderHtml(data),
   });
+}
+
+// ── "Your number is ready" ────────────────────────────────────────────────────
+
+/**
+ * Sent when a number is assigned to a tenant who signed up without one.
+ *
+ * This email is the one that did not exist. When a Twilio purchase failed at
+ * signup, provisioning carried on and the welcome email told the customer their
+ * number was "being provisioned" with a follow-up coming "within a few
+ * minutes". Nothing in the codebase sent it. Three customers waited, got
+ * nothing, and cancelled — one of them naming it exactly: "is not working cause
+ * not had my divert number".
+ */
+export function numberReadyHtml(opts: {
+  firstName:   string;
+  phoneNumber: string;
+}): string {
+  const SG = "'Space Grotesk','Helvetica Neue',Arial,sans-serif";
+  const MN = "'Manrope','Helvetica Neue',Arial,sans-serif";
+  const e164 = opts.phoneNumber.replace(/[^\d+]/g, '');
+  const display = /^\+?44(7\d{3})(\d{6})$/.test(e164)
+    ? e164.replace(/^\+?44(7\d{3})(\d{6})$/, '+44 $1 $2')
+    : opts.phoneNumber;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#020D18;">
+<span style="display:none;font-size:1px;color:#020D18;opacity:0;">Your number is live — here's how to send your calls to it.</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020D18;background-image:radial-gradient(ellipse at 20% 0%,rgba(255,107,43,0.10),transparent 55%);padding:40px 16px;">
+<tr><td align="center">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
+    <tr><td align="center" style="padding:8px 0 28px;">
+      <img src="https://tradereceptionist.com/assets/logo.png" width="190" alt="Trade Receptionist" style="display:block;width:190px;height:auto;border:0;">
+    </td></tr>
+    <tr><td style="background:#0A1A2E;background-image:linear-gradient(180deg,#0C1F38,#081626);border-radius:24px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:40px 44px 8px;">
+          <p style="margin:0 0 18px;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#ffb59a;font-family:${MN};">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#FF6B2B;vertical-align:middle;margin-right:8px;"></span>Your number is ready
+          </p>
+          <h1 style="margin:0 0 14px;font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-0.03em;color:#F0F4F8;font-family:${SG};">Here's your number, ${opts.firstName}.</h1>
+          <p style="margin:0;font-size:16px;line-height:1.65;color:rgba(240,244,248,0.62);max-width:430px;font-family:${MN};">Sorry it took longer than it should have. Your receptionist is live on the number below — send your calls to it and it'll start answering.</p>
+        </td></tr>
+      </table>
+      <tr><td style="padding:28px 44px 8px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#161313;background-image:linear-gradient(180deg,rgba(255,107,43,0.10),rgba(255,107,43,0.04));border:1px solid rgba(255,107,43,0.28);border-radius:18px;">
+          <tr><td style="padding:22px 26px;">
+            <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#FF8C55;font-family:${MN};">Your number</p>
+            <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:-0.01em;color:#FFFFFF;font-family:${SG};">${display}</p>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="padding:18px 44px 4px;">${forwardingInstructionsHtml(opts.phoneNumber)}</td></tr>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:26px 44px 36px;font-size:13px;line-height:1.6;color:rgba(240,244,248,0.55);font-family:${MN};">
+          Once that's done, ring your number from another phone and you'll hear it answer. Anything not right, just reply to this email.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+/** Send the "your number is ready" follow-up. Never throws. */
+export async function sendNumberReadyEmail(opts: {
+  to:          string;
+  firstName:   string;
+  phoneNumber: string;
+}): Promise<boolean> {
+  try {
+    await sendEmail({
+      to:      opts.to,
+      subject: `Your Trade Receptionist number is ready — ${opts.phoneNumber}`,
+      html:    numberReadyHtml({ firstName: opts.firstName, phoneNumber: opts.phoneNumber }),
+    });
+    logEvent('info', 'number_ready_email.sent', { to: opts.to });
+    return true;
+  } catch (err: unknown) {
+    logEvent('error', 'number_ready_email.failed', {
+      to: opts.to, error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
 }

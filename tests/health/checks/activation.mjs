@@ -16,15 +16,7 @@
  * between finding that out now and finding out from a cancellation.
  */
 import { check, evidence, PASS, FAIL, BLOCKED, HIGH, MEDIUM } from '../lib/check.mjs';
-import { admin } from '../lib/env.mjs';
-
-/**
- * Every automated-test identity. The seed domain is a subdomain of the e2e one,
- * so a single suffix covers both — the earlier filter only excluded
- * `@health.tradereceptionist.test` and let a leaked e2e tenant through, which
- * then reported as a real customer paying for silence.
- */
-const TEST_DOMAIN = 'tradereceptionist.test';
+import { admin, isOurs } from '../lib/env.mjs';
 
 /** Grace period before a live tenant with no calls is worth raising. */
 const SILENT_DAYS = 14;
@@ -46,7 +38,7 @@ async function liveTenants() {
   // signal about real customers.
   return (data ?? []).filter((c) =>
     c.is_active
-    && !c.owner_email.endsWith(TEST_DOMAIN)
+    && !isOurs(c.owner_email)
     && SERVICEABLE.has(c.subscription_status ?? 'trialing'));
 }
 

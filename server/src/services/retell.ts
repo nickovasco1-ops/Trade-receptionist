@@ -8,7 +8,44 @@ import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
 
-const CHARLOTTE_VOICE_ID = 'retell-Willa';
+/**
+ * Voice. `11labs-Amy` is a natural-sounding en-GB voice; Retell's own voices are
+ * cheaper but noticeably more synthetic.
+ *
+ * COST: ElevenLabs TTS bills at $0.040/min against $0.015/min for a Retell
+ * native voice — +$0.025/min, roughly +£0.04 per two-minute call. Deliberate:
+ * a receptionist that sounds synthetic is the product failing.
+ */
+const CHARLOTTE_VOICE_ID = '11labs-Amy';
+
+/** Lowest-latency ElevenLabs model. Only applies to 11labs voices. */
+const VOICE_MODEL = 'eleven_flash_v2_5';
+
+/**
+ * Realism settings, applied to every agent.
+ *
+ * Long gaps before the agent speaks are the strongest "this is a robot" signal,
+ * so latency settings are realism settings.
+ */
+const AGENT_VOICE_TEMPERATURE = 1.1;   // 1.0 reads flat; above ~1.3 gets unstable
+const AGENT_BACKCHANNEL_FREQUENCY = 0.6; // 0.7 made the "mm-hm"s feel tic-like
+const AGENT_REMINDER_TRIGGER_MS = 9000;
+const AGENT_REMINDER_MAX_COUNT = 2;
+
+/**
+ * Trade vocabulary the speech recogniser should expect. Nothing breaks the
+ * illusion faster than "sorry, could you repeat that", and these are the words
+ * a UK caller actually uses. Per-tenant service names are appended at build time.
+ */
+const TRADE_BOOSTED_KEYWORDS = [
+  'boiler', 'combi', 'condensing boiler', 'boiler service', 'gas safe',
+  'Worcester Bosch', 'Vaillant', 'Baxi', 'Ideal', 'Glow-worm',
+  'radiator', 'thermostat', 'TRV', 'immersion', 'cylinder', 'stopcock',
+  'cistern', 'soil pipe', 'waste pipe', 'macerator', 'power flush',
+  'burst pipe', 'leak', 'drain', 'blockage', 'airlock', 'limescale',
+  'consumer unit', 'RCD', 'fuse board', 'rewire', 'socket', 'downlight',
+  'no hot water', 'no heating', 'gas leak', 'call-out',
+];
 
 // Conversational tuning shared by create + update so every agent stays healthy.
 // interruption_sensitivity was 0.9 (over-eager to stop talking); 0.6 is calmer.
@@ -70,6 +107,11 @@ export interface RetellAgentConfig {
   calendarBookingEnabled?: boolean;
   /** Optional: first utterance spoken when call connects */
   beginMessage?: string;
+  /**
+   * Tenant-specific words the speech recogniser should expect — their services
+   * and service areas. Appended to the shared trade vocabulary.
+   */
+  boostedKeywords?: string[];
 }
 
 export interface ProvisionedAgent {
@@ -354,12 +396,20 @@ export async function createRetellAgent(
     agent_name:       config.agentName,
     response_engine:  { type: 'retell-llm', llm_id: llmId },
     voice_id:         CHARLOTTE_VOICE_ID,
+    voice_model:      VOICE_MODEL,
     language:         'en-GB',
     enable_backchannel:         true,
-    backchannel_frequency:      0.7,
+    backchannel_frequency:      AGENT_BACKCHANNEL_FREQUENCY,
     backchannel_words:          ['hmm', 'right', 'okay', 'yes', 'I see'],
     interruption_sensitivity:   AGENT_INTERRUPTION_SENSITIVITY,
     end_call_after_silence_ms:  AGENT_END_CALL_AFTER_SILENCE_MS,
+    // Realism + latency, see the constants above.
+    voice_temperature:          AGENT_VOICE_TEMPERATURE,
+    responsiveness:             1,
+    stt_mode:                   'fast',
+    reminder_trigger_ms:        AGENT_REMINDER_TRIGGER_MS,
+    reminder_max_count:         AGENT_REMINDER_MAX_COUNT,
+    boosted_keywords:           [...TRADE_BOOSTED_KEYWORDS, ...(config.boostedKeywords ?? [])],
     max_call_duration_ms:       600000,
     post_call_analysis_data:    POST_CALL_ANALYSIS_DATA,
     // Enable call recording so recording_url is populated in webhook events and

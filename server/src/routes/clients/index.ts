@@ -30,6 +30,8 @@ import type {
   ClientProvisionResponse,
   NumberMode,
 } from '../../../../shared/types';
+import { divertActivationCode } from '../../../../shared/phone';
+import { sendNumberReadyEmail } from '../../services/resend';
 
 const router = Router();
 
@@ -145,11 +147,15 @@ async function rollback(state: CleanupState): Promise<void> {
 
 // ── Number mode helpers ───────────────────────────────────────────────────────
 
-function buildActivationCode(twilioNumber: string): string {
+function buildActivationCode(twilioNumber: string): string | null {
   // UK carrier universal divert (busy + no answer + unreachable) — one dial activates all three.
   // Works on EE, Vodafone, O2, Three, BT Mobile, Sky Mobile.
   // giffgaff users: set via My giffgaff app instead.
-  return `**004*${twilioNumber}#`;
+  //
+  // Returns null for a number that cannot be expressed in national dialling
+  // format. Emitting no code is correct; emitting an E.164 one produced a code
+  // that silently never registered. See shared/phone.ts.
+  return divertActivationCode(twilioNumber);
 }
 
 function buildProvisionResponse(
@@ -603,6 +609,12 @@ router.post('/provision', requireAdmin, async (req: Request, res: Response) => {
       ownerNumber:  owner_mobile ?? null,
       calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: buildBeginMessage(client, config),
+      // The tenant's own words, so the recogniser expects them.
+      boostedKeywords: [
+        business_name,
+        ...(config.services ?? []),
+        ...(config.service_areas ?? []),
+      ].filter(Boolean),
     });
     state.llmId   = agentIds.llmId;
     state.agentId = agentIds.agentId;
@@ -772,6 +784,17 @@ router.post('/:id/assign-number', requireAdmin, async (req: Request, res: Respon
 
   const updatedClient = updated as Client;
   logEvent('info', 'assign_number.complete', { clientId: client.id, number: phoneNumber, mode: updatedClient.own_number ? 'keep_existing' : 'new_number' });
+
+  // The follow-up the welcome email used to promise and nothing ever sent.
+  // Only for tenants who had no number before — this route is also used to
+  // swap a working number, and that does not warrant a "your number is ready".
+  if (!client.twilio_number && updatedClient.owner_email) {
+    void sendNumberReadyEmail({
+      to:          updatedClient.owner_email,
+      firstName:   (updatedClient.owner_name ?? 'there').split(' ')[0],
+      phoneNumber: phoneNumber,
+    });
+  }
   res.json({
     success: true,
     data: buildProvisionResponse(updatedClient, phoneNumber),

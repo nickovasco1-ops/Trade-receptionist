@@ -7,6 +7,7 @@ import { searchUkNumbers, buyUkNumber, attachNumberToTrunk } from '../../service
 import { logSubscriber } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
 import { verifyStripeSignature } from './stripe-signature';
+import { forwardingInstructionsHtml } from '../../lib/forwarding-email';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 
 const router = Router();
@@ -241,8 +242,6 @@ export function welcomeHtml(opts: {
   const displayNumber = /^\+?44(7\d{3})(\d{6})$/.test(e164)
     ? e164.replace(/^\+?44(7\d{3})(\d{6})$/, '+44 $1 $2')
     : (opts.phoneNumber ?? '');
-  const dialNumber = e164;
-
   const numberBlock = opts.phoneNumber
     ? `<tr><td style="padding:28px 44px 8px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#161313;background-image:linear-gradient(180deg,rgba(255,107,43,0.10),rgba(255,107,43,0.04));border:1px solid rgba(255,107,43,0.28);border-radius:18px;">
@@ -255,27 +254,18 @@ export function welcomeHtml(opts: {
       </td></tr>`
     : `<tr><td style="padding:28px 44px 8px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A1A2E;border:1px solid rgba(255,255,255,0.10);border-radius:18px;">
-          <tr><td style="padding:20px 26px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.62);font-family:${MN};">Your dedicated number is being provisioned — you'll get a follow-up email within a few minutes with your number and divert code.</td></tr>
+          <tr><td style="padding:20px 26px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.62);font-family:${MN};">We&rsquo;re finishing your setup by hand and a real person is on it. You&rsquo;ll get your number and forwarding instructions as soon as it&rsquo;s ready — if you&rsquo;d rather chase it, just reply to this email.</td></tr>
         </table>
       </td></tr>`;
 
+  // Forwarding instructions live in lib/forwarding-email.ts so the welcome
+  // email and the "your number is ready" email cannot drift apart.
   const divertBlock = opts.phoneNumber
-    ? `<tr><td style="padding:18px 44px 4px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0F2C24;background-image:linear-gradient(180deg,#10322A,#0C2620);border:1px solid rgba(110,231,183,0.22);border-radius:18px;">
-          <tr><td style="padding:22px 26px;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#6ee7b7;font-family:${MN};">Send your calls over — 30 seconds</p>
-            <p style="margin:0 0 14px;font-size:14px;line-height:1.55;color:rgba(240,244,248,0.66);font-family:${MN};">On the mobile you want covered, open the keypad and dial this exactly, then press call:</p>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020D18;border:1px solid rgba(255,255,255,0.10);border-radius:12px;">
-              <tr><td align="center" style="padding:16px 14px;font-family:'SF Mono','Courier New',monospace;font-size:23px;font-weight:700;letter-spacing:0.02em;color:#ffffff;">**004*${dialNumber}#</td></tr>
-            </table>
-            <p style="margin:14px 0 0;font-size:13px;line-height:1.55;color:rgba(240,244,248,0.55);font-family:${MN};">That's it — every call you don't pick up now rings your receptionist instead. Works on EE, O2, Vodafone &amp; Three. To switch it off any time, dial <span style="color:rgba(240,244,248,0.80);font-weight:600;">##004#</span>.</p>
-          </td></tr>
-        </table>
-      </td></tr>`
+    ? `<tr><td style="padding:18px 44px 4px;">${forwardingInstructionsHtml(opts.phoneNumber)}</td></tr>`
     : '';
 
   const step2 = opts.phoneNumber
-    ? 'Dial the divert code above to forward your unanswered calls'
+    ? 'Forward your calls using the steps above'
     : 'Divert your unanswered calls to your new number once it arrives';
 
   const stepRow = (n: string, text: string) =>
@@ -337,7 +327,7 @@ export function welcomeHtml(opts: {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr><td style="padding:24px 44px 36px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04);border-radius:14px;">
-            <tr><td align="center" style="padding:14px 18px;font-size:12.5px;color:rgba(240,244,248,0.55);line-height:1.5;font-family:${MN};">14-day free trial &nbsp;·&nbsp; No card on file &nbsp;·&nbsp; Cancel anytime</td></tr>
+            <tr><td align="center" style="padding:14px 18px;font-size:12.5px;color:rgba(240,244,248,0.55);line-height:1.5;font-family:${MN};">14-day free trial &nbsp;·&nbsp; No charge today &nbsp;·&nbsp; Cancel anytime</td></tr>
           </table>
         </td></tr>
       </table>
@@ -480,6 +470,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       ownerNumber:  ownerMobile,
       calendarBookingEnabled: !!client.google_cal_id,
       beginMessage: buildBeginMessage(client, configRow as BusinessConfig),
+      boostedKeywords: [ownerName].filter(Boolean),
     });
     agentId = ids.agentId;
 
@@ -509,13 +500,24 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
 
   if (agentId) {
     try {
-      const available = await searchUkNumbers(5);
+      // Two attempts. Number purchase failing is usually transient — an account
+      // hiccup or a number taken between search and buy — and a single failure
+      // used to cost the whole customer.
+      let available = await searchUkNumbers(5);
       if (!available.length) {
-        logEvent('warn', 'stripe.webhook.provider_failure', {
+        logEvent('warn', 'stripe.webhook.twilio_search_retry', {
+          eventType: 'checkout.session.completed', clientId: client.id,
+        });
+        await new Promise((r) => setTimeout(r, 1500));
+        available = await searchUkNumbers(5);
+      }
+
+      if (!available.length) {
+        logEvent('error', 'stripe.webhook.provider_failure', {
           eventType: 'checkout.session.completed',
           clientId: client.id,
           provider: 'twilio',
-          error: 'no UK numbers available',
+          error: 'no UK numbers available after retry',
         });
       } else {
         const purchased = await buyUkNumber(available[0].phoneNumber);
@@ -565,6 +567,40 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
         provider: 'twilio',
         error: errorMessage(err),
       });
+    }
+  }
+
+  // In new-number mode the Twilio number IS the customer's business number, so
+  // finishing without one means they have paid for nothing. This used to pass
+  // silently: the customer got a welcome email, no number, and no way to know.
+  // Three cancelled inside a fortnight, one of them writing "is not working
+  // cause not had my divert number".
+  //
+  // It cannot be repaired here — buying a number is what just failed — so the
+  // job is to make sure a human finds out the same day.
+  if (!phoneNumber && !client.own_number) {
+    logEvent('error', 'stripe.webhook.provisioned_without_number', {
+      eventType:   'checkout.session.completed',
+      clientId:    client.id,
+      ownerEmail:  ownerEmail,
+      action:      'customer has no number and no product — assign one via POST /clients/:id/assign-number',
+    });
+
+    const alertTo = process.env.INTEGRITY_ALERT_EMAIL;
+    if (alertTo) {
+      try {
+        await sendEmail({
+          to:      alertTo,
+          subject: `[Trade Receptionist] ${client.business_name} has no number — signup incomplete`,
+          html: `<p><strong>${client.business_name}</strong> (${ownerEmail}) completed checkout but no Twilio number could be bought.</p>`
+              + '<p>They have an agent and an account, and no way to receive a call. They will churn quickly and quietly if this is not fixed today.</p>'
+              + `<p>Fix: <code>POST /clients/${client.id}/assign-number</code> — it buys the number, wires it up, and emails them the forwarding instructions.</p>`,
+        });
+      } catch (alertErr: unknown) {
+        logEvent('error', 'stripe.webhook.alert_failed', {
+          clientId: client.id, error: errorMessage(alertErr),
+        });
+      }
     }
   }
 
