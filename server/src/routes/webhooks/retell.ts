@@ -5,6 +5,11 @@ import { postCallWorkflow } from '../../services/retell';
 import { detectEmergency, escalateEmergency, getEmergencyLevel } from '../../lib/emergency';
 import { logCall, logIncident } from '../../services/notion';
 import { errorMessage, logEvent, requestId } from '../../lib/observability';
+import {
+  deriveOutcome,
+  extractLeadData,
+  hasStructuredAnalysis,
+} from '../../lib/lead-extraction';
 import type {
   RetellCallStartedEvent,
   RetellCallEndedEvent,
@@ -14,8 +19,6 @@ import type {
   Call,
   CallOutcome,
   LeadInsert,
-  LeadUrgency,
-  LeadPropertyType,
 } from '../../../../shared/types';
 
 const router = Router();
@@ -37,84 +40,6 @@ async function verifySignature(rawBody: Buffer, signature: string): Promise<bool
   } catch {
     return false;
   }
-}
-
-// ── Lead extraction ───────────────────────────────────────────────────────────
-
-function extractLeadData(
-  summary: string,
-  customData?: Record<string, unknown>
-): Partial<LeadInsert> {
-  // Prefer structured data from Retell's post-call analysis
-  if (customData && Object.keys(customData).length > 0) {
-    const str = (key: string) => {
-      const v = customData[key];
-      return v && typeof v === 'string' && v.trim() ? v.trim() : undefined;
-    };
-    const propertyRaw = str('property_type');
-    const validPropertyTypes: LeadPropertyType[] = ['residential', 'commercial', 'unknown'];
-    const property_type = propertyRaw && validPropertyTypes.includes(propertyRaw as LeadPropertyType)
-      ? (propertyRaw as LeadPropertyType)
-      : undefined;
-    return {
-      caller_name:           str('caller_name'),
-      caller_number:         str('caller_number'),
-      caller_email:          str('caller_email'),
-      postcode:              str('postcode'),
-      job_type:              str('job_type'),
-      urgency:               (str('urgency') as LeadUrgency | undefined),
-      property_type,
-      customer_availability: str('customer_availability'),
-      notes:                 str('notes'),
-    };
-  }
-
-  // Fallback: regex parse the AI's freeform summary
-  const get = (re: RegExp): string | undefined => summary.match(re)?.[1]?.trim() || undefined;
-
-  const propertyFallback = /\b(commercial|office|shop|warehouse|site)\b/i.test(summary)
-    ? 'commercial'
-    : /\b(residential|house|flat|HMO|domestic)\b/i.test(summary)
-      ? 'residential'
-      : undefined;
-
-  return {
-    caller_name:           get(/(?:customer|caller|name)[:\s|]+([A-Z][a-z]+(?: [A-Z][a-z]+)+)/),
-    caller_number:         get(/(?:number|mobile|phone|tel)[:\s|]+([+\d\s().-]{7,15})/i),
-    postcode:              get(/([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})/i),
-    job_type:              get(/(?:job|trade|work|repair|service)[:\s|]+([^|.\n]{3,40})/i),
-    urgency:               (/urgent|emergency/i.test(summary) ? 'urgent' : 'routine') as LeadUrgency,
-    property_type:         propertyFallback as LeadPropertyType | undefined,
-    customer_availability: get(/(?:available|availability|free|best.time)[:\s|]+([^|.\n]{5,60})/i),
-    notes:                 summary.length > 20 ? summary.slice(0, 1000) : undefined,
-  };
-}
-
-const VALID_OUTCOMES: CallOutcome[] = [
-  'booked', 'lead_captured', 'enquiry', 'spam', 'voicemail', 'emergency', 'transferred', 'no_answer',
-];
-
-function deriveOutcome(summary: string, customData?: Record<string, unknown>): CallOutcome {
-  // Prefer the structured call_outcome from Retell's post-call analysis.
-  const fromAnalysis = customData?.['call_outcome'];
-  if (typeof fromAnalysis === 'string') {
-    const v = fromAnalysis.trim().toLowerCase() as CallOutcome;
-    if (VALID_OUTCOMES.includes(v)) return v;
-  }
-
-  // Fallback: parse a leading status word from the freeform summary.
-  const first = summary.trim().split(/[\s|:\n]/)[0]?.toUpperCase() ?? '';
-  const map: Record<string, CallOutcome> = {
-    BOOKED:        'booked',
-    LEAD_CAPTURED: 'lead_captured',
-    ENQUIRY:       'enquiry',
-    SPAM:          'spam',
-    VOICEMAIL:     'voicemail',
-    EMERGENCY:     'emergency',
-    TRANSFERRED:   'transferred',
-    NO_ANSWER:     'no_answer',
-  };
-  return map[first] ?? 'enquiry';
 }
 
 // ── Event handlers ────────────────────────────────────────────────────────────
@@ -403,12 +328,15 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
 
   // Update transcript with refined analysis. Persist full_text too so the
   // dashboard can show the complete transcript, not just the summary.
+  // `?? undefined` rather than `?? null` throughout: a call_analyzed event that
+  // arrives without analysis must not blank a summary that call_ended already
+  // stored. Writing null here destroyed data on every partial event.
   const { error: transcriptErr } = await supabase.from('transcripts').upsert(
     {
       call_id:   callRow.id,
       full_text: event.transcript ?? undefined,
-      summary:   event.call_analysis?.call_summary ?? null,
-      raw_json:  event.call_analysis as Record<string, unknown>,
+      summary:   event.call_analysis?.call_summary ?? undefined,
+      raw_json:  (event.call_analysis as Record<string, unknown> | undefined) ?? undefined,
     },
     { onConflict: 'call_id' }
   );
@@ -420,13 +348,20 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
     });
   }
 
-  // Update lead if custom_analysis_data has better structured values
+  // Update lead if the analysis carries better values than call_ended had.
+  // Pass the summary too: the structured fields are frequently partial, and the
+  // summary is the only place a single-word name like "Tito" ever appears.
   const customData = event.call_analysis?.custom_analysis_data;
-  if (customData && Object.keys(customData).length > 0) {
-    const lead = extractLeadData('', customData);
+  if (hasStructuredAnalysis(customData) || event.call_analysis?.call_summary) {
+    const lead = extractLeadData(event.call_analysis?.call_summary ?? '', customData);
+    // Only send the fields we actually resolved. Spreading undefined values
+    // would clear columns that call_ended had already filled in.
+    const patch = Object.fromEntries(
+      Object.entries(lead).filter(([, v]) => v !== undefined),
+    );
     const { error: leadErr } = await supabase
       .from('leads')
-      .update({ ...lead, updated_at: new Date().toISOString() })
+      .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('call_id', callRow.id);
 
     if (leadErr) {

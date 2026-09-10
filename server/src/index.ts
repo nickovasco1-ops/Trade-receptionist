@@ -23,9 +23,18 @@ import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
+import { deriveOutcome, extractLeadData, isLeadEmpty } from './lib/lead-extraction';
 import { sendTrialReminderEmail, sendEmail } from './services/resend';
 import { runTenantIntegrityCheck } from './services/tenant-integrity';
-import type { Call, Client } from '../../shared/types';
+import type { Call, CallOutcome, Client } from '../../shared/types';
+
+/**
+ * Outcomes that deserve a lead row. Mirrors the list in the Retell webhook —
+ * a missed call still becomes a lead so the owner has someone to ring back.
+ */
+const LEAD_OUTCOMES: CallOutcome[] = [
+  'booked', 'lead_captured', 'enquiry', 'emergency', 'no_answer', 'voicemail',
+];
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -572,8 +581,9 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
     return;
   }
 
-  let synced = 0;
-  let skipped = 0;
+  let synced   = 0;   // calls that were missing entirely and got inserted
+  let repaired = 0;   // calls that existed but had no analysis, now backfilled
+  let skipped  = 0;   // calls already complete
 
   for (const client of clients) {
     const retellCalls = await listCallsForAgent(client.retell_agent_id as string);
@@ -582,60 +592,153 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
       const retellCallId = rc.call_id as string | undefined;
       if (!retellCallId) continue;
 
+      const startTs      = rc.start_timestamp as number | undefined;
+      const endTs        = rc.end_timestamp   as number | undefined;
+      const durationSecs = Math.round(((rc.duration_ms as number | undefined) ?? 0) / 1000);
+      const analysis     = rc.call_analysis as Record<string, unknown> | undefined;
+      const summary      = (analysis?.call_summary as string | undefined) ?? '';
+      const customData   = analysis?.custom_analysis_data as Record<string, unknown> | undefined;
+
+      // Same derivation the webhook uses. This used to uppercase the summary's
+      // first word and look it up in a local map, so a summary starting "The
+      // caller..." was filed as an enquiry whatever had actually happened.
+      const outcome = deriveOutcome(summary, customData);
+
       const { data: existing } = await supabase
         .from('calls')
-        .select('id')
+        .select('id, recording_url')
         .eq('retell_call_id', retellCallId)
         .maybeSingle();
 
-      if (existing) { skipped++; continue; }
+      let callId = existing?.id as string | undefined;
 
-      const startTs = rc.start_timestamp as number | undefined;
-      const endTs   = rc.end_timestamp   as number | undefined;
-      const durationSecs = Math.round(((rc.duration_ms as number | undefined) ?? 0) / 1000);
-      const analysis = rc.call_analysis as Record<string, unknown> | undefined;
-      const summary = (analysis?.call_summary as string | undefined) ?? '';
-      const first = summary.trim().split(/[\s|:\n]/)[0]?.toUpperCase() ?? '';
-      const outcomeMap: Record<string, string> = {
-        BOOKED: 'booked', LEAD_CAPTURED: 'lead_captured', ENQUIRY: 'enquiry',
-        SPAM: 'spam', VOICEMAIL: 'voicemail', EMERGENCY: 'emergency',
-        TRANSFERRED: 'transferred', NO_ANSWER: 'no_answer',
-      };
-      const outcome = outcomeMap[first] ?? 'enquiry';
+      if (!callId) {
+        const { data: inserted, error } = await supabase.from('calls').insert({
+          client_id:      client.id,
+          retell_call_id: retellCallId,
+          caller_number:  (rc.from_number as string | undefined) ?? null,
+          direction:      'inbound',
+          duration_secs:  durationSecs,
+          outcome,
+          is_emergency:   outcome === 'emergency',
+          recording_url:  (rc.recording_url as string | undefined) ?? null,
+          started_at:     startTs ? new Date(startTs).toISOString() : null,
+          ended_at:       endTs   ? new Date(endTs).toISOString()   : null,
+        }).select('id').single();
 
-      const { error } = await supabase.from('calls').insert({
-        client_id:      client.id,
-        retell_call_id: retellCallId,
-        caller_number:  (rc.from_number as string | undefined) ?? null,
-        direction:      'inbound',
-        duration_secs:  durationSecs,
-        outcome,
-        is_emergency:   outcome === 'emergency',
-        recording_url:  (rc.recording_url as string | undefined) ?? null,
-        started_at:     startTs ? new Date(startTs).toISOString() : null,
-        ended_at:       endTs   ? new Date(endTs).toISOString()   : null,
-      });
+        if (error || !inserted) {
+          logEvent('error', 'admin.sync_calls.insert_failed', {
+            retellCallId, error: error?.message ?? 'insert returned no row',
+          });
+          continue;
+        }
+        callId = inserted.id as string;
+        synced++;
+      }
 
-      if (error) {
-        logEvent('error', 'admin.sync_calls.insert_failed', { retellCallId, error: error.message });
-      } else {
-        // Upsert transcript if available
-        if (summary) {
-          const { data: callRow } = await supabase.from('calls').select('id').eq('retell_call_id', retellCallId).single();
-          if (callRow) {
-            await supabase.from('transcripts').upsert(
-              { call_id: callRow.id, summary, full_text: (rc.transcript as string | undefined) ?? null },
-              { onConflict: 'call_id' }
-            );
+      // ── Reconcile, do not just insert ──────────────────────────────────────
+      //
+      // This endpoint is the documented recovery path for a dropped Retell
+      // webhook, but it used to `continue` the moment the call row existed. The
+      // event that actually goes missing is `call_analyzed` — the one carrying
+      // the summary and the structured fields — so the calls were all present
+      // and 20 of the first 30 had no analysis and an empty lead, while this
+      // job reported success every run.
+      if (!analysis) continue;
+
+      const { data: existingTranscript } = await supabase
+        .from('transcripts')
+        .select('call_id, summary, raw_json')
+        .eq('call_id', callId)
+        .maybeSingle();
+
+      const transcriptNeedsAnalysis = !existingTranscript?.raw_json || !existingTranscript?.summary;
+      let didRepair = false;
+
+      if (transcriptNeedsAnalysis) {
+        const { error: tErr } = await supabase.from('transcripts').upsert(
+          {
+            call_id:   callId,
+            summary:   summary || undefined,
+            full_text: (rc.transcript as string | undefined) ?? undefined,
+            raw_json:  analysis,
+          },
+          { onConflict: 'call_id' }
+        );
+        if (tErr) {
+          logEvent('error', 'admin.sync_calls.transcript_failed', { retellCallId, error: tErr.message });
+        } else {
+          didRepair = true;
+        }
+      }
+
+      // Backfill a recording that was not ready when the call ended.
+      if (!existing?.recording_url && rc.recording_url) {
+        await supabase.from('calls')
+          .update({ recording_url: rc.recording_url as string })
+          .eq('id', callId);
+      }
+
+      // ── The lead ───────────────────────────────────────────────────────────
+      //
+      // Absent from this endpoint entirely until now, which is why a repaired
+      // call still left the tradesperson with a lead holding nothing but a
+      // phone number.
+      const leadFields = extractLeadData(summary, customData);
+      const patch = Object.fromEntries(
+        Object.entries(leadFields).filter(([, v]) => v !== undefined),
+      );
+
+      if (Object.keys(patch).length > 0) {
+        const { data: existingLead } = await supabase
+          .from('leads')
+          .select('id, caller_name, job_type, notes, postcode')
+          .eq('call_id', callId)
+          .maybeSingle();
+
+        if (existingLead) {
+          // Only overwrite a shell. A lead the owner has since annotated is
+          // theirs — Supabase is the source of truth once a human has touched it.
+          if (isLeadEmpty(existingLead)) {
+            const { error: lErr } = await supabase.from('leads')
+              .update({ ...patch, updated_at: new Date().toISOString() })
+              .eq('id', existingLead.id);
+            if (lErr) {
+              logEvent('error', 'admin.sync_calls.lead_failed', { retellCallId, error: lErr.message });
+            } else {
+              didRepair = true;
+            }
+          }
+        } else if (LEAD_OUTCOMES.includes(outcome)) {
+          const { error: lErr } = await supabase.from('leads').upsert(
+            {
+              client_id:     client.id,
+              call_id:       callId,
+              caller_number: patch.caller_number ?? (rc.from_number as string | undefined) ?? null,
+              status:        outcome === 'booked' ? 'booked' : 'new',
+              ...patch,
+            },
+            { onConflict: 'call_id' }
+          );
+          if (lErr) {
+            logEvent('error', 'admin.sync_calls.lead_failed', { retellCallId, error: lErr.message });
+          } else {
+            didRepair = true;
           }
         }
-        synced++;
+      }
+
+      // Only count a repair against a call that already existed — a freshly
+      // inserted one is already counted as synced.
+      if (existing) {
+        if (didRepair) repaired++;
+        else skipped++;
       }
     }
   }
 
-  logEvent('info', 'admin.sync_calls.complete', { synced, skipped });
-  res.json({ success: true, data: { synced, skipped } });
+  logEvent('info', 'admin.sync_calls.complete', { synced, repaired, skipped });
+  res.json({ success: true, data: { synced, repaired, skipped } });
 });
 
 // 404 fallback
