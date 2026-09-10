@@ -13,11 +13,18 @@ export interface PlanConfig {
 
 const isTest = import.meta.env.VITE_STRIPE_MODE === 'test';
 
+// Every URL here must resolve to a Stripe price matching the `price` field
+// below. Until 2026-09-10 the starter and pro links pointed at the original
+// April prices — £29 and £59 — while this file, the pricing section and the
+// checkout modal all advertised £49 and £89. Every Starter and Pro signup was
+// charged 40% less than the price it accepted. A Payment Link's price cannot
+// be edited after creation, so correcting it means new links, and any change
+// to `price` below needs one.
 const LIVE_URLS = {
-  starter:  'https://buy.stripe.com/7sY3cwaXI6pl7jAd5k6wE00',
-  pro:      'https://buy.stripe.com/dRmdRa4zk5lh33ke9o6wE01',
-  business: 'https://buy.stripe.com/eVq6oId5Q4hdcDUd5k6wE04',
-  agency:   'https://buy.stripe.com/9B6aEYc1MfZV6fw7L06wE05',
+  starter:  'https://buy.stripe.com/4gM5kEc1M1515bs9T86wE07', // price_1UEGpV… £49
+  pro:      'https://buy.stripe.com/9B628s7Lw2956fw5CS6wE06', // price_1UEGox… £89
+  business: 'https://buy.stripe.com/eVq6oId5Q4hdcDUd5k6wE04', // price_1TfOU6… £159
+  agency:   'https://buy.stripe.com/9B6aEYc1MfZV6fw7L06wE05', // price_1TfOU7… £249
 };
 
 const TEST_URLS = {
