@@ -35,7 +35,20 @@ every write fails with `object_not_found`. The failures are caught and logged,
 so nothing breaks loudly — the databases just stay empty.
 
 For each database: open it → `···` menu → **Connections** → **Connect to** →
-select the integration (**trade receptionist**).
+select the integration (**trade receptionist**). All four live under the
+**Trade Receptionist HQ** page, and access is inherited, so connecting the
+integration to that one parent page covers every database under it.
+
+> **This bit it, exactly as written, on 2026-09-04.** The Subscribers and Call
+> Log databases lost the connection, and from then on every sync run failed all
+> five tenant rows and every finished call failed to log. The env vars were
+> correct the whole time — the ids in the error messages
+> (`fcb48b66-…` Subscribers, `e5dced91-…` Call Log) are the live databases. The
+> Notion sync workflow emailed "5 failed rows" every two hours for six days and
+> 25 consecutive runs, because the cause was only ever written to Sentry.
+> The sync now probes each database once before doing any work and returns the
+> provider's own message in a `reason` field, which the workflow prints — so
+> the next time this happens the alert says what to fix.
 
 Confirm with:
 
@@ -50,6 +63,15 @@ A clean run reports `failed: 0` for every database.
 
 It does not exist yet. Create it under **Trade Receptionist HQ** with these
 properties, then set `NOTION_LEADS_DB_ID`:
+
+> **Do not point `NOTION_LEADS_DB_ID` at the existing "Leads Pipeline"
+> database.** It is the hand-made June version and `syncLeads()` cannot write
+> to it: its title column is `Caller Name` rather than `Caller`, and its
+> `Lead ID` is an **auto-increment** property, which is read-only and cannot
+> hold the Supabase uuid the sync matches on — so every row would fail and no
+> row could ever be found again. Its `Status` and `Urgency` options are also
+> Title Case against Supabase's lowercase, which would silently double every
+> option. Create a new database with the schema below.
 
 | Property | Type | Notes |
 |---|---|---|

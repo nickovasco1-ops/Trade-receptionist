@@ -28,11 +28,34 @@ jobs:
             exit 1
           fi
 
-          # A row-level failure returns 200 with a non-zero failed count, which
-          # is exactly how the old fire-and-forget logging stayed invisible.
-          FAILED=$(echo "$BODY" | grep -o '"failed":[0-9]*' | grep -o '[0-9]*' | paste -sd+ - | bc)
-          if [ "${FAILED:-0}" -gt 0 ]; then
-            echo "::error::Notion sync completed with $FAILED failed rows — check the integration has access to every database."
+          # Each result carries a `reason` when it did not sync cleanly. Print it.
+          # This job emailed "5 failed rows" every two hours for six days while the
+          # cause — the integration had never been shared the Subscribers database —
+          # was only ever visible in Sentry. A count is not a diagnosis.
+          echo "$BODY" | jq -r '
+            .data[]
+            | select((.failed // 0) > 0 or (.skipped // 0) > 0)
+            | "\(.database): created=\(.created) updated=\(.updated) skipped=\(.skipped) failed=\(.failed)"
+              + (if .reason then "\n  reason: " + .reason else "" end)'
+
+          FAILED=$(echo "$BODY" | jq '[.data[].failed // 0] | add // 0')
+          if [ "$FAILED" -gt 0 ]; then
+            # Notion answers an unshared database with "Could not find database with
+            # ID <id>" — the fix is Notion-side (••• → Connections → add the
+            # integration), not a code change.
+            REASONS=$(echo "$BODY" | jq -r '[.data[] | select((.failed // 0) > 0)
+              | "\(.database): \(.reason // "no reason reported")"] | join(" | ")')
+            echo "::error::Notion sync failed — $REASONS"
             exit 1
           fi
+
+          # A database left unconfigured never syncs and never complains. That is
+          # how the Leads database sat empty: skipped is not the same as clean.
+          SKIPPED=$(echo "$BODY" | jq '[.data[].skipped // 0] | add // 0')
+          if [ "$SKIPPED" -gt 0 ]; then
+            REASONS=$(echo "$BODY" | jq -r '[.data[] | select((.skipped // 0) > 0)
+              | "\(.database): \(.reason // "skipped")"] | join(" | ")')
+            echo "::warning::Notion sync skipped a database — $REASONS"
+          fi
+
           echo "Notion sync clean"

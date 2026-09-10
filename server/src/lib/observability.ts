@@ -25,6 +25,20 @@ export function errorMessage(error: unknown): string {
 }
 
 /**
+ * Reduce a phone number to something a log can carry.
+ *
+ * A caller's number is personal data under UK GDPR, and these logs are shipped
+ * to a third-party processor (Sentry) and retained. The last four digits are
+ * enough to tie a log line to a call when someone is debugging one, and are not
+ * enough to ring anybody. Use this anywhere a number would otherwise be logged.
+ */
+export function maskPhone(phone: string | null | undefined): string {
+  if (!phone) return 'none';
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 4 ? `***${digits.slice(-4)}` : '***';
+}
+
+/**
  * Structured log + Sentry capture for error-level events.
  *
  * - All levels → Railway structured JSON log

@@ -37,6 +37,43 @@ Sentry.init({
   enableLogs: true,
 });
 
+// ─── Stale lazy-chunk recovery ────────────────────────────────────────────────
+// Every route below is code-split. When a deploy replaces the hashed chunk
+// files, a browser that loaded the old index.html asks for a chunk that no
+// longer exists, the dynamic import rejects, and the user gets a blank route
+// with no way back. Sentry shows real users hitting exactly this.
+//
+// Vite fires `vite:preloadError` for that failure. Reloading picks up the new
+// index.html and the chunks it actually references. The sessionStorage guard
+// means a genuinely broken deploy costs one reload, not an infinite loop.
+const RELOAD_FLAG = 'tr:chunk-reloaded';
+
+window.addEventListener('vite:preloadError', (event) => {
+  let alreadyTried = false;
+  try {
+    alreadyTried = sessionStorage.getItem(RELOAD_FLAG) === '1';
+    if (!alreadyTried) sessionStorage.setItem(RELOAD_FLAG, '1');
+  } catch {
+    // Private mode or blocked storage — reload once and accept the small risk
+    // of a second attempt rather than leaving the user on a blank page.
+  }
+
+  if (alreadyTried) {
+    // Reloading did not help, so this is not a stale chunk. Let it surface as
+    // an error rather than reloading forever.
+    return;
+  }
+
+  event.preventDefault();
+  Sentry.addBreadcrumb({ category: 'app', level: 'info', message: 'vite:preloadError — reloading once' });
+  window.location.reload();
+});
+
+// A clean load means whatever was stale has been replaced.
+window.addEventListener('load', () => {
+  try { sessionStorage.removeItem(RELOAD_FLAG); } catch { /* storage unavailable */ }
+});
+
 // Legal pages (lazy — public, no auth required)
 const TermsPage      = React.lazy(() => import('./src/pages/legal/TermsPage'));
 const PrivacyPage    = React.lazy(() => import('./src/pages/legal/PrivacyPage'));

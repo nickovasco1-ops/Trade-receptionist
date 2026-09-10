@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { sendSms } from './twilio';
-import { logEvent, errorMessage } from '../lib/observability';
+import { logEvent, errorMessage, maskPhone } from '../lib/observability';
 import type { Client, Lead } from '../../../shared/types';
 
 interface LeadWithClient extends Lead {
@@ -86,7 +86,9 @@ export async function runLeadFollowUp(): Promise<FollowUpResult> {
     try {
       const body = buildFollowUpSms(lead, client);
       await sendSms(callerNumber, body, client.twilio_number);
-      logEvent('info', 'lead_followup.sms_sent', { leadId: lead.id, to: callerNumber });
+      // Masked: a caller's number is personal data, and this line ends up in
+      // Sentry. The lead id is the join key when someone needs the full number.
+      logEvent('info', 'lead_followup.sms_sent', { leadId: lead.id, to: maskPhone(callerNumber) });
       result.sent++;
     } catch (err: unknown) {
       logEvent('error', 'lead_followup.sms_failed', {

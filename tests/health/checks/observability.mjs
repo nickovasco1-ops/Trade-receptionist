@@ -130,7 +130,11 @@ export default [
         for (const field of PII_FIELDS) {
           // Flag a bare field reference; masked/boolean forms are fine.
           const re = new RegExp(`\\b${field}\\b(?!\\s*:\\s*(Boolean|mask|hash))`);
-          if (re.test(line) && !/hasPhone|Boolean\(|masked|\.length/.test(line)) {
+          // maskPhone() is the project's canonical redaction helper
+          // (server/src/lib/observability.ts). A field wrapped in it is not raw
+          // PII, so recognising it here is completing the safe-wrapper list, not
+          // widening it — an unwrapped field on the same line still fails.
+          if (re.test(line) && !/hasPhone|Boolean\(|masked|maskPhone\(|\.length/.test(line)) {
             offenders.push(`${line.trim().slice(0, 180)}   ← ${field}`);
             break;
           }

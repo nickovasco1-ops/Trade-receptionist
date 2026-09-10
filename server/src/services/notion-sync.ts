@@ -51,6 +51,15 @@ export interface SyncResult {
   updated:  number;
   skipped:  number;
   failed:   number;
+  /**
+   * Why this database did not sync cleanly, in the provider's own words.
+   *
+   * Counts alone are not actionable: "failed: 5" was emailed every two hours
+   * for six days while the cause — the integration had never been given access
+   * to the database — sat only in Sentry. Whatever fails here has to travel
+   * back out to whoever reads the alert.
+   */
+  reason?:  string;
 }
 
 /**
@@ -71,6 +80,23 @@ async function dataSourceIdFor(client: NotionClient, databaseId: string): Promis
   if (!id) throw new Error(`notion: database ${databaseId} exposes no data source`);
   dataSourceCache.set(databaseId, id);
   return id;
+}
+
+/**
+ * Confirm the integration can actually see the database before doing any work.
+ *
+ * Notion answers an unshared database with "Could not find database with ID",
+ * identically for every request. Without this probe that answer arrives once
+ * per tenant row — five copies of one fact — and the sync spends its whole run
+ * discovering the same thing over and over.
+ */
+async function probeAccess(client: NotionClient, databaseId: string): Promise<string | null> {
+  try {
+    await dataSourceIdFor(client, databaseId);
+    return null;
+  } catch (err: unknown) {
+    return errorMessage(err);
+  }
 }
 
 /** Find an existing page by an exact match on a rich-text id column. */
@@ -122,8 +148,19 @@ export async function syncSubscribers(): Promise<SyncResult> {
   const result: SyncResult = { database: 'Subscribers', created: 0, updated: 0, skipped: 0, failed: 0 };
 
   if (!client || !databaseId) {
-    logEvent('warn', 'notion_sync.skipped', { database: 'subscribers', reason: 'not configured' });
     result.skipped = 1;
+    result.reason  = client
+      ? 'NOTION_SUBSCRIBERS_DB_ID is not set'
+      : 'NOTION_API_KEY is not set';
+    logEvent('warn', 'notion_sync.skipped', { database: 'subscribers', reason: result.reason });
+    return result;
+  }
+
+  const denied = await probeAccess(client, databaseId);
+  if (denied) {
+    result.failed = 1;
+    result.reason = denied;
+    logEvent('error', 'notion_sync.database_unreachable', { database: 'subscribers', databaseId, error: denied });
     return result;
   }
 
@@ -180,6 +217,7 @@ export async function syncSubscribers(): Promise<SyncResult> {
       }
     } catch (err: unknown) {
       result.failed += 1;
+      result.reason ??= errorMessage(err);
       logEvent('error', 'notion_sync.row_failed', {
         database: 'subscribers', clientId: c.id, error: errorMessage(err),
       });
@@ -202,8 +240,19 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
   const result: SyncResult = { database: 'Leads', created: 0, updated: 0, skipped: 0, failed: 0 };
 
   if (!client || !databaseId) {
-    logEvent('warn', 'notion_sync.skipped', { database: 'leads', reason: 'NOTION_LEADS_DB_ID not set' });
     result.skipped = 1;
+    result.reason  = client
+      ? 'NOTION_LEADS_DB_ID is not set, so no lead has ever reached Notion'
+      : 'NOTION_API_KEY is not set';
+    logEvent('warn', 'notion_sync.skipped', { database: 'leads', reason: result.reason });
+    return result;
+  }
+
+  const denied = await probeAccess(client, databaseId);
+  if (denied) {
+    result.failed = 1;
+    result.reason = denied;
+    logEvent('error', 'notion_sync.database_unreachable', { database: 'leads', databaseId, error: denied });
     return result;
   }
 
@@ -252,6 +301,7 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
       }
     } catch (err: unknown) {
       result.failed += 1;
+      result.reason ??= errorMessage(err);
       logEvent('error', 'notion_sync.row_failed', {
         database: 'leads', leadId: l.id, error: errorMessage(err),
       });
