@@ -169,6 +169,16 @@ export function deriveOutcome(summary: string, customData?: Record<string, unkno
     if (VALID_OUTCOMES.includes(v)) return v;
   }
 
+  // Then the leading status token: the agent is prompted to open its summary
+  // with the outcome, e.g. "LEAD_CAPTURED: Jane needs a boiler repair". This
+  // is a deliberate convention, not a hack — it is precise where the prose
+  // matching below is a guess, so it goes first. Dropping it in favour of the
+  // regexes alone turned every such summary into `enquiry`.
+  const leading = summary.trim().split(/[\s|:\n]/)[0]?.toLowerCase() as CallOutcome | undefined;
+  if (leading && VALID_OUTCOMES.includes(leading)) return leading;
+
+  // Finally, read the prose. The backfill used to have only the token parse,
+  // so a summary written as a sentence was always filed as `enquiry`.
   const text = summary.toLowerCase();
   if (/\bspam|robocall|sales call|cold call\b/.test(text)) return 'spam';
   if (/\bemergency|gas leak|flooding|burst\b/.test(text)) return 'emergency';

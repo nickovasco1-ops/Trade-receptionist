@@ -122,6 +122,23 @@ describe('deriveOutcome', () => {
     assert.equal(deriveOutcome('', { call_outcome: 'maybe' }), 'enquiry');
   });
 
+  test('reads the leading status token the agent is prompted to emit', () => {
+    // Retell's summaries open with the outcome — "LEAD_CAPTURED: Jane needs a
+    // boiler repair". e2e covers this shape; losing it filed every such call
+    // as an enquiry, which is how it broke CI the first time.
+    assert.equal(deriveOutcome('LEAD_CAPTURED: Jane Caller needs a boiler repair at SW1A 1AA.'), 'lead_captured');
+    assert.equal(deriveOutcome('BOOKED | Tuesday 9am'), 'booked');
+    assert.equal(deriveOutcome('no_answer'), 'no_answer');
+  });
+
+  test('the structured outcome still beats the leading token', () => {
+    assert.equal(deriveOutcome('LEAD_CAPTURED: ...', { call_outcome: 'booked' }), 'booked');
+  });
+
+  test('a leading word that is not an outcome does not become one', () => {
+    assert.equal(deriveOutcome('Booking enquiry about a new bathroom.'), 'enquiry');
+  });
+
   test('reads the summary rather than only its first word', () => {
     // The backfill used to uppercase the first word and look it up, so every
     // summary written as prose was filed as an enquiry.
