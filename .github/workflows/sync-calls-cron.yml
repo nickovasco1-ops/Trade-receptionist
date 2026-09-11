@@ -29,8 +29,17 @@ jobs:
             exit 1
           fi
 
-          # Extract synced count and warn if calls were recovered (means webhooks missed them)
-          SYNCED=$(cat /tmp/body.txt | grep -o '"synced":[0-9]*' | grep -o '[0-9]*' || echo "0")
+          # `synced` counts calls that were missing entirely. `repaired` counts
+          # calls that were already stored but had no analysis and an empty
+          # lead — the dropped `call_analyzed` event, which is the common
+          # failure and the one this job used to walk straight past.
+          SYNCED=$(jq -r '.data.synced // 0' /tmp/body.txt)
+          REPAIRED=$(jq -r '.data.repaired // 0' /tmp/body.txt)
+
           if [ "$SYNCED" -gt 0 ]; then
             echo "::warning::$SYNCED call(s) recovered from Retell — webhooks missed these deliveries"
           fi
+          if [ "$REPAIRED" -gt 0 ]; then
+            echo "::warning::$REPAIRED call(s) had missing analysis or an empty lead and were backfilled"
+          fi
+          echo "synced=$SYNCED repaired=$REPAIRED"
