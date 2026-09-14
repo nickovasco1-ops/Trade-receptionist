@@ -187,5 +187,71 @@ export default [
         detail: res?.ok ? '' : 'The backend is not responding to its health check.',
       };
     },
+  }),,
+
+  check({
+    id: 'providers.retell_list_contract', cls: 'C1', severity: HIGH,
+    title: 'The Retell list endpoints we depend on still exist and answer the shape we parse',
+    fn: async () => {
+      // Retell deprecated /v2/list-calls and /list-phone-numbers in Sept 2026 —
+      // the second dated deprecation to break this integration with no change
+      // on our side. Both replacements answer `{ items }` where the originals
+      // answered a bare array, so a version drift does not error: it returns
+      // nothing, and every caller reads that as "no calls, no numbers".
+      //
+      // This check exists so the next one is caught by a red build rather than
+      // by noticing the backfill has quietly recovered nothing for a month.
+      const key = process.env.RETELL_API_KEY ?? '';
+      if (!key) {
+        return {
+          status: BLOCKED,
+          evidence: evidence('retell list endpoints', 'RETELL_API_KEY not set', 1),
+          detail: 'Needs the Retell key. Never assume the contract held.',
+        };
+      }
+
+      const lines = [];
+      let bad = 0;
+
+      const calls = await fetch('https://api.retellai.com/v3/list-calls', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 1 }),
+      }).catch(() => null);
+
+      if (!calls?.ok) {
+        lines.push(`POST /v3/list-calls -> HTTP ${calls?.status ?? 'unreachable'}`);
+        bad += 1;
+      } else {
+        const body = await calls.json().catch(() => null);
+        const ok = body && typeof body === 'object' && Array.isArray(body.items);
+        lines.push(`POST /v3/list-calls -> 200, items array: ${ok}`);
+        if (!ok) bad += 1;
+      }
+
+      const numbers = await fetch('https://api.retellai.com/v2/list-phone-numbers', {
+        headers: { Authorization: `Bearer ${key}` },
+      }).catch(() => null);
+
+      if (!numbers?.ok) {
+        lines.push(`GET /v2/list-phone-numbers -> HTTP ${numbers?.status ?? 'unreachable'}`);
+        bad += 1;
+      } else {
+        const body = await numbers.json().catch(() => null);
+        const ok = body && typeof body === 'object' && Array.isArray(body.items);
+        lines.push(`GET /v2/list-phone-numbers -> 200, items array: ${ok}`);
+        if (!ok) bad += 1;
+      }
+
+      return {
+        status: bad ? FAIL : PASS,
+        evidence: evidence('retell list endpoints (live)', lines.join('\n'), bad ? 1 : 0),
+        detail: bad
+          ? 'A Retell list endpoint moved or changed shape. listCallsForAgent() and '
+            + 'listRetellPhoneNumbers() in server/src/services/retell.ts read `items` — '
+            + 'until they are updated, call backfill and number-routing checks recover nothing.'
+          : '',
+      };
+    },
   }),
 ];

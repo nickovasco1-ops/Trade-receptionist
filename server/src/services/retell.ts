@@ -1,3 +1,4 @@
+import { Retell } from 'retell-sdk';
 import { sendOwnerSms, sendCallerSms } from './twilio';
 import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt, buildBeginMessage } from '../lib/prompt-builder';
@@ -7,6 +8,27 @@ import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
 const BASE_URL = 'https://api.retellai.com';
+
+/**
+ * Retell's official client, used for the endpoints that version.
+ *
+ * Retell deprecated the legacy list endpoints in Sept 2026 — `/v2/list-calls`
+ * and `/list-phone-numbers` — the second dated deprecation to break this
+ * integration without a line of our code changing (see §10). Hand-written
+ * paths rot silently; the SDK carries the current version, so `call.list()`
+ * and `phoneNumber.list()` move with the API instead of against it.
+ *
+ * Everything else in this file still uses fetch deliberately: agent and LLM
+ * lifecycle calls are stable, and rewriting them is risk without reward.
+ */
+let sdk: Retell | null = null;
+
+function retellSdk(): Retell {
+  const key = process.env.RETELL_API_KEY;
+  if (!key) throw new Error('RETELL_API_KEY not set');
+  sdk ??= new Retell({ apiKey: key });
+  return sdk;
+}
 
 /**
  * Voice. `11labs-Amy` is a natural-sounding en-GB voice; Retell's own voices are
@@ -681,10 +703,12 @@ export async function listRetellPhoneNumbers(): Promise<Array<{
 }>> {
   if (isE2ETestMode()) return [];
 
-  const res = await fetch(`${BASE_URL}/list-phone-numbers`, { headers: headers() });
-  if (!res.ok) throw new Error(`Retell listPhoneNumbers failed: ${await res.text()}`);
-
-  const body = await res.json() as Array<Record<string, unknown>>;
+  // Was GET /list-phone-numbers, deprecated Sept 2026. The SDK targets the
+  // current /v2/list-phone-numbers, which answers { items } rather than a bare
+  // array — reading the old shape would have returned zero numbers and quietly
+  // reported every tenant's line as unrouted.
+  const page = await retellSdk().phoneNumber.list();
+  const body = (page.items ?? []) as unknown as Array<Record<string, unknown>>;
   return body.map((n) => {
     const agents = Array.isArray(n['inbound_agents']) ? n['inbound_agents'] as Array<Record<string, unknown>> : [];
     return {
@@ -744,8 +768,21 @@ export async function getCall(callId: string): Promise<Record<string, unknown> |
 }
 
 /**
- * List calls for a specific agent from the Retell API.
- * Used by the admin sync endpoint to recover calls lost due to webhook failures.
+ * List calls for an agent.
+ *
+ * Was POST /v2/list-calls, deprecated Sept 2026. Three things changed in v3 and
+ * every one of them fails silently rather than loudly:
+ *
+ *   - the response is `{ items, has_more, pagination_key }`, not a bare array,
+ *     so the old parser would have returned zero calls for every agent;
+ *   - the filter is `agent: [{ agent_id }]`, not `agent_id: [id]`;
+ *   - the list item no longer carries `transcript` at all — only the
+ *     single-call endpoint does. See getRetellCall().
+ *
+ * This throws on API failure rather than returning []. The old behaviour meant
+ * a dead endpoint read as "this agent has no calls", so /admin/sync-calls
+ * reported success while recovering nothing — the exact shape of every
+ * expensive outage this project has had.
  */
 export async function listCallsForAgent(
   agentId: string
@@ -754,36 +791,48 @@ export async function listCallsForAgent(
     return [];
   }
 
-  // Retell v2: filter_criteria is an object, path is /v2/list-calls
-  // Agent ID filter works; skip timestamp filter as Retell v2 timestamp format is unclear.
-  // The sync endpoint already de-dupes via retell_call_id so fetching all is safe.
-  const filterCriteria: Record<string, unknown> = { agent_id: [agentId] };
+  const client = retellSdk();
+  const calls: Record<string, unknown>[] = [];
+  let paginationKey: string | undefined;
 
-  const body: Record<string, unknown> = {
-    filter_criteria: filterCriteria,
-    limit: 100,
-    sort_order: 'descending',
-  };
+  // Paginate to exhaustion, bounded. The previous version asked for 100 and
+  // took whatever came back, so a busy tenant silently lost the remainder.
+  const MAX_CALLS = 1000;
 
-  const res = await fetch(`${BASE_URL}/v2/list-calls`, {
-    method:  'POST',
-    headers: headers(),
-    body:    JSON.stringify(body),
-  });
+  do {
+    const page = await client.call.list({
+      filter_criteria: { agent: [{ agent_id: agentId }] },
+      limit: 100,
+      sort_order: 'descending',
+      ...(paginationKey ? { pagination_key: paginationKey } : {}),
+    });
 
-  if (!res.ok) {
-    logEvent('error', 'retell.list_calls_failed', { agentId, status: res.status });
-    return [];
+    calls.push(...((page.items ?? []) as unknown as Record<string, unknown>[]));
+    paginationKey = page.has_more ? page.pagination_key : undefined;
+  } while (paginationKey && calls.length < MAX_CALLS);
+
+  return calls;
+}
+
+/**
+ * Fetch one call in full.
+ *
+ * The v3 list response omits `transcript`; this endpoint still returns it. The
+ * backfill calls this only for a call it is actually about to write a
+ * transcript for, so the extra request is per-repair, not per-call.
+ */
+export async function getRetellCall(
+  callId: string
+): Promise<Record<string, unknown> | null> {
+  if (isE2ETestMode()) return null;
+
+  try {
+    const call = await retellSdk().call.retrieve(callId);
+    return call as unknown as Record<string, unknown>;
+  } catch (err: unknown) {
+    logEvent('error', 'retell.get_call_failed', { callId, error: errorMessage(err) });
+    return null;
   }
-
-  // Retell returns the array directly (not wrapped in { calls: [] })
-  const data = await res.json() as unknown;
-  if (Array.isArray(data)) return data as Record<string, unknown>[];
-  // Some API versions wrap in { calls: [] }
-  if (data && typeof data === 'object' && 'calls' in data) {
-    return ((data as { calls: unknown[] }).calls ?? []) as Record<string, unknown>[];
-  }
-  return [];
 }
 
 /**

@@ -144,7 +144,7 @@ export default [
       if (!RETELL_KEY) {
         return {
           status: BLOCKED,
-          evidence: evidence('POST retell /v2/list-calls', 'RETELL_API_KEY not available here', 1),
+          evidence: evidence('POST retell /v3/list-calls', 'RETELL_API_KEY not available here', 1),
           detail: 'Needs the Retell key to read real per-call costs.',
         };
       }
@@ -162,15 +162,19 @@ export default [
       const since = new Date();
       since.setUTCDate(1); since.setUTCHours(0, 0, 0, 0);
 
-      const res = await fetch('https://api.retellai.com/v2/list-calls', {
+      // /v2/list-calls was deprecated Sept 2026. v3 answers { items }, not a
+      // bare array — reading the old shape here would have silently reported
+      // zero spend for every tenant and passed.
+      const res = await fetch('https://api.retellai.com/v3/list-calls', {
         method: 'POST',
         headers: { Authorization: `Bearer ${RETELL_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ limit: 1000 }),
       }).catch(() => null);
       if (!res?.ok) {
-        return { status: BLOCKED, evidence: evidence('POST retell /v2/list-calls', `HTTP ${res?.status ?? 'unreachable'}`, 1) };
+        return { status: BLOCKED, evidence: evidence('POST retell /v3/list-calls', `HTTP ${res?.status ?? 'unreachable'}`, 1) };
       }
-      const calls = await res.json();
+      const payload = await res.json();
+      const calls = Array.isArray(payload) ? payload : (payload?.items ?? []);
 
       // combined_cost is in cents.
       const spendByAgent = new Map();

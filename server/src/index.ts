@@ -20,7 +20,7 @@ import { applyE2ETestProviderEnv } from './config/e2e';
 import { syncAll } from './services/notion-sync';
 import { applyTierToAgent, getRetellAgent } from './services/retell';
 import { runLeadFollowUp } from './services/lead-followup';
-import { listCallsForAgent, postCallWorkflow, patchRetellAgent } from './services/retell';
+import { listCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
 import { deriveOutcome, extractLeadData, isLeadEmpty } from './lib/lead-extraction';
@@ -584,9 +584,24 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
   let synced   = 0;   // calls that were missing entirely and got inserted
   let repaired = 0;   // calls that existed but had no analysis, now backfilled
   let skipped  = 0;   // calls already complete
+  let failed   = 0;   // agents Retell would not list calls for
 
   for (const client of clients) {
-    const retellCalls = await listCallsForAgent(client.retell_agent_id as string);
+    // listCallsForAgent throws now rather than answering [] on an API failure.
+    // Catch per agent so one bad tenant does not abandon the rest, but count it
+    // — a run that recovered nothing because Retell rejected us must not report
+    // the same clean zero as a run with nothing to do.
+    let retellCalls: Record<string, unknown>[];
+    try {
+      retellCalls = await listCallsForAgent(client.retell_agent_id as string);
+    } catch (err: unknown) {
+      failed += 1;
+      logEvent('error', 'admin.sync_calls.list_failed', {
+        clientId: client.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      continue;
+    }
 
     for (const rc of retellCalls) {
       const retellCallId = rc.call_id as string | undefined;
@@ -656,11 +671,20 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
       let didRepair = false;
 
       if (transcriptNeedsAnalysis) {
+        // The v3 list response carries no `transcript`. Fetch the full call
+        // only when we are actually about to write one, so this stays one
+        // extra request per repair rather than per call.
+        let fullText = rc.transcript as string | undefined;
+        if (!fullText) {
+          const full = await getRetellCall(retellCallId);
+          fullText = full?.['transcript'] as string | undefined;
+        }
+
         const { error: tErr } = await supabase.from('transcripts').upsert(
           {
             call_id:   callId,
             summary:   summary || undefined,
-            full_text: (rc.transcript as string | undefined) ?? undefined,
+            full_text: fullText ?? undefined,
             raw_json:  analysis,
           },
           { onConflict: 'call_id' }
@@ -737,8 +761,8 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
     }
   }
 
-  logEvent('info', 'admin.sync_calls.complete', { synced, repaired, skipped });
-  res.json({ success: true, data: { synced, repaired, skipped } });
+  logEvent(failed ? 'error' : 'info', 'admin.sync_calls.complete', { synced, repaired, skipped, failed });
+  res.json({ success: true, data: { synced, repaired, skipped, failed } });
 });
 
 // 404 fallback
