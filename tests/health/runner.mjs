@@ -27,7 +27,20 @@ async function loadChecks() {
   for (const file of (await fs.readdir(dir)).sort()) {
     if (!file.endsWith('.mjs')) continue;
     const mod = await import(path.join(dir, file));
-    for (const def of mod.default ?? []) out.push({ ...def, file });
+    for (const [i, def] of (mod.default ?? []).entries()) {
+      // A hole in the exported array — a stray `}),,` — yields undefined here.
+      // Left alone it becomes a check with no id, which BLOCKS as "undefined"
+      // and then crashes the report sorter on `id.localeCompare`, taking the
+      // entire health run down with it. A suite that cannot report is worse
+      // than a suite that fails, so refuse to start and name the file.
+      if (!def || typeof def.id !== 'string') {
+        throw new Error(
+          `health: ${file} exports a malformed check at index ${i} `
+          + '(missing or undefined — look for a double comma in the array)',
+        );
+      }
+      out.push({ ...def, file });
+    }
   }
   return out;
 }

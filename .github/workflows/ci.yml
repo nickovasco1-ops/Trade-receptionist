@@ -44,6 +44,31 @@ jobs:
       - name: Server unit tests
         run: npm test --prefix server
 
+  retell-contract:
+    name: Retell API contract (live)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install web dependencies
+        run: npm ci
+
+      # Retell deprecates endpoints on a dated schedule, and the replacements
+      # answer a different shape rather than an error — so drift reads as "no
+      # calls" and every safety net goes quietly green. This probes the live API
+      # on every PR so the next deprecation lands as a red build here instead of
+      # as a backfill that silently recovers nothing.
+      - name: Retell list endpoints still match what we parse
+        run: node tests/health/runner.mjs --only=providers.retell_list_contract
+        env:
+          RETELL_API_KEY: ${{ secrets.RETELL_API_KEY }}
+
   e2e:
     name: E2E (full suite)
     runs-on: ubuntu-latest
