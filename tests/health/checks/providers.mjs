@@ -187,7 +187,7 @@ export default [
         detail: res?.ok ? '' : 'The backend is not responding to its health check.',
       };
     },
-  }),,
+  }),
 
   check({
     id: 'providers.retell_list_contract', cls: 'C1', severity: HIGH,
