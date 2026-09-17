@@ -19,6 +19,7 @@
     "generate:demo-audio": "node scripts/generate-sample-call.mjs",
     "generate:landing-asset": "node scripts/generate-landing-asset.mjs",
     "reference:call-flow-layout": "node scripts/reference-call-flow-layout.mjs",
+    "render:onboarding": "npm --prefix onboarding-walkthrough/remotion run render",
     "visual-skill:build": "tsc -p trade-receptionist-visual-skill/tsconfig.json",
     "visual-skill": "npm run visual-skill:build --silent && node trade-receptionist-visual-skill/dist/cli.js",
     "visual-skill:dry-run": "npm run visual-skill -- dry-run",

@@ -1,0 +1,24 @@
+{
+  "name": "trade-receptionist-onboarding-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion composition for the Trade Receptionist onboarding walkthrough film (1920x1080, 30fps).",
+  "license": "UNLICENSED",
+  "scripts": {
+    "preview": "remotion studio",
+    "render": "remotion render TradeReceptionistOnboarding ../video/Trade-Receptionist-Onboarding-Remotion.mp4",
+    "still": "remotion still TradeReceptionistOnboarding",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.526",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.526"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "~5.8.0"
+  }
+}
