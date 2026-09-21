@@ -18,8 +18,14 @@ const BASE_URL = 'https://api.retellai.com';
  * paths rot silently; the SDK carries the current version, so `call.list()`
  * and `phoneNumber.list()` move with the API instead of against it.
  *
- * Everything else in this file still uses fetch deliberately: agent and LLM
- * lifecycle calls are stable, and rewriting them is risk without reward.
+ * That migration originally stopped at the list endpoints, on the reasoning
+ * that "agent and LLM lifecycle calls are stable". They were not. Auditing
+ * every hand-written path against this SDK found two that were simply wrong:
+ * `/get-call/{id}` (current: `/v2/get-call/{id}`) and, worse,
+ * `/publish-agent/{id}` (current: `/publish-agent-version/{id}`) — a call
+ * whose response was never read, so an agent that failed to publish reported
+ * success and answered nothing. Anything with a version-bearing path now goes
+ * through the SDK. Only genuinely unversioned lifecycle paths stay on fetch.
  */
 let sdk: Retell | null = null;
 
@@ -632,39 +638,41 @@ export async function applyTierToAgent(
   const tier = tierFor(plan);
   if (isE2ETestMode()) return { applied: tier, version: 0 };
 
+  // Every step below throws on failure rather than being awaited and dropped.
+  // The previous version fired four bare `fetch`es and read none of them, so a
+  // wrong path, a rejected key or a rate limit all returned `{ applied, version }`
+  // exactly as a success would. That is how a publish to a path Retell does not
+  // serve went unnoticed: the endpoint 404s, nothing reads the 404, and the
+  // caller is told the tier was applied.
+  const client = retellSdk();
+
   // The LLM has no published/draft split — patch it directly.
-  await fetch(`${BASE_URL}/update-retell-llm/${encodeURIComponent(llmId)}`, {
-    method: 'PATCH',
-    headers: headers(),
-    body: JSON.stringify({ model: tier.model, model_high_priority: tier.highPriority }),
-  });
+  await client.llm.update(llmId, {
+    model: tier.model,
+    model_high_priority: tier.highPriority,
+  } as Parameters<typeof client.llm.update>[1]);
 
   const current = await getRetellAgent(agentId);
   const baseVersion = typeof current?.version === 'number' ? current.version : 0;
 
   // Branch a draft, since a published version cannot be edited in place.
-  const draft = await fetch(`${BASE_URL}/create-agent-version/${encodeURIComponent(agentId)}`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify({ base_version: baseVersion }),
-  });
-  const draftBody = draft.ok ? await draft.json() as Record<string, unknown> : null;
-  const version = typeof draftBody?.version === 'number' ? draftBody.version : baseVersion;
+  const draft = await client.agent.createVersion(agentId, { base_version: baseVersion });
+  const version = typeof draft?.version === 'number' ? draft.version : baseVersion;
 
-  await fetch(`${BASE_URL}/update-agent/${encodeURIComponent(agentId)}?version=${version}`, {
-    method: 'PATCH',
-    headers: headers(),
-    body: JSON.stringify({
-      voice_id: tier.voiceId,
-      ...(tier.voiceModel ? { voice_model: tier.voiceModel } : {}),
-    }),
-  });
+  await client.agent.update(agentId, {
+    version,
+    voice_id: tier.voiceId,
+    ...(tier.voiceModel ? { voice_model: tier.voiceModel } : {}),
+  } as Parameters<typeof client.agent.update>[1]);
 
-  // Publish, or the number keeps routing to the old version.
-  await fetch(`${BASE_URL}/publish-agent/${encodeURIComponent(agentId)}`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify({ version }),
+  // Publish, or the number keeps routing to the old version — which is to say
+  // the customer's phone is answered by whatever was live before, or by
+  // nothing at all if the agent has never had a published version.
+  // Was POST /publish-agent/{id}; Retell serves /publish-agent-version/{id}.
+  await client.agent.publish(agentId, { version });
+
+  logEvent('info', 'retell.tier_applied', {
+    agentId, version, tier: tier.label, voiceId: tier.voiceId, fastTier: tier.highPriority,
   });
 
   return { applied: tier, version };
@@ -757,14 +765,26 @@ export async function releaseRetellNumber(phoneNumber: string): Promise<void> {
 
 // ── Call API ──────────────────────────────────────────────────────────────────
 
+/**
+ * Fetch one call.
+ *
+ * Was a hand-written `GET /get-call/{id}`. The current path is
+ * `/v2/get-call/{id}` — the unversioned one is not in Retell's SDK, and the
+ * Sept 2026 deprecation notice says unversioned paths are moving to `/v2` and
+ * "may be removed at any time". Whether it still answers today is unverified;
+ * what is certain is that it is the legacy path and is going away.
+ *
+ * The danger is the failure mode, not the date: this returned `null` for any
+ * non-2xx, and `POST /calls/backfill/:id` — the documented single-call
+ * recovery path — reports that to the caller as **404 "Call not found in
+ * Retell"**. So the day the path is withdrawn, the recovery tool starts
+ * saying the call does not exist, for calls that plainly do.
+ *
+ * Kept as a thin alias so there is exactly one way to fetch a call: two
+ * implementations on two different paths is what let this drift unnoticed.
+ */
 export async function getCall(callId: string): Promise<Record<string, unknown> | null> {
-  if (isE2ETestMode()) {
-    return null;
-  }
-
-  const res = await fetch(`${BASE_URL}/get-call/${callId}`, { headers: headers() });
-  if (!res.ok) return null;
-  return res.json() as Promise<Record<string, unknown>>;
+  return getRetellCall(callId);
 }
 
 /**

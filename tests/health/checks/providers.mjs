@@ -190,6 +190,105 @@ export default [
   }),
 
   check({
+    id: 'providers.retell_path_contract', cls: 'C1', severity: HIGH,
+    title: 'Every hand-written Retell path we call is a path the current SDK serves',
+    fn: async () => {
+      // The list-endpoint deprecation was caught. The assumption made while
+      // fixing it — "agent and LLM lifecycle calls are stable" — was not
+      // checked, and two hand-written paths were already wrong:
+      //
+      //   /get-call/{id}      →  Retell serves /v2/get-call/{id}
+      //   /publish-agent/{id} →  Retell serves /publish-agent-version/{id}
+      //
+      // Neither failed loudly. getCall() returned null for a non-2xx, which
+      // the backfill route reported as "Call not found in Retell"; the publish
+      // response was never read at all, so an agent that never published was
+      // reported as successfully tiered.
+      //
+      // This runs offline and on every PR. The installed retell-sdk is the
+      // oracle: it ships the vendor's current paths, so any path of ours that
+      // is absent from it is either wrong today or deprecated and about to be.
+      const { readFileSync, readdirSync, statSync } = await import('node:fs');
+      const { join } = await import('node:path');
+
+      const walk = (dir, out = []) => {
+        let entries;
+        try { entries = readdirSync(dir); } catch { return out; }
+        for (const e of entries) {
+          const full = join(dir, e);
+          let st;
+          try { st = statSync(full); } catch { continue; }
+          if (st.isDirectory()) walk(full, out);
+          else if (/\.(ts|mjs|js)$/.test(e)) out.push(full);
+        }
+        return out;
+      };
+
+      const sdkDir = 'server/node_modules/retell-sdk/resources';
+      const sdkFiles = walk(sdkDir).filter((f) => f.endsWith('.js'));
+      if (!sdkFiles.length) {
+        return {
+          status: BLOCKED,
+          evidence: evidence('read retell-sdk resources', `no .js files under ${sdkDir}`, 1),
+          detail: 'Install server deps (npm ci --prefix server) so the SDK can be read.',
+        };
+      }
+
+      // Paths the SDK actually calls: `_client.get('/x')` and `_client.post(path`/x/${id}`)`.
+      const served = new Set();
+      for (const f of sdkFiles) {
+        const src = readFileSync(f, 'utf8');
+        for (const m of src.matchAll(/_client\.(?:get|post|patch|delete|put)\([^'"`]*['"`](\/[A-Za-z0-9/_-]+)/g)) {
+          served.add(m[1].replace(/\/+$/, ''));
+        }
+      }
+
+      // Paths we hand-write: `${BASE_URL}/x` or a literal api.retellai.com/x.
+      const ourFiles = walk('server/src').filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
+      const ours = new Map(); // path -> "file:line"
+      for (const f of ourFiles) {
+        const lines = readFileSync(f, 'utf8').split('\n');
+        lines.forEach((line, i) => {
+          for (const m of line.matchAll(/(?:\$\{BASE_URL\}|https:\/\/api\.retellai\.com)(\/[A-Za-z0-9/_-]+)/g)) {
+            // Keep only the static prefix, up to the first interpolated segment.
+            const path = m[1].replace(/\/+$/, '');
+            if (!ours.has(path)) ours.set(path, `${f}:${i + 1}`);
+          }
+        });
+      }
+
+      if (!ours.size) {
+        return {
+          status: BLOCKED,
+          evidence: evidence('scan server/src for Retell paths', 'found none — the scanner is broken, not the code', 1),
+          detail: 'Expected at least one hand-written Retell path. Fix the scanner before trusting a pass.',
+        };
+      }
+
+      const unknown = [...ours.entries()].filter(([path]) => !served.has(path));
+      const lines = [
+        `retell-sdk paths read: ${served.size}`,
+        `hand-written paths found: ${ours.size}`,
+        ...unknown.map(([path, where]) => `UNKNOWN ${path}  (${where})`),
+      ];
+
+      return {
+        status: unknown.length ? FAIL : PASS,
+        evidence: evidence(
+          'compare server/src Retell paths against retell-sdk',
+          lines.join('\n'),
+          unknown.length ? 1 : 0,
+        ),
+        detail: unknown.length
+          ? `${unknown.length} Retell path(s) we call are not paths the installed SDK serves. `
+            + 'Either the endpoint was renamed/versioned under us, or it never existed. '
+            + 'Check the SDK resource for the right path and use the SDK method rather than a literal.'
+          : '',
+      };
+    },
+  }),
+
+  check({
     id: 'providers.retell_list_contract', cls: 'C1', severity: HIGH,
     title: 'The Retell list endpoints we depend on still exist and answer the shape we parse',
     fn: async () => {
