@@ -5,7 +5,8 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import DashboardShell from '../components/dashboard/DashboardShell';
 import Button from '../components/dashboard/ui/Button';
 import { supabase } from '../lib/supabase';
-import type { ReceptionistTone, Plan } from '../../shared/types';
+import DiaryConnect from '../components/dashboard/DiaryConnect';
+import type { CalendarProvider, ReceptionistTone, Plan } from '../../shared/types';
 import { divertActivationCode } from '../../shared/phone';
 
 interface ClientSettings {
@@ -19,6 +20,8 @@ interface ClientSettings {
   payment_status: string | null;
   after_hours_message: string | null;
   google_cal_id: string | null;
+  calendar_provider: CalendarProvider | null;
+  calendar_status: string | null;
   google_cal_connected: boolean;
   // Receptionist profile
   receptionist_name: string;
@@ -153,7 +156,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [calConnecting, setCalConnecting] = useState(false);
   const [calJustConnected, setCalJustConnected] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -161,12 +163,14 @@ export default function SettingsPage() {
   // Raw textarea state — avoids filter(Boolean) stripping blank lines mid-type
   const [servicesRaw, setServicesRaw] = useState('');
   const [serviceAreasRaw, setServiceAreasRaw] = useState('');
+  const [calendarProvider, setCalendarProvider] = useState<CalendarProvider | null>(null);
+  const [calendarNeedsReconnect, setCalendarNeedsReconnect] = useState(false);
 
-  // Show a success banner after returning from the Google OAuth redirect
-  // (server redirects to /settings?connected=google&clientId=...).
+  // Show a success banner after returning from any provider's OAuth redirect
+  // (server redirects to /settings?connected=<provider>&clientId=...).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('connected') === 'google') {
+    if (params.get('connected')) {
       setCalJustConnected(true);
       // Strip the query params so a refresh doesn't re-trigger the banner.
       window.history.replaceState({}, '', window.location.pathname);
@@ -195,7 +199,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('clients')
-        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id, subscription_status, payment_status, plan')
+        .select('id, business_name, owner_name, owner_email, owner_mobile, twilio_number, own_number, google_cal_id, calendar_provider, calendar_status, subscription_status, payment_status, plan')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -218,6 +222,14 @@ export default function SettingsPage() {
         .maybeSingle();
 
       setClientId(data.id);
+      // Fall back to the legacy Google column so a tenant who connected before
+      // migration 019 still reads as connected here.
+      setCalendarProvider(
+        (data.calendar_provider as CalendarProvider | null)
+        ?? (data.google_cal_id ? 'google' : null),
+      );
+      setCalendarNeedsReconnect(data.calendar_status === 'needs_reconnect');
+
       setForm({
         business_name: data.business_name ?? '',
         owner_name: data.owner_name ?? '',
@@ -229,7 +241,7 @@ export default function SettingsPage() {
         payment_status: data.payment_status ?? null,
         after_hours_message: configData?.after_hours_message ?? '',
         google_cal_id: data.google_cal_id ?? '',
-        google_cal_connected: !!data.google_cal_id,
+        google_cal_connected: !!(data.calendar_provider ?? data.google_cal_id),
         receptionist_name: configData?.receptionist_name ?? '',
         receptionist_tone: (configData?.receptionist_tone as ReceptionistTone | undefined) ?? 'friendly',
         services: configData?.services ?? [],
@@ -312,41 +324,6 @@ export default function SettingsPage() {
       setActionError('Could not reach the settings service. Please try again.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function connectGoogleCalendar() {
-    if (!clientId) {
-      setActionError('Your settings are not fully loaded yet. Please refresh and try again.');
-      return;
-    }
-
-    setCalConnecting(true);
-    setActionError(null);
-
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) {
-        setActionError('Your session has expired. Please sign in again before connecting Google Calendar.');
-        setCalConnecting(false);
-        return;
-      }
-
-      const res = await fetch(`/api/auth/google?clientId=${clientId}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const json = await res.json();
-
-      if (json.success && json.data?.url) {
-        window.location.href = json.data.url;
-        return;
-      }
-
-      setActionError(json.error ?? 'Could not start the Google Calendar connection.');
-      setCalConnecting(false);
-    } catch {
-      setActionError('Could not reach the calendar connection service. Please try again.');
-      setCalConnecting(false);
     }
   }
 
@@ -788,47 +765,19 @@ export default function SettingsPage() {
               </SettingsSection>
 
               <SettingsSection
-                title="Google Calendar"
+                title="Your diary"
                 icon={Calendar}
-                description="Give Trade Receptionist live diary awareness so it can check availability and help move callers into real appointments."
+                description="Connect the diary you actually use and your receptionist can see when you are free, then book the job while the caller is still on the phone."
               >
-                {form.google_cal_connected ? (
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3 rounded-[18px] bg-white/[0.04] px-4 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-                      <CheckCircle size={15} className="text-status-success" aria-hidden="true" />
-                      <span className="text-[14px] font-semibold text-offwhite/74">Calendar connected</span>
-                      <span className="truncate text-[12px] text-offwhite/34">{form.google_cal_id}</span>
-                    </div>
-                    <div className="mt-4">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={connectGoogleCalendar}
-                        disabled={calConnecting}
-                      >
-                        <Key size={13} aria-hidden="true" />
-                        {calConnecting ? 'Redirecting…' : 'Re-connect'}
-                      </Button>
-                    </div>
-                  </div>
+                {clientId ? (
+                  <DiaryConnect
+                    clientId={clientId}
+                    connectedProvider={calendarProvider}
+                    needsReconnect={calendarNeedsReconnect}
+                    onConnected={(provider) => setCalendarProvider(provider)}
+                  />
                 ) : (
-                  <div>
-                    <p className="text-[13px] leading-relaxed text-offwhite/48">
-                      Sign in with Google to connect your calendar automatically. Once connected, Trade Receptionist can check availability and book work directly into your diary.
-                    </p>
-                    <div className="mt-4">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={connectGoogleCalendar}
-                        disabled={calConnecting}
-                      >
-                        <Key size={14} aria-hidden="true" />
-                        {calConnecting ? 'Redirecting to Google…' : 'Connect Google Calendar'}
-                      </Button>
-                    </div>
-                  </div>
+                  <p className="text-[13px] leading-relaxed text-offwhite/58">Loading your account…</p>
                 )}
               </SettingsSection>
 
@@ -913,8 +862,8 @@ export default function SettingsPage() {
                   {
                     title: 'Diary connection',
                     copy: form.google_cal_connected
-                      ? 'Calendar access is connected and available for booking support.'
-                      : 'Calendar booking is available once you complete the Google connection.',
+                      ? 'Your diary is connected, so callers can be booked straight in.'
+                      : 'Your receptionist can take a message but cannot book a job until you connect a diary.',
                   },
                 ].map(item => (
                   <div

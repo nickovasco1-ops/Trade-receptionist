@@ -161,7 +161,7 @@ export default function DashboardPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id, onboarding_complete, subscription_status, payment_status, plan, google_cal_id')
+        .select('id, onboarding_complete, subscription_status, payment_status, plan, google_cal_id, calendar_provider')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -171,7 +171,9 @@ export default function DashboardPage() {
       }
 
       setSubscriptionAlert(subscriptionMessage(clientRow.subscription_status, clientRow.payment_status));
-      setCalendarMissing(!clientRow.google_cal_id);
+      // Any provider counts, not just Google. Falls back to the legacy column
+      // so a tenant connected before migration 019 is not told to reconnect.
+      setCalendarMissing(!(clientRow.calendar_provider ?? clientRow.google_cal_id));
 
       // Rolling 30-day window for quota calculation
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

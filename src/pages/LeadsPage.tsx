@@ -105,7 +105,7 @@ export default function LeadsPage() {
 
       const { data: clientRow } = await supabase
         .from('clients')
-        .select('id, google_cal_id')
+        .select('id, google_cal_id, calendar_provider')
         .eq('owner_email', user.email)
         .maybeSingle();
 
@@ -114,7 +114,7 @@ export default function LeadsPage() {
         return;
       }
 
-      setCalendarConnected(!!clientRow.google_cal_id);
+      setCalendarConnected(!!(clientRow.calendar_provider ?? clientRow.google_cal_id));
 
       const [leadsRes, bookingsRes] = await Promise.all([
         supabase

@@ -28,6 +28,9 @@ export async function seedClient(
     businessName?: string;
     retellAgentId?: string | null;
     googleCalendarId?: string | null;
+    /** Exercise a non-Google diary. Defaults to Google when googleCalendarId is set. */
+    calendarProvider?: 'google' | 'microsoft' | 'caldav' | null;
+    calendarId?: string | null;
   } = {}
 ): Promise<TestAccount> {
   await createConfirmedTestUser(email);
@@ -46,6 +49,18 @@ export async function seedClient(
       ? options.googleCalendarId
       : null,
     google_refresh_token: options.googleCalendarId ? 'test-refresh-token' : null,
+    // Migration 019. Written in step with the Google pair so a fixture built the
+    // old way still reads as connected through calendarConnection(), and so a
+    // spec can exercise Outlook or Apple by naming a provider.
+    calendar_provider: options.calendarProvider
+      ?? (options.googleCalendarId ? 'google' : null),
+    calendar_id: options.calendarProvider
+      ? (options.calendarId ?? 'test-calendar-id')
+      : (options.googleCalendarId ?? null),
+    calendar_credentials: (options.calendarProvider ?? options.googleCalendarId)
+      ? 'test-calendar-credentials'
+      : null,
+    calendar_status: (options.calendarProvider ?? options.googleCalendarId) ? 'connected' : 'none',
     plan: 'pro',
     is_active: true,
     onboarding_complete: options.onboardingComplete ?? true,

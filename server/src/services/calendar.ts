@@ -178,6 +178,24 @@ async function getBusyWindows(
     adapterFor(conn.provider).getBusyWindows(conn, timeMin, timeMax));
 }
 
+/**
+ * Check a connection end to end and report what the provider said.
+ *
+ * Used by the admin diagnostic. Goes through withCredentialWatch, so simply
+ * running the diagnostic also updates calendar_status — a tenant whose diary has
+ * gone stale is flagged by the act of checking, and one that has recovered is
+ * un-flagged.
+ */
+export async function probeCalendar(
+  connection: CalendarConnection,
+  hours = 24,
+): Promise<{ provider: string; calendarId: string; busy: BusyWindow[] }> {
+  const now = new Date();
+  const until = new Date(now.getTime() + hours * 3_600_000);
+  const busy = await getBusyWindows(connection, now.toISOString(), until.toISOString());
+  return { provider: connection.provider, calendarId: connection.calendarId, busy };
+}
+
 // ── Availability ──────────────────────────────────────────────────────────────
 
 export interface SlotOptions {
