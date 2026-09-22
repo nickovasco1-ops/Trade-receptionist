@@ -4,6 +4,7 @@ import { sendPostCallEmail } from './resend';
 import { buildSystemPrompt, buildBeginMessage } from '../lib/prompt-builder';
 import { getNextAvailableSlots } from './slot-cache';
 import { isE2ETestMode } from '../config/e2e';
+import { calendarIsConnected } from './calendar';
 import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 
@@ -923,7 +924,7 @@ export async function updateAgentConfiguration(
     };
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
-      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, !!client.google_cal_id, beginMessage);
+      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, calendarIsConnected(client), beginMessage);
       llmUpdated = true;
     }
   }

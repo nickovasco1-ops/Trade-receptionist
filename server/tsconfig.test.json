@@ -1,0 +1,17 @@
+{
+  // Type-check the tests too.
+  //
+  // The build config excludes src/**/*.test.ts so test files are not emitted to
+  // dist — sensible, but it also meant they were never type-checked at all:
+  // `npm run build:api` reported clean while a test called a function with the
+  // wrong number of arguments, and the only symptom was a runtime TypeError.
+  //
+  // Same family as the unquoted test glob that expanded to one directory, and as
+  // emergency.test.ts being written for a runner this project does not use: a
+  // check that silently does not apply is worse than no check, because it reads
+  // as green.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

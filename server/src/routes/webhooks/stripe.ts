@@ -10,6 +10,7 @@ import { verifyStripeSignature } from './stripe-signature';
 import { forwardingInstructionsHtml } from '../../lib/forwarding-email';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 import { fireOpsAlert } from '../../services/alerts';
+import { calendarIsConnected } from '../../services/calendar';
 
 const router = Router();
 
@@ -549,7 +550,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
       agentName:    `Trade Receptionist — ${ownerName}`,
       prompt,
       ownerNumber:  ownerMobile,
-      calendarBookingEnabled: !!client.google_cal_id,
+      calendarBookingEnabled: calendarIsConnected(client),
       beginMessage: buildBeginMessage(client, configRow as BusinessConfig),
       plan,
       boostedKeywords: [ownerName].filter(Boolean),

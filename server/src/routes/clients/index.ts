@@ -32,6 +32,7 @@ import type {
 } from '../../../../shared/types';
 import { divertActivationCode } from '../../../../shared/phone';
 import { sendNumberReadyEmail } from '../../services/resend';
+import { calendarIsConnected } from '../../services/calendar';
 
 const router = Router();
 
@@ -607,7 +608,7 @@ router.post('/provision', requireAdmin, async (req: Request, res: Response) => {
       agentName:    `${receptionist_name} — ${business_name}`,
       prompt,
       ownerNumber:  owner_mobile ?? null,
-      calendarBookingEnabled: !!client.google_cal_id,
+      calendarBookingEnabled: calendarIsConnected(client),
       beginMessage: buildBeginMessage(client, config),
       // The tenant's own words, so the recogniser expects them.
       plan: client.plan,

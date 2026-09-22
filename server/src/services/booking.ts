@@ -6,10 +6,13 @@ import type {
 } from '../../../shared/types';
 import { supabase } from './supabase';
 import {
+  CalendarAuthError,
+  calendarConnection,
   createCalendarEvent,
   deleteCalendarEvent,
   getAvailableSlots,
   isSlotAvailable,
+  providerLabel,
 } from './calendar';
 import { sendCallerSms } from './twilio';
 import { sendBookingConfirmationEmail } from './resend';
@@ -114,16 +117,23 @@ function confirmationSummary(sentSms: boolean, sentEmail: boolean): string {
 }
 
 export function bookingErrorDetails(error: unknown): { status: number; message: string } {
-  const message = error instanceof Error ? error.message : 'Google Calendar request failed';
-
-  if (
-    message.includes('Google token refresh failed')
-    || message.includes('invalid_grant')
-    || message.includes('invalid_client')
-  ) {
+  // A dead credential is now its own error type, so this no longer has to guess
+  // from substrings — and it names the provider the tenant actually connected
+  // rather than saying "Google" to an Outlook customer.
+  if (error instanceof CalendarAuthError) {
     return {
       status: 409,
-      message: 'Google Calendar access needs to be reconnected before bookings can be used.',
+      message: `${providerLabel(error.provider)} access needs to be reconnected before bookings can be used.`,
+    };
+  }
+
+  const message = error instanceof Error ? error.message : 'Calendar request failed';
+
+  // Retained for any path that still surfaces a raw provider string.
+  if (/invalid_grant|invalid_client|token refresh failed/i.test(message)) {
+    return {
+      status: 409,
+      message: 'Calendar access needs to be reconnected before bookings can be used.',
     };
   }
 
@@ -187,13 +197,13 @@ export async function getClientAvailability(
 ): Promise<Date[]> {
   const { client, config } = context;
 
-  if (!client.google_cal_id || !client.google_refresh_token) {
-    throw new Error('Google Calendar is not connected for this business yet.');
+  const connection = calendarConnection(client);
+  if (!connection) {
+    throw new Error('No diary is connected for this business yet.');
   }
 
   const slots = await getAvailableSlots({
-    calendarId: client.google_cal_id,
-    refreshToken: client.google_refresh_token,
+    connection,
     durationMins: request.durationMins ?? 60,
     days: request.days ?? 7,
     maxSlots: request.maxSlots ?? 10,
@@ -257,8 +267,9 @@ export async function createBookingForClient(
 ): Promise<BookingResult> {
   const { client, config } = context;
 
-  if (!client.google_cal_id || !client.google_refresh_token) {
-    throw new Error('Google Calendar is not connected for this business yet.');
+  const connection = calendarConnection(client);
+  if (!connection) {
+    throw new Error('No diary is connected for this business yet.');
   }
 
   const durationMins = request.durationMins ?? 60;
@@ -294,8 +305,7 @@ export async function createBookingForClient(
   }
 
   const slotStillAvailable = await isSlotAvailable({
-    calendarId: client.google_cal_id,
-    refreshToken: client.google_refresh_token,
+    connection,
     startTime: scheduledAt,
     durationMins,
     startHour: config.business_hours_start ?? '08:00',
@@ -319,9 +329,10 @@ export async function createBookingForClient(
   const callerEmail = request.callerEmail?.trim() || request.lead?.caller_email || null;
   const jobType = request.jobType?.trim() || request.lead?.job_type || null;
 
+  // Named for the column it lands in (bookings.google_event_id), which keeps its
+  // name for compatibility but now holds an id from whichever provider booked it.
   const googleEventId = await createCalendarEvent(
-    client.google_cal_id,
-    client.google_refresh_token,
+    connection,
     {
       title: bookingTitle(jobType, customerName),
       startTime: scheduledAt.toISOString(),
@@ -352,7 +363,7 @@ export async function createBookingForClient(
     .single();
 
   if (bookingError || !bookingRow) {
-    await deleteCalendarEvent(client.google_cal_id, client.google_refresh_token, googleEventId).catch((error: unknown) =>
+    await deleteCalendarEvent(connection, googleEventId).catch((error: unknown) =>
       logEvent('error', 'booking.calendar_rollback_failed', { clientId: client.id, stage: 'booking_insert', error: errorMessage(error) })
     );
 
@@ -374,7 +385,7 @@ export async function createBookingForClient(
 
     if (leadUpdateError) {
       await supabase.from('bookings').delete().eq('id', bookingRow.id);
-      await deleteCalendarEvent(client.google_cal_id, client.google_refresh_token, googleEventId).catch((error: unknown) =>
+      await deleteCalendarEvent(connection, googleEventId).catch((error: unknown) =>
         logEvent('error', 'booking.calendar_rollback_failed', { clientId: client.id, stage: 'lead_status', error: errorMessage(error) })
       );
       throw new Error('The booking could not be finalised. No changes were applied.');

@@ -31,6 +31,21 @@ export type SubscriptionStatus =
 /** Mirrors the clients_payment_status_check constraint. */
 export type PaymentStatus = 'current' | 'failed' | 'canceled';
 
+/**
+ * Where a tenant keeps their diary. Mirrors clients_calendar_provider_check
+ * (migration 019) — widening this union without widening that constraint fails
+ * at INSERT time, not at compile time. See the 018 landmine in CLAUDE.md §10.
+ *
+ * `caldav` covers Apple iCloud and any other CalDAV server. Apple offers no
+ * OAuth for calendar data at all, so it is the one provider that cannot be a
+ * single tap: the tenant generates an app-specific password. Every vendor that
+ * claims seamless iCloud sync does exactly this underneath.
+ */
+export type CalendarProvider = 'google' | 'microsoft' | 'caldav';
+
+/** Mirrors clients_calendar_status_check (migration 019). */
+export type CalendarStatus = 'none' | 'connected' | 'needs_reconnect';
+
 export interface Client {
   id: string;
   business_name: string;
@@ -40,8 +55,23 @@ export interface Client {
   retell_agent_id: string | null;
   twilio_number: string | null;
   own_number: string | null;
+  // Google-specific columns, kept because the dashboard, tenant-integrity
+  // checks and Notion sync all read them. Written in step with the generic
+  // calendar_* columns below whenever the provider is Google.
   google_cal_id: string | null;
   google_refresh_token: string | null;
+  // Provider-neutral calendar connection (migration 019). Prefer these: read
+  // them through calendarConnection() in services/calendar rather than testing
+  // a provider column directly, or the next provider gets missed at half the
+  // call sites the way Google was the only one for months.
+  calendar_provider: CalendarProvider | null;
+  calendar_id: string | null;
+  /** SECRET. Never select into the browser — see migration 019's RLS note. */
+  calendar_credentials: string | null;
+  calendar_status: CalendarStatus;
+  calendar_last_error: string | null;
+  calendar_connected_at: string | null;
+  calendar_checked_at: string | null;
   plan: Plan;
   is_active: boolean;
   onboarding_complete: boolean;
