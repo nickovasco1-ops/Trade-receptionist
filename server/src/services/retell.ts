@@ -983,8 +983,12 @@ export async function postCallWorkflow(
   const fromNumber   = client.twilio_number ?? undefined;
 
   // Build a deep-link to the lead in the dashboard, if a lead was created.
+  // The dashboard is served from the marketing domain, not an `app.` subdomain —
+  // that subdomain has never existed in DNS, so every lead link sent to an owner
+  // was dead. Kept overridable so a future split-out needs no code change.
+  const appUrl = process.env.PUBLIC_APP_URL ?? 'https://tradereceptionist.com';
   const leadUrl = extra.leadId
-    ? `https://app.tradereceptionist.com/dashboard/leads?leadId=${extra.leadId}`
+    ? `${appUrl}/dashboard/leads?leadId=${extra.leadId}`
     : null;
 
   const tasks: Promise<unknown>[] = [];

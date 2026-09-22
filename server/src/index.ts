@@ -313,7 +313,7 @@ app.post('/admin/send-trial-reminders', async (req, res) => {
     return;
   }
 
-  const dashboardUrl = process.env.PUBLIC_APP_URL ?? 'https://app.tradereceptionist.com';
+  const dashboardUrl = process.env.PUBLIC_APP_URL ?? 'https://tradereceptionist.com';
 
   // Find clients in days 8–10 of their trial who haven't converted yet.
   const now = new Date();
