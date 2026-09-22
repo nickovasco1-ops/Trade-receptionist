@@ -1504,7 +1504,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                         )}
 
                         <div className="flex gap-3 pt-2">
-                          <SecondaryBtn onClick={() => setStep('diary')} className="flex-1">
+                          <SecondaryBtn onClick={() => setStep('hours')} className="flex-1">
                             Back
                           </SecondaryBtn>
                           <PrimaryBtn onClick={() => setStep('contact')} className="flex-[1.3]">
