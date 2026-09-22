@@ -4,7 +4,14 @@ import { supabase } from './supabase';
  * Persist the Google Calendar refresh token captured during a Supabase Google
  * OAuth sign-in.
  *
- * When a user signs in with Google (scope `…/auth/calendar`, `access_type=offline`),
+ * This is the cheapest possible connection — no extra tap at all — which is why
+ * offering Google sign-in at signup matters more than any other change to this
+ * flow. The scope here is whatever the Supabase dashboard's Google provider is
+ * configured to request, NOT the narrowed list in server calendar-providers.ts;
+ * they are two separate OAuth clients and the Supabase one must also include a
+ * calendar scope or the token it returns cannot read a diary.
+ *
+ * When a user signs in with Google (calendar scope, `access_type=offline`),
  * the resulting Supabase session briefly carries `provider_token` and
  * `provider_refresh_token`. Those are only present on the first page load after the
  * OAuth redirect, so this must run on whichever page the user lands on post-login

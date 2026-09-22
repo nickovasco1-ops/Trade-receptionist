@@ -31,7 +31,7 @@ async function liveTenants() {
   if (!db) return null;
   const { data, error } = await db
     .from('clients')
-    .select('id,business_name,owner_email,created_at,is_active,subscription_status,google_cal_id,twilio_number');
+    .select('id,business_name,owner_email,created_at,is_active,subscription_status,google_cal_id,calendar_provider,calendar_status,twilio_number');
   if (error) throw new Error(error.message);
 
   // Test identities are ours and never take calls; excluding them keeps the
@@ -118,11 +118,22 @@ export default [
       }
 
       // buildRetellTools() attaches the calendar tools only when
-      // google_cal_id is set, so no calendar means the agent has no booking
+      // a diary is connected, so no diary means the agent has no booking
       // capability at all — it can only capture a lead.
-      const withoutCalendar = tenants.filter((t) => !t.google_cal_id);
+      // Any provider counts (migration 019). Reading google_cal_id alone would
+      // report every Outlook and Apple tenant as broken. needs_reconnect counts
+      // as not connected: the row is populated but the provider is refusing it.
+      const hasDiary = (t) =>
+        Boolean(t.calendar_provider ?? t.google_cal_id) && t.calendar_status !== 'needs_reconnect';
+      const withoutCalendar = tenants.filter((t) => !hasDiary(t));
       const lines = tenants.map((t) =>
-        `${t.business_name}: calendar ${t.google_cal_id ? 'connected' : 'NOT connected — agent has no booking tools'}`);
+        `${t.business_name}: diary ${
+          hasDiary(t)
+            ? `connected (${t.calendar_provider ?? 'google'})`
+            : t.calendar_status === 'needs_reconnect'
+              ? 'NEEDS RECONNECT — provider is rejecting the stored credential'
+              : 'NOT connected — agent has no booking tools'
+        }`);
 
       return {
         status: withoutCalendar.length ? FAIL : PASS,
