@@ -28,47 +28,20 @@ import {
   MICROSOFT_SCOPES,
   encodeCaldavCredentials,
 } from './calendar-providers';
+import { backendBaseUrl, resolveRedirectUri } from '../lib/oauth-redirect';
 
 // ── Env / redirect URIs ───────────────────────────────────────────────────────
-
-function trimEnv(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed.replace(/\/$/, '') : null;
-}
+//
+// Resolution lives in lib/oauth-redirect.ts, which is pure and unit-tested — this
+// module imports the Supabase client, which throws at import time without
+// credentials, so nothing in here can be tested directly.
 
 export function publicBackendBaseUrl(): string | null {
-  const explicitBase = trimEnv(process.env.PUBLIC_API_BASE_URL);
-  if (explicitBase) return explicitBase;
-
-  const retellFunctionBase = trimEnv(process.env.RETELL_FUNCTION_BASE_URL);
-  if (retellFunctionBase) return retellFunctionBase;
-
-  const webhookUrl = trimEnv(process.env.RETELL_WEBHOOK_URL);
-  if (!webhookUrl) return null;
-
-  try {
-    return new URL(webhookUrl).origin;
-  } catch {
-    return null;
-  }
+  return backendBaseUrl(process.env);
 }
 
 function redirectUriFor(provider: 'google' | 'microsoft'): string {
-  const override = provider === 'google'
-    ? trimEnv(process.env.GOOGLE_REDIRECT_URI)
-    : trimEnv(process.env.MICROSOFT_REDIRECT_URI);
-
-  const base = publicBackendBaseUrl();
-  const derived = base ? `${base}/auth/${provider}/callback` : null;
-  const redirectUri = derived ?? override;
-
-  if (!redirectUri) {
-    throw new Error(
-      `Cannot derive the ${provider} redirect URI — set PUBLIC_API_BASE_URL or `
-      + `${provider === 'google' ? 'GOOGLE' : 'MICROSOFT'}_REDIRECT_URI`,
-    );
-  }
-  return redirectUri;
+  return resolveRedirectUri(provider, process.env);
 }
 
 function googleOauthConfig() {
