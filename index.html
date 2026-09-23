@@ -124,6 +124,38 @@
     </script>
   </head>
   <body class="bg-navy text-offwhite font-body">
+    <noscript>
+      <!--
+        Google's OAuth verification fetches the home page and rejected this project
+        once with "Your home page URL is unresponsive". The SPA body is a single
+        empty div, so anything that does not run JavaScript sees a blank document —
+        indistinguishable from a dead site. This is the minimum a crawler needs:
+        who we are, what the product does, and the legal links. Every claim here is
+        checkable against shipped behaviour, per CLAUDE.md §1.1.
+      -->
+      <main style="max-width:65ch;margin:0 auto;padding:48px 24px;font-family:Manrope,sans-serif;color:#F0F4F8;background:#051426;">
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:32px;line-height:1.1;">Trade Receptionist</h1>
+        <p style="font-size:18px;line-height:1.65;color:rgba(240,244,248,0.7);">
+          An AI receptionist for UK tradespeople. It answers your calls, books jobs
+          into your diary, filters out spam, and sends you an SMS and email summary
+          of every call — so you never lose a customer while you are under a sink or
+          on a roof.
+        </p>
+        <p style="font-size:16px;line-height:1.7;color:rgba(240,244,248,0.7);">
+          Plans start at £49 a month with a 14-day free trial. Trade Receptionist Ltd
+          is registered in England &amp; Wales.
+        </p>
+        <p style="font-size:16px;line-height:1.7;">
+          <a href="/privacy" style="color:#FF6B2B;">Privacy Policy</a> ·
+          <a href="/terms" style="color:#FF6B2B;">Terms of Service</a> ·
+          <a href="mailto:hello@tradereceptionist.co.uk" style="color:#FF6B2B;">hello@tradereceptionist.co.uk</a>
+        </p>
+        <p style="font-size:15px;color:rgba(240,244,248,0.58);">
+          This site needs JavaScript for the full experience. Please enable it, or
+          email us and we will help you directly.
+        </p>
+      </main>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

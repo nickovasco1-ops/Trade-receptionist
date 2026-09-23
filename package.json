@@ -10,7 +10,7 @@
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "vite",
     "dev:api": "cd server && npm run dev",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-legal.mjs",
     "build:api": "cd server && npm run build",
     "preview": "vite preview",
     "generate:call-flow-assets": "node scripts/generate-call-flow-assets.mjs --all",
@@ -31,7 +31,8 @@
     "validate:env": "node scripts/validate-env.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "health:daily": "node tests/health/runner.mjs --mode=daily",
-    "health:deep": "node tests/health/runner.mjs --mode=deep"
+    "health:deep": "node tests/health/runner.mjs --mode=deep",
+    "prerender:legal": "node scripts/prerender-legal.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.50.0",
