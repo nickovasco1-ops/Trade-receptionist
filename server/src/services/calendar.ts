@@ -15,7 +15,9 @@ import { logEvent, errorMessage } from '../lib/observability';
 import {
   CalendarAuthError,
   adapterFor,
+  calendarConnection,
   type BusyWindow,
+  type CalendarColumns,
   type CalendarConnection,
   type CalendarEventInput,
 } from './calendar-providers';
@@ -334,4 +336,105 @@ export async function deleteCalendarEvent(
 ): Promise<void> {
   return withCredentialWatch(connection, 'delete_event', () =>
     adapterFor(connection.provider).deleteEvent(connection, eventId));
+}
+
+// ── Fleet-wide credential sweep ───────────────────────────────────────────────
+
+/** What the sweep needs off a `clients` row: the calendar columns plus who to name. */
+type SweepClient = CalendarColumns & {
+  id: string;
+  business_name: string | null;
+  owner_email: string | null;
+};
+
+export interface CalendarSweepRow {
+  clientId:     string;
+  businessName: string;
+  ownerEmail:   string;
+  provider:     string;
+  status:       'ok' | 'needs_reconnect' | 'provider_error' | 'not_connected';
+  detail?:      string;
+}
+
+export interface CalendarSweepReport {
+  checkedAt:      string;
+  tenantsChecked: number;
+  ok:             number;
+  needsReconnect: number;
+  providerErrors: number;
+  notConnected:   number;
+  rows:           CalendarSweepRow[];
+}
+
+/**
+ * Probe every active tenant's diary and report which credentials are dead.
+ *
+ * This exists because of Google's 7-day refresh-token expiry for OAuth projects
+ * still in Testing. A token dies overnight, and without this the first thing that
+ * notices is a real caller asking for an appointment — mid-call, where a failed
+ * tool is simply spoken around and nothing is logged as a fault.
+ *
+ * Read-only as far as the providers go. It does write `calendar_status`, because
+ * probeCalendar() runs through withCredentialWatch(): checking flags a tenant whose
+ * diary has died and un-flags one that has recovered, which is the point.
+ */
+export async function sweepCalendars(): Promise<CalendarSweepReport> {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('is_active', true);
+
+  if (error) throw new Error(`Failed to list tenants: ${error.message}`);
+
+  const clients = (data ?? []) as SweepClient[];
+  const rows: CalendarSweepRow[] = [];
+
+  for (const client of clients) {
+    const base = {
+      clientId:     client.id,
+      businessName: client.business_name ?? '(unnamed)',
+      ownerEmail:   client.owner_email ?? '(no email)',
+    };
+
+    const connection = calendarConnection(client);
+    if (!connection) {
+      rows.push({ ...base, provider: 'none', status: 'not_connected' });
+      continue;
+    }
+
+    try {
+      await probeCalendar(connection, 24);
+      rows.push({ ...base, provider: connection.provider, status: 'ok' });
+    } catch (err: unknown) {
+      // Only a rejected credential means "reconnect". A timeout or a provider 500
+      // is not a reason to tell a tradesperson their perfectly good diary is broken.
+      const dead = err instanceof CalendarAuthError;
+      rows.push({
+        ...base,
+        provider: connection.provider,
+        status:   dead ? 'needs_reconnect' : 'provider_error',
+        detail:   errorMessage(err).slice(0, 300),
+      });
+    }
+  }
+
+  const report: CalendarSweepReport = {
+    checkedAt:      new Date().toISOString(),
+    tenantsChecked: rows.length,
+    ok:             rows.filter((r) => r.status === 'ok').length,
+    needsReconnect: rows.filter((r) => r.status === 'needs_reconnect').length,
+    providerErrors: rows.filter((r) => r.status === 'provider_error').length,
+    notConnected:   rows.filter((r) => r.status === 'not_connected').length,
+    rows,
+  };
+
+  logEvent(report.needsReconnect > 0 ? 'error' : 'info', 'calendar.sweep_complete', {
+    tenantsChecked: report.tenantsChecked,
+    ok:             report.ok,
+    needsReconnect: report.needsReconnect,
+    providerErrors: report.providerErrors,
+    notConnected:   report.notConnected,
+  });
+
+  return report;
 }

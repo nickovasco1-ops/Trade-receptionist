@@ -1,0 +1,51 @@
+name: Calendar Health Cron
+
+on:
+  schedule:
+    # 06:30 UTC daily (07:30 BST) — before the trades' working day, so a dead
+    # diary is found before a caller finds it.
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-calendars:
+    name: POST /admin/check-calendars
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe every tenant's diary
+        run: |
+          STATUS=$(curl -s -o /tmp/body.json -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/check-calendars \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json")
+
+          echo "HTTP $STATUS"
+          cat /tmp/body.json
+          echo
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::Calendar sweep endpoint returned HTTP $STATUS"
+            exit 1
+          fi
+
+          # A 2xx is not success. notification-health.yml reported green for 20
+          # runs while the notifications it checked were failing, because it only
+          # ever looked at the status code. Read the body.
+          DEAD=$(jq -r '.data.needsReconnect // "null"' /tmp/body.json)
+          CHECKED=$(jq -r '.data.tenantsChecked // "null"' /tmp/body.json)
+
+          if [ "$DEAD" = "null" ] || [ "$CHECKED" = "null" ]; then
+            echo "::error::Response carried no report — treating as a failed run, not an idle one"
+            exit 1
+          fi
+
+          echo "Checked $CHECKED tenant(s); $DEAD need to reconnect."
+          echo "### Calendar health: $DEAD of $CHECKED need reconnecting" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.data.rows[] | "- \(.businessName): \(.provider) — \(.status)"' /tmp/body.json \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$DEAD" -gt 0 ]; then
+            echo "::error::$DEAD tenant(s) cannot reach their diary — their receptionist cannot book a job"
+            exit 1
+          fi

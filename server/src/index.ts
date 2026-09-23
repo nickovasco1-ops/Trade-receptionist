@@ -26,6 +26,7 @@ import { logEvent } from './lib/observability';
 import { deriveOutcome, extractLeadData, isLeadEmpty } from './lib/lead-extraction';
 import { sendTrialReminderEmail, sendEmail } from './services/resend';
 import { runTenantIntegrityCheck } from './services/tenant-integrity';
+import { sweepCalendars } from './services/calendar';
 import type { Call, CallOutcome, Client } from '../../shared/types';
 
 /**
@@ -220,6 +221,58 @@ app.post('/admin/check-tenant-integrity', async (req, res) => {
       error: err instanceof Error ? err.message : String(err),
     });
     res.status(500).json({ success: false, error: 'Integrity check failed' });
+  }
+});
+
+// ── POST /admin/check-calendars ──────────────────────────────────────────────
+// Probes every active tenant's diary and reports which credentials are dead.
+//
+// Why this is not optional while the Google OAuth project sits in Testing: Google
+// expires refresh tokens after 7 days for an unverified app with sensitive scopes.
+// A tenant connects their diary, it works, and a week later it silently does not.
+// Without a sweep the first thing that notices is a caller asking for an
+// appointment — and a failed tool mid-call is spoken around by the LLM, so the
+// customer hears a plausible answer and we hear nothing.
+//
+// Intended daily, ahead of the working day, on the same external cron as the
+// other /admin routes. Emails CALENDAR_ALERT_EMAIL (falling back to
+// INTEGRITY_ALERT_EMAIL) when any tenant needs to reconnect; unset means the
+// report is returned and logged only and nobody is told.
+app.post('/admin/check-calendars', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const report = await sweepCalendars();
+    const dead = report.rows.filter((r) => r.status === 'needs_reconnect');
+
+    const alertTo = process.env.CALENDAR_ALERT_EMAIL ?? process.env.INTEGRITY_ALERT_EMAIL;
+    if (dead.length && alertTo) {
+      const rows = dead
+        .map((r) => `<li><strong>${r.businessName}</strong> (${r.ownerEmail}) — ${r.provider} rejected the stored credential: ${r.detail ?? 'no detail'}</li>`)
+        .join('');
+      try {
+        await sendEmail({
+          to:      alertTo,
+          subject: `[Trade Receptionist] ${dead.length} diary connection(s) have died`,
+          html:    `<p>${dead.length} of ${report.tenantsChecked} active tenant(s) can no longer reach their diary, so their receptionist cannot book a job:</p><ul>${rows}</ul><p>Each one needs to reconnect from Settings &rarr; Diary connection.</p>`,
+        });
+      } catch (err: unknown) {
+        logEvent('error', 'calendar.sweep_alert_email_failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    res.json({ success: true, data: report });
+  } catch (err: unknown) {
+    logEvent('error', 'calendar.sweep_failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    res.status(500).json({ success: false, error: 'Calendar sweep failed' });
   }
 });
 
