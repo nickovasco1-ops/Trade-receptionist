@@ -1,5 +1,6 @@
 import type { Client, BusinessConfig } from '../../../shared/types';
 import { normaliseHour } from './time';
+import { calendarIsConnected } from '../services/calendar';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const RECEPTIONIST_LABEL = 'Trade Receptionist';
@@ -72,7 +73,7 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig, availa
   const ratesLine        = formatRates(config);
   const emergencyKw      = formatEmergencyKeywords(config);
   const afterHoursMessage = formatAfterHoursMessage(config, client);
-  const hasCalendar      = !!client.google_cal_id;
+  const hasCalendar      = calendarIsConnected(client);
   const tone             = toneInstructions(config.receptionist_tone);
 
   const slotHint = hasCalendar && availableSlots.length > 0
@@ -232,6 +233,6 @@ export function buildCallVariables(client: Client, config: BusinessConfig): Reco
     owner_name:        client.owner_name,
     callback_number:   client.owner_mobile ?? '',
     receptionist_name: config.receptionist_name?.trim() || RECEPTIONIST_LABEL,
-    calendar_enabled:  String(!!client.google_cal_id),
+    calendar_enabled:  String(calendarIsConnected(client)),
   };
 }

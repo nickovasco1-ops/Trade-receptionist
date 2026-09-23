@@ -8,10 +8,18 @@ import assert from 'node:assert/strict';
  * tsx (§8.1) and Bun is not installed anywhere — locally or in CI — so all 216
  * lines had never once executed. Only three matchers are used, so a shim keeps
  * every assertion intact rather than rewriting them into assert calls.
+ *
+ * `toBe` is generic because the assertions carry a type argument inherited from
+ * the bun original — `toBe<EmergencyLevel>('critical')`. The shim originally
+ * declared no type parameter, so all 27 of those were type errors; they went
+ * unnoticed because tsconfig excluded *.test.ts, which meant `npm run build:api`
+ * type-checked everything in src EXCEPT the tests. Keeping the parameter and
+ * making it meaningful is better than deleting it: it asserts the expected value
+ * is a member of the union, which is what the original was reaching for.
  */
 function expect(actual: unknown) {
   return {
-    toBe(expected: unknown) {
+    toBe<T>(expected: T) {
       assert.strictEqual(actual, expected);
     },
     toContain(needle: unknown) {

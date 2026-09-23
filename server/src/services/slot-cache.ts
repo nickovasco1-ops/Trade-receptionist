@@ -1,4 +1,4 @@
-import { getAvailableSlots } from './calendar';
+import { calendarConnection, getAvailableSlots } from './calendar';
 import { logEvent, errorMessage } from '../lib/observability';
 import { normaliseHour } from '../lib/time';
 import type { Client, BusinessConfig } from '../../../shared/types';
@@ -35,7 +35,8 @@ export async function getNextAvailableSlots(
   client: Client,
   config: BusinessConfig
 ): Promise<string[]> {
-  if (!client.google_cal_id || !client.google_refresh_token) return [];
+  const connection = calendarConnection(client);
+  if (!connection) return [];
 
   const cached = cache.get(client.id);
   if (cached && cached.expiresAt > Date.now()) return cached.slots;
@@ -44,8 +45,7 @@ export async function getNextAvailableSlots(
 
   try {
     const fetchPromise = getAvailableSlots({
-      calendarId:    client.google_cal_id,
-      refreshToken:  client.google_refresh_token,
+      connection,
       days:          7,
       durationMins:  60,
       startHour:     normaliseHour(config.business_hours_start) ?? '08:00',

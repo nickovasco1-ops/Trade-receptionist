@@ -33,7 +33,7 @@ interface ClientRow {
   id: string; business_name: string; owner_name: string | null; owner_email: string;
   owner_mobile: string | null; twilio_number: string | null; plan: string;
   subscription_status: string | null; is_active: boolean | null;
-  google_cal_id: string | null; onboarding_complete: boolean | null;
+  google_cal_id: string | null; calendar_provider: string | null; onboarding_complete: boolean | null;
   created_at: string; current_period_end: string | null;
 }
 
@@ -133,11 +133,14 @@ function healthOf(c: {
   is_active: boolean | null;
   subscription_status: string | null;
   google_cal_id: string | null;
+  calendar_provider: string | null;
   callCount: number;
 }): string {
   if (!c.is_active || c.subscription_status === 'canceled') return 'churned';
   if (c.callCount === 0) return 'no calls yet';
-  if (!c.google_cal_id) return 'no diary';
+  // Any provider counts. Reading google_cal_id alone would have reported every
+  // Outlook and Apple tenant as having no diary.
+  if (!c.calendar_provider && !c.google_cal_id) return 'no diary';
   return 'ok';
 }
 
@@ -167,7 +170,7 @@ export async function syncSubscribers(): Promise<SyncResult> {
   const { data: clientData, error } = await supabase
     .from('clients')
     .select('id,business_name,owner_name,owner_email,owner_mobile,twilio_number,plan,'
-          + 'subscription_status,is_active,google_cal_id,onboarding_complete,created_at,current_period_end');
+          + 'subscription_status,is_active,google_cal_id,calendar_provider,onboarding_complete,created_at,current_period_end');
   if (error) throw new Error(`notion sync: client fetch failed: ${error.message}`);
   const clients = (clientData ?? []) as unknown as ClientRow[];
 
@@ -191,7 +194,7 @@ export async function syncSubscribers(): Promise<SyncResult> {
         'Receptionist Number': phone(c.twilio_number),
         'Plan':                select(c.plan),
         'Status':              select(c.subscription_status),
-        'Diary Connected':     check(Boolean(c.google_cal_id)),
+        'Diary Connected':     check(Boolean(c.calendar_provider ?? c.google_cal_id)),
         'Onboarding Complete': check(Boolean(c.onboarding_complete)),
         'Calls (all time)':    num(callCount ?? 0),
         'Leads (all time)':    num(leadCount ?? 0),
@@ -202,6 +205,7 @@ export async function syncSubscribers(): Promise<SyncResult> {
                                  is_active: c.is_active,
                                  subscription_status: c.subscription_status,
                                  google_cal_id: c.google_cal_id,
+                                 calendar_provider: c.calendar_provider,
                                  callCount: callCount ?? 0,
                                })),
         'Last Synced':         date(now),

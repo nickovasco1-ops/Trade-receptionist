@@ -172,41 +172,104 @@ test('settings API errors show a user-facing error', async ({ page }) => {
   }
 });
 
-test('Google Calendar connect button reaches the OAuth boundary', async ({ page }) => {
+/**
+ * The Settings diary block is now DiaryConnect, shared with the onboarding
+ * wizard, so the button is the provider itself ("Google Calendar") rather than
+ * an instruction ("Connect Google Calendar"). The old selector is what made
+ * this test time out for two minutes rather than fail in two seconds.
+ */
+async function stubConsentUrl(page: Page, provider: 'google' | 'microsoft') {
+  const captured: { clientId: string | null; url: URL | null } = { clientId: null, url: null };
+
+  await page.route(`**/api/auth/${provider}?**`, async (route) => {
+    const requestUrl = new URL(route.request().url());
+    captured.clientId = requestUrl.searchParams.get('clientId');
+
+    const consent = new URL(provider === 'google'
+      ? 'https://accounts.google.com/o/oauth2/v2/auth'
+      : 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+    consent.searchParams.set('client_id', `e2e-${provider}-client`);
+    consent.searchParams.set('response_type', 'code');
+    consent.searchParams.set('scope', provider === 'google'
+      ? 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy'
+      : 'offline_access https://graph.microsoft.com/Calendars.ReadWrite');
+    consent.searchParams.set('state', `e2e.${captured.clientId}.signed`);
+    captured.url = consent;
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, data: { url: consent.toString() } }),
+    });
+  });
+
+  return captured;
+}
+
+test('the diary block reaches the Google OAuth boundary', async ({ page }) => {
   const account = await seedSettingsAccount();
-  let requestedClientId: string | null = null;
-  let oauthUrl: URL | null = null;
 
   try {
-    await page.route('**/api/auth/google?**', async (route) => {
-      const requestUrl = new URL(route.request().url());
-      requestedClientId = requestUrl.searchParams.get('clientId');
-      oauthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-      oauthUrl.searchParams.set('client_id', 'e2e-google-client.apps.googleusercontent.com');
-      oauthUrl.searchParams.set('redirect_uri', 'http://localhost:3001/auth/google/callback');
-      oauthUrl.searchParams.set('response_type', 'code');
-      oauthUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar');
-      oauthUrl.searchParams.set('state', `e2e.${requestedClientId}.signed`);
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, data: { url: oauthUrl.toString() } }),
-      });
-    });
-
+    const captured = await stubConsentUrl(page, 'google');
     await signInAndOpenSettings(page, account);
 
     const requestPromise = page.waitForRequest((request) =>
       request.url().includes('/api/auth/google') && request.method() === 'GET'
     );
-    await page.getByRole('button', { name: /connect google calendar/i }).click();
+    await page.getByRole('button', { name: /google calendar/i }).click();
     await requestPromise;
 
-    expect(requestedClientId).toBe(account.clientId);
-    expect(oauthUrl?.hostname).toBe('accounts.google.com');
-    expect(oauthUrl?.searchParams.get('scope')).toContain('calendar');
-    expect(oauthUrl?.searchParams.get('state')).toContain(account.clientId!);
+    expect(captured.clientId).toBe(account.clientId);
+    expect(captured.url?.hostname).toBe('accounts.google.com');
+    // freebusy is not covered by calendar.events, so both must be requested or
+    // every availability check fails while everything still compiles.
+    expect(captured.url?.searchParams.get('scope')).toContain('calendar.events');
+    expect(captured.url?.searchParams.get('scope')).toContain('calendar.freebusy');
+    expect(captured.url?.searchParams.get('state')).toContain(account.clientId!);
+  } finally {
+    await cleanupAccount(account);
+  }
+});
+
+test('the diary block reaches the Microsoft OAuth boundary', async ({ page }) => {
+  // Outlook, Hotmail and Live customers had no way in at all before migration
+  // 019, and Microsoft is the one provider that needs no review — so it is the
+  // cheapest path to a working diary and worth proving end to end.
+  const account = await seedSettingsAccount();
+
+  try {
+    const captured = await stubConsentUrl(page, 'microsoft');
+    await signInAndOpenSettings(page, account);
+
+    const requestPromise = page.waitForRequest((request) =>
+      request.url().includes('/api/auth/microsoft') && request.method() === 'GET'
+    );
+    await page.getByRole('button', { name: /outlook or hotmail/i }).click();
+    await requestPromise;
+
+    expect(captured.clientId).toBe(account.clientId);
+    expect(captured.url?.hostname).toBe('login.microsoftonline.com');
+    // Without offline_access there is no refresh token and the connection dies
+    // in an hour.
+    expect(captured.url?.searchParams.get('scope')).toContain('offline_access');
+  } finally {
+    await cleanupAccount(account);
+  }
+});
+
+test('the iPhone answer asks which account backs the diary', async ({ page }) => {
+  // An iPhone is not a calendar service. Both paying customers keep their diary
+  // in Google *through* the iOS Calendar app, so this branch is what routes the
+  // common case to one tap instead of an app-specific password.
+  const account = await seedSettingsAccount();
+
+  try {
+    await signInAndOpenSettings(page, account);
+    await page.getByRole('button', { name: /my iphone/i }).click();
+
+    await expect(page.getByRole('heading', { name: /which email is on your iphone/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /gmail/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /icloud/i })).toBeVisible();
   } finally {
     await cleanupAccount(account);
   }

@@ -65,7 +65,7 @@ router.post('/portal-session', async (req: Request, res: Response) => {
   // Derive return URL from request origin; fall back to the production app URL.
   const origin = typeof req.headers.origin === 'string' && req.headers.origin
     ? req.headers.origin
-    : 'https://app.tradereceptionist.com';
+    : (process.env.PUBLIC_APP_URL ?? 'https://tradereceptionist.com');
   const returnUrl = `${origin}/dashboard/settings`;
 
   try {

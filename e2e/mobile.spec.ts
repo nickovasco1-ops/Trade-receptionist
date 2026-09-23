@@ -11,7 +11,7 @@ import { interceptProviderSideEffects } from './utils/providers';
 
 test.describe.configure({ timeout: 120_000 });
 
-const mobileSteps = ['receptionist', 'business', 'services', 'hours', 'contact', 'ready'] as const;
+const mobileSteps = ['receptionist', 'business', 'services', 'hours', 'diary', 'contact', 'ready'] as const;
 
 async function expectNoCriticalHorizontalOverflow(page: Page) {
   await expect.poll(async () =>
@@ -89,6 +89,12 @@ async function completeMobileOnboarding(page: Page) {
   await expectMobileStep(page, 'hours');
   await page.getByLabel(/start time/i).fill('08:00');
   await page.getByLabel(/end time/i).fill('18:00');
+  await page.getByRole('button', { name: /^continue$/i }).click();
+
+  // The diary step's provider buttons are the widest thing in the wizard, so
+  // expectMobileStep's overflow assertion earns its keep here: four stacked
+  // option cards at 375px is exactly where a layout escapes the viewport.
+  await expectMobileStep(page, 'diary');
   await page.getByRole('button', { name: /^continue$/i }).click();
 
   await expectMobileStep(page, 'contact');

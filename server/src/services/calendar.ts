@@ -1,209 +1,118 @@
-// Google Calendar integration — per-client OAuth 2.0 flow.
-// Each client authorises once; we store their refresh_token in Supabase.
+// Calendar availability and bookings — provider-independent.
 //
-// Required env vars:
-//   GOOGLE_CLIENT_ID
-//   GOOGLE_CLIENT_SECRET
-//   GOOGLE_REDIRECT_URI  optional override; otherwise derived from the public backend URL
+// Working hours, DST handling, slot generation and overlap detection are the
+// same whether the diary is Google, Outlook or Apple. Only free/busy, create
+// and delete differ, and those live behind CalendarAdapter in
+// services/calendar-providers.ts. The OAuth and CalDAV connect flows live in
+// services/calendar-connect.ts.
+//
+// This file used to be Google-only, with (calendarId, refreshToken) threaded
+// through every signature. That shape is why "is the diary connected?" was
+// spelled `!!client.google_cal_id` in about thirty places.
 
-import crypto from 'crypto';
 import { supabase } from './supabase';
+import { logEvent, errorMessage } from '../lib/observability';
+import {
+  CalendarAuthError,
+  adapterFor,
+  calendarConnection,
+  type BusyWindow,
+  type CalendarColumns,
+  type CalendarConnection,
+  type CalendarEventInput,
+} from './calendar-providers';
 
-// ── Env ───────────────────────────────────────────────────────────────────────
+export type { CalendarConnection, CalendarEventInput, CalendarColumns } from './calendar-providers';
+export {
+  CalendarAuthError,
+  calendarConnection,
+  calendarIsConnected,
+  providerLabel,
+} from './calendar-providers';
 
-function trimEnv(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed.replace(/\/$/, '') : null;
-}
-
-function publicBackendBaseUrl(): string | null {
-  const explicitBase = trimEnv(process.env.PUBLIC_API_BASE_URL);
-  if (explicitBase) return explicitBase;
-
-  const retellFunctionBase = trimEnv(process.env.RETELL_FUNCTION_BASE_URL);
-  if (retellFunctionBase) return retellFunctionBase;
-
-  const webhookUrl = trimEnv(process.env.RETELL_WEBHOOK_URL);
-  if (!webhookUrl) return null;
-
-  try {
-    return new URL(webhookUrl).origin;
-  } catch {
-    return null;
-  }
-}
-
-function oauthConfig() {
-  const clientId     = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const configuredRedirect = trimEnv(process.env.GOOGLE_REDIRECT_URI);
-  const derivedRedirect = publicBackendBaseUrl()
-    ? `${publicBackendBaseUrl()}/auth/google/callback`
-    : null;
-  const redirectUri = derivedRedirect ?? configuredRedirect;
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error('GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI must be set');
-  }
-  return { clientId, clientSecret, redirectUri };
-}
-
-function oauthStateSecret(): string {
-  return process.env.GOOGLE_OAUTH_STATE_SECRET
-    ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-    ?? '';
-}
-
-interface OAuthState {
-  clientId: string;
-  ownerEmail: string;
-  issuedAt: number;
-}
-
-function encodeOAuthState(state: OAuthState): string {
-  const secret = oauthStateSecret();
-  if (!secret) throw new Error('GOOGLE_OAUTH_STATE_SECRET or SUPABASE_SERVICE_ROLE_KEY must be set');
-
-  const payload = Buffer.from(JSON.stringify(state)).toString('base64url');
-  const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-  return `${payload}.${signature}`;
-}
-
-function decodeOAuthState(rawState: string): OAuthState {
-  const secret = oauthStateSecret();
-  if (!secret) throw new Error('GOOGLE_OAUTH_STATE_SECRET or SUPABASE_SERVICE_ROLE_KEY must be set');
-
-  const [payload, signature] = rawState.split('.');
-  if (!payload || !signature) throw new Error('Invalid OAuth state');
-
-  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expected);
-  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-    throw new Error('OAuth state signature check failed');
-  }
-
-  return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as OAuthState;
-}
-
-// ── OAuth helpers ─────────────────────────────────────────────────────────────
+// ── Connection resolution ─────────────────────────────────────────────────────
+//
+// calendarConnection() and calendarIsConnected() live in calendar-providers.ts
+// so they stay unit-testable — this module imports the Supabase client, which
+// throws at import time without credentials. Re-exported here so callers have
+// one obvious place to import calendar behaviour from.
 
 /**
- * Build the Google consent URL for a specific client.
- * Embed clientId in the `state` param so the callback knows which client
- * to save the refresh_token against.
+ * Record that a provider has rejected the stored credential.
+ *
+ * The point is that a dead diary becomes *visible*. Before this, a revoked
+ * token threw mid-call, the LLM smoothly talked around the missing tool, and
+ * nothing was logged at error level — so a customer could go weeks with a
+ * receptionist that quietly could not book anything.
  */
-export function generateOAuthUrl(clientId: string, ownerEmail: string): string {
-  const { clientId: gClientId, redirectUri } = oauthConfig();
-  const state = encodeOAuthState({
-    clientId,
-    ownerEmail,
-    issuedAt: Date.now(),
-  });
-
-  const params = new URLSearchParams({
-    client_id:     gClientId,
-    redirect_uri:  redirectUri,
-    response_type: 'code',
-    scope:         'https://www.googleapis.com/auth/calendar',
-    access_type:   'offline',
-    prompt:        'consent',  // always returns a refresh_token
-    state,
-  });
-
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-}
-
-/** Exchange an authorisation code for access + refresh tokens. */
-export async function exchangeOAuthCode(
-  code: string
-): Promise<{ accessToken: string; refreshToken: string }> {
-  const { clientId, clientSecret, redirectUri } = oauthConfig();
-
-  const params = new URLSearchParams({
-    code,
-    client_id:     clientId,
-    client_secret: clientSecret,
-    redirect_uri:  redirectUri,
-    grant_type:    'authorization_code',
-  });
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    params.toString(),
-  });
-  if (!res.ok) throw new Error(`Google token exchange failed: ${await res.text()}`);
-
-  const data = (await res.json()) as {
-    access_token:  string;
-    refresh_token: string;
-  };
-  return { accessToken: data.access_token, refreshToken: data.refresh_token };
-}
-
-/**
- * Use a stored refresh_token to obtain a short-lived access_token.
- * Called before every Calendar API request.
- */
-async function getAccessToken(refreshToken: string): Promise<string> {
-  const { clientId, clientSecret } = oauthConfig();
-
-  const params = new URLSearchParams({
-    refresh_token: refreshToken,
-    client_id:     clientId,
-    client_secret: clientSecret,
-    grant_type:    'refresh_token',
-  });
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    params.toString(),
-  });
-  if (!res.ok) throw new Error(`Google token refresh failed: ${await res.text()}`);
-
-  return ((await res.json()) as { access_token: string }).access_token;
-}
-
-/**
- * Handle the OAuth callback: exchange the code, persist the refresh_token,
- * and save the user's primary calendar ID against the client record.
- * Call from GET /auth/google/callback.
- */
-export async function handleOAuthCallback(code: string, state: string): Promise<string> {
-  const decodedState = decodeOAuthState(state);
-  const clientId = decodedState.clientId;
-  const { accessToken, refreshToken } = await exchangeOAuthCode(code);
-
-  // Fetch the user's primary calendar ID so we don't have to ask for it
-  const calRes = await fetch(
-    'https://www.googleapis.com/calendar/v3/users/me/calendarList/primary',
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
-  const calendarId = calRes.ok
-    ? ((await calRes.json()) as { id: string }).id
-    : 'primary';
-
-  const { data: updated, error } = await supabase
+export async function markCalendarNeedsReconnect(
+  clientId: string,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase
     .from('clients')
     .update({
-      google_refresh_token: refreshToken,
-      google_cal_id:        calendarId,
-      updated_at:           new Date().toISOString(),
+      calendar_status: 'needs_reconnect',
+      calendar_last_error: message.slice(0, 500),
+      calendar_checked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', clientId)
-    .eq('owner_email', decodedState.ownerEmail)
-    .select('id')
-    .maybeSingle();
+    .eq('id', clientId);
 
-  if (error || !updated) {
-    throw new Error('Calendar callback could not match a valid client owner');
-  }
-
-  return clientId;
+  // error level on purpose: this reaches Sentry and the daily health report.
+  logEvent('error', 'calendar.needs_reconnect', {
+    clientId,
+    reason: message.slice(0, 200),
+    ...(error ? { persistError: error.message } : {}),
+  });
 }
 
-// ── Timezone utility ──────────────────────────────────────────────────────────
+/** Clear the flag once a provider answers successfully again. */
+async function markCalendarHealthy(clientId: string): Promise<void> {
+  await supabase
+    .from('clients')
+    .update({
+      calendar_status: 'connected',
+      calendar_last_error: null,
+      calendar_checked_at: new Date().toISOString(),
+    })
+    .eq('id', clientId)
+    .eq('calendar_status', 'needs_reconnect');
+}
+
+/**
+ * Run a provider operation, flagging the tenant if the credential is dead.
+ *
+ * Only CalendarAuthError flips the flag. A timeout or a 500 from the provider is
+ * not a reason to tell a customer to reconnect a perfectly good diary.
+ */
+async function withCredentialWatch<T>(
+  conn: CalendarConnection,
+  operation: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    const result = await run();
+    if (conn.clientId) {
+      await markCalendarHealthy(conn.clientId).catch(() => { /* best effort */ });
+    }
+    return result;
+  } catch (error: unknown) {
+    if (error instanceof CalendarAuthError && conn.clientId) {
+      await markCalendarNeedsReconnect(conn.clientId, error.message).catch(() => { /* best effort */ });
+    } else {
+      logEvent('error', 'calendar.operation_failed', {
+        clientId: conn.clientId ?? null,
+        provider: conn.provider,
+        operation,
+        error: errorMessage(error),
+      });
+    }
+    throw error;
+  }
+}
+
+// ── Timezone utilities ────────────────────────────────────────────────────────
 
 /**
  * Convert an ISO-like local time string (no Z suffix) to a UTC Date for a given
@@ -254,8 +163,8 @@ function localMinutesInTz(date: Date, tz: string): number {
   return (hour * 60) + minute;
 }
 
-function busyWindowsOverlap(
-  busy: Array<{ start: Date; end: Date }>,
+export function busyWindowsOverlap(
+  busy: BusyWindow[],
   slotStart: Date,
   slotEnd: Date
 ): boolean {
@@ -263,35 +172,36 @@ function busyWindowsOverlap(
 }
 
 async function getBusyWindows(
-  calendarId: string,
-  refreshToken: string,
+  conn: CalendarConnection,
   timeMin: string,
   timeMax: string
-): Promise<Array<{ start: Date; end: Date }>> {
-  const token = await getAccessToken(refreshToken);
+): Promise<BusyWindow[]> {
+  return withCredentialWatch(conn, 'get_busy_windows', () =>
+    adapterFor(conn.provider).getBusyWindows(conn, timeMin, timeMax));
+}
 
-  const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ timeMin, timeMax, items: [{ id: calendarId }] }),
-  });
-  if (!fbRes.ok) throw new Error(`Google freeBusy failed: ${await fbRes.text()}`);
-
-  const fbData = (await fbRes.json()) as {
-    calendars: Record<string, { busy: Array<{ start: string; end: string }> }>;
-  };
-
-  return (fbData.calendars[calendarId]?.busy ?? []).map((window) => ({
-    start: new Date(window.start),
-    end:   new Date(window.end),
-  }));
+/**
+ * Check a connection end to end and report what the provider said.
+ *
+ * Used by the admin diagnostic. Goes through withCredentialWatch, so simply
+ * running the diagnostic also updates calendar_status — a tenant whose diary has
+ * gone stale is flagged by the act of checking, and one that has recovered is
+ * un-flagged.
+ */
+export async function probeCalendar(
+  connection: CalendarConnection,
+  hours = 24,
+): Promise<{ provider: string; calendarId: string; busy: BusyWindow[] }> {
+  const now = new Date();
+  const until = new Date(now.getTime() + hours * 3_600_000);
+  const busy = await getBusyWindows(connection, now.toISOString(), until.toISOString());
+  return { provider: connection.provider, calendarId: connection.calendarId, busy };
 }
 
 // ── Availability ──────────────────────────────────────────────────────────────
 
 export interface SlotOptions {
-  calendarId:   string;
-  refreshToken: string;
+  connection:   CalendarConnection;
   fromDate?:    Date;           // default: now
   days?:        number;         // default: 7
   durationMins?: number;        // default: 60
@@ -308,8 +218,7 @@ export interface SlotOptions {
  */
 export async function getAvailableSlots(opts: SlotOptions): Promise<Date[]> {
   const {
-    calendarId,
-    refreshToken,
+    connection,
     fromDate    = new Date(),
     days        = 7,
     durationMins = 60,
@@ -322,7 +231,7 @@ export async function getAvailableSlots(opts: SlotOptions): Promise<Date[]> {
 
   const timeMin  = fromDate.toISOString();
   const timeMax  = new Date(fromDate.getTime() + days * 86_400_000).toISOString();
-  const busy = await getBusyWindows(calendarId, refreshToken, timeMin, timeMax);
+  const busy = await getBusyWindows(connection, timeMin, timeMax);
 
   const now    = new Date();
   const buffer = 30 * 60_000; // 30-min look-ahead buffer
@@ -368,8 +277,7 @@ export interface SlotAvailabilityOptions extends Omit<SlotOptions, 'fromDate' | 
 
 export async function isSlotAvailable(opts: SlotAvailabilityOptions): Promise<boolean> {
   const {
-    calendarId,
-    refreshToken,
+    connection,
     startTime,
     durationMins = 60,
     startHour = '08:00',
@@ -399,8 +307,7 @@ export async function isSlotAvailable(opts: SlotAvailabilityOptions): Promise<bo
   }
 
   const busy = await getBusyWindows(
-    calendarId,
-    refreshToken,
+    connection,
     startTime.toISOString(),
     slotEnd.toISOString()
   );
@@ -410,74 +317,124 @@ export async function isSlotAvailable(opts: SlotAvailabilityOptions): Promise<bo
 
 // ── Event creation ────────────────────────────────────────────────────────────
 
-export interface CreateEventInput {
-  title:         string;
-  startTime:     string;   // ISO 8601
-  endTime?:      string;   // ISO 8601
-  customerName?: string;
-  callerNumber?: string;
-  address?:      string;
-  notes?:        string;
-  timezone?:     string;
-}
-
 /**
- * Create a calendar event on the client's calendar.
- * Returns the Google event ID (store in bookings.google_event_id).
+ * Create the job on the tenant's calendar.
+ * Returns the provider's event id (stored in bookings.google_event_id, which
+ * keeps its name for compatibility but now holds an id from any provider).
  */
 export async function createCalendarEvent(
-  calendarId:   string,
-  refreshToken: string,
-  event:        CreateEventInput
+  connection: CalendarConnection,
+  event: CalendarEventInput,
 ): Promise<string> {
-  const token = await getAccessToken(refreshToken);
-  const tz    = event.timezone ?? 'Europe/London';
-
-  const description = [
-    event.customerName  ? `Customer: ${event.customerName}` : null,
-    event.callerNumber  ? `Phone: ${event.callerNumber}`    : null,
-    event.address       ? `Address: ${event.address}`       : null,
-    event.notes         ? `Notes: ${event.notes}`           : null,
-    '',
-    'Booked via Trade Receptionist',
-  ].filter((l) => l !== null).join('\n');
-
-  const body = {
-    summary:     event.title,
-    description,
-    start:       { dateTime: event.startTime, timeZone: tz },
-    end:         { dateTime: event.endTime ?? event.startTime, timeZone: tz },
-    reminders:   { useDefault: false, overrides: [{ method: 'email', minutes: 60 }] },
-  };
-
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-    {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-    }
-  );
-  if (!res.ok) throw new Error(`Google Calendar createEvent failed: ${await res.text()}`);
-  return ((await res.json()) as { id: string }).id;
+  return withCredentialWatch(connection, 'create_event', () =>
+    adapterFor(connection.provider).createEvent(connection, event));
 }
 
 export async function deleteCalendarEvent(
-  calendarId: string,
-  refreshToken: string,
-  eventId: string
+  connection: CalendarConnection,
+  eventId: string,
 ): Promise<void> {
-  const token = await getAccessToken(refreshToken);
+  return withCredentialWatch(connection, 'delete_event', () =>
+    adapterFor(connection.provider).deleteEvent(connection, eventId));
+}
 
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-    {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+// ── Fleet-wide credential sweep ───────────────────────────────────────────────
+
+/** What the sweep needs off a `clients` row: the calendar columns plus who to name. */
+type SweepClient = CalendarColumns & {
+  id: string;
+  business_name: string | null;
+  owner_email: string | null;
+};
+
+export interface CalendarSweepRow {
+  clientId:     string;
+  businessName: string;
+  ownerEmail:   string;
+  provider:     string;
+  status:       'ok' | 'needs_reconnect' | 'provider_error' | 'not_connected';
+  detail?:      string;
+}
+
+export interface CalendarSweepReport {
+  checkedAt:      string;
+  tenantsChecked: number;
+  ok:             number;
+  needsReconnect: number;
+  providerErrors: number;
+  notConnected:   number;
+  rows:           CalendarSweepRow[];
+}
+
+/**
+ * Probe every active tenant's diary and report which credentials are dead.
+ *
+ * This exists because of Google's 7-day refresh-token expiry for OAuth projects
+ * still in Testing. A token dies overnight, and without this the first thing that
+ * notices is a real caller asking for an appointment — mid-call, where a failed
+ * tool is simply spoken around and nothing is logged as a fault.
+ *
+ * Read-only as far as the providers go. It does write `calendar_status`, because
+ * probeCalendar() runs through withCredentialWatch(): checking flags a tenant whose
+ * diary has died and un-flags one that has recovered, which is the point.
+ */
+export async function sweepCalendars(): Promise<CalendarSweepReport> {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('is_active', true);
+
+  if (error) throw new Error(`Failed to list tenants: ${error.message}`);
+
+  const clients = (data ?? []) as SweepClient[];
+  const rows: CalendarSweepRow[] = [];
+
+  for (const client of clients) {
+    const base = {
+      clientId:     client.id,
+      businessName: client.business_name ?? '(unnamed)',
+      ownerEmail:   client.owner_email ?? '(no email)',
+    };
+
+    const connection = calendarConnection(client);
+    if (!connection) {
+      rows.push({ ...base, provider: 'none', status: 'not_connected' });
+      continue;
     }
-  );
 
-  if (!res.ok && res.status !== 404) {
-    throw new Error(`Google Calendar deleteEvent failed: ${await res.text()}`);
+    try {
+      await probeCalendar(connection, 24);
+      rows.push({ ...base, provider: connection.provider, status: 'ok' });
+    } catch (err: unknown) {
+      // Only a rejected credential means "reconnect". A timeout or a provider 500
+      // is not a reason to tell a tradesperson their perfectly good diary is broken.
+      const dead = err instanceof CalendarAuthError;
+      rows.push({
+        ...base,
+        provider: connection.provider,
+        status:   dead ? 'needs_reconnect' : 'provider_error',
+        detail:   errorMessage(err).slice(0, 300),
+      });
+    }
   }
+
+  const report: CalendarSweepReport = {
+    checkedAt:      new Date().toISOString(),
+    tenantsChecked: rows.length,
+    ok:             rows.filter((r) => r.status === 'ok').length,
+    needsReconnect: rows.filter((r) => r.status === 'needs_reconnect').length,
+    providerErrors: rows.filter((r) => r.status === 'provider_error').length,
+    notConnected:   rows.filter((r) => r.status === 'not_connected').length,
+    rows,
+  };
+
+  logEvent(report.needsReconnect > 0 ? 'error' : 'info', 'calendar.sweep_complete', {
+    tenantsChecked: report.tenantsChecked,
+    ok:             report.ok,
+    needsReconnect: report.needsReconnect,
+    providerErrors: report.providerErrors,
+    notConnected:   report.notConnected,
+  });
+
+  return report;
 }

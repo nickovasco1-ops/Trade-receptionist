@@ -59,6 +59,19 @@ jobs:
       - name: Install web dependencies
         run: npm ci
 
+      # The path check reads the installed retell-sdk as its oracle.
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      # Offline, no key, no network: every hand-written Retell path in
+      # server/src must be a path the vendor's current SDK actually serves.
+      # Added after finding /get-call/{id} and /publish-agent/{id} were both
+      # wrong — the first made call backfill report "not found in Retell" for
+      # calls that existed, the second meant an agent could be reported as
+      # published while answering nothing.
+      - name: Retell paths we call are paths the SDK serves
+        run: node tests/health/runner.mjs --only=providers.retell_path_contract
+
       # Retell deprecates endpoints on a dated schedule, and the replacements
       # answer a different shape rather than an error — so drift reads as "no
       # calls" and every safety net goes quietly green. This probes the live API

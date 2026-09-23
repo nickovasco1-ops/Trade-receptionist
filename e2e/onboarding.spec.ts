@@ -9,16 +9,29 @@ import {
 } from './utils/fixtures';
 import { testPhone, uniqueId } from './utils/env';
 
-const stepOrder = ['receptionist', 'business', 'services', 'hours', 'contact', 'ready'] as const;
+const stepOrder = ['receptionist', 'business', 'services', 'hours', 'diary', 'contact', 'ready'] as const;
 
 test.describe.configure({ timeout: 120_000 });
 
-async function expectStep(page: Page, step: typeof stepOrder[number], index: number) {
+async function expectStep(page: Page, step: typeof stepOrder[number]) {
   await expect(page.getByTestId(`onboarding-step-${step}`)).toBeVisible();
   await expect(page.getByRole('progressbar', { name: /onboarding progress/i })).toHaveAttribute(
     'aria-valuenow',
-    String(index + 1)
+    String(stepOrder.indexOf(step) + 1)
   );
+}
+
+/**
+ * Walk past the diary step without connecting anything.
+ *
+ * Connecting for real would need a live Google, Microsoft or Apple account, so
+ * the suite covers the step being present and skippable. Skippable matters on
+ * its own: a tenant with a paper diary has no honest answer, and a step that
+ * cannot be skipped just gets abandoned.
+ */
+async function skipDiaryStep(page: Page) {
+  await expect(page.getByRole('heading', { name: /where do you keep your diary/i })).toBeVisible();
+  await page.getByRole('button', { name: /^continue$/i }).click();
 }
 
 async function seedOnboardingAccount(): Promise<TestAccount> {
@@ -32,7 +45,7 @@ async function seedOnboardingAccount(): Promise<TestAccount> {
 async function openOnboarding(page: Page, account: TestAccount) {
   await authenticate(page, account.email);
   await page.goto('/onboarding');
-  await expectStep(page, 'receptionist', 0);
+  await expectStep(page, 'receptionist');
 }
 
 async function fillBusinessStep(page: Page, businessName: string) {
@@ -63,23 +76,26 @@ async function fillContactStep(page: Page) {
 
 async function completeToReadyStep(page: Page, businessName: string) {
   await page.getByRole('button', { name: /^continue$/i }).click();
-  await expectStep(page, 'business', 1);
+  await expectStep(page, 'business');
   await fillBusinessStep(page, businessName);
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await expectStep(page, 'services', 2);
+  await expectStep(page, 'services');
   await fillServicesStep(page);
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await expectStep(page, 'hours', 3);
+  await expectStep(page, 'hours');
   await fillHoursStep(page);
   await page.getByRole('button', { name: /^continue$/i }).click();
 
-  await expectStep(page, 'contact', 4);
+  await expectStep(page, 'diary');
+  await skipDiaryStep(page);
+
+  await expectStep(page, 'contact');
   await fillContactStep(page);
   await page.getByRole('button', { name: /review setup/i }).click();
 
-  await expectStep(page, 'ready', 5);
+  await expectStep(page, 'ready');
   await expect(page.getByText(/trade receptionist is ready to go live/i)).toBeVisible();
 }
 
@@ -109,7 +125,7 @@ test('current onboarding steps render in the correct order', async ({ page }) =>
 
     for (let index = 0; index < stepOrder.length; index += 1) {
       const step = stepOrder[index];
-      await expectStep(page, step, index);
+      await expectStep(page, step);
 
       if (step === 'business') {
         await fillBusinessStep(page, `Ordered ${uniqueId('biz').slice(-8)} Plumbing`);
@@ -138,7 +154,7 @@ test('required fields prevent advancement on gated steps', async ({ page }) => {
     await openOnboarding(page, account);
 
     await page.getByRole('button', { name: /^continue$/i }).click();
-    await expectStep(page, 'business', 1);
+    await expectStep(page, 'business');
 
     const businessNameInput = page.getByLabel(/business name/i);
     await expect.poll(async () => businessNameInput.inputValue()).not.toBe('');
@@ -151,17 +167,20 @@ test('required fields prevent advancement on gated steps', async ({ page }) => {
     await page.getByLabel(/city \/ area/i).fill('South London');
     await page.getByRole('button', { name: /^continue$/i }).click();
 
-    await expectStep(page, 'services', 2);
+    await expectStep(page, 'services');
     await expect(page.getByRole('button', { name: /^continue$/i })).toBeEnabled();
     await fillServicesStep(page);
     await page.getByRole('button', { name: /^continue$/i }).click();
 
-    await expectStep(page, 'hours', 3);
+    await expectStep(page, 'hours');
     await expect(page.getByRole('button', { name: /^continue$/i })).toBeEnabled();
     await fillHoursStep(page);
     await page.getByRole('button', { name: /^continue$/i }).click();
 
-    await expectStep(page, 'contact', 4);
+    await expectStep(page, 'diary');
+    await skipDiaryStep(page);
+
+    await expectStep(page, 'contact');
     await page.getByLabel(/^your name$/i).fill('');
     await page.getByLabel(/mobile for summaries/i).fill('');
     await expect(page.getByRole('button', { name: /review setup/i })).toBeDisabled();
@@ -191,29 +210,36 @@ test('form data persists when navigating back and forward inside onboarding', as
     await fillHoursStep(page);
     await page.getByRole('button', { name: /^continue$/i }).click();
 
+    await skipDiaryStep(page);
+
     await fillContactStep(page);
 
     await page.getByRole('button', { name: /^back$/i }).click();
-    await expectStep(page, 'hours', 3);
+    await expectStep(page, 'diary');
+
+    await page.getByRole('button', { name: /^back$/i }).click();
+    await expectStep(page, 'hours');
     await expect(page.getByLabel(/start time/i)).toHaveValue('07:30');
     await expect(page.getByLabel(/end time/i)).toHaveValue('17:30');
 
     await page.getByRole('button', { name: /^back$/i }).click();
-    await expectStep(page, 'services', 2);
+    await expectStep(page, 'services');
     await expect(page.getByTestId('onboarding-step-services').getByText('Kitchen tap repair')).toBeVisible();
 
     await page.getByRole('button', { name: /^back$/i }).click();
-    await expectStep(page, 'business', 1);
+    await expectStep(page, 'business');
     await expect(page.getByLabel(/business name/i)).toHaveValue(businessName);
     await expect(page.getByLabel(/trade type/i)).toHaveValue('Plumber');
     await expect(page.getByLabel(/city \/ area/i)).toHaveValue('South London');
 
     await page.getByRole('button', { name: /^continue$/i }).click();
-    await expectStep(page, 'services', 2);
+    await expectStep(page, 'services');
     await page.getByRole('button', { name: /^continue$/i }).click();
-    await expectStep(page, 'hours', 3);
+    await expectStep(page, 'hours');
     await page.getByRole('button', { name: /^continue$/i }).click();
-    await expectStep(page, 'contact', 4);
+    await expectStep(page, 'diary');
+    await page.getByRole('button', { name: /^continue$/i }).click();
+    await expectStep(page, 'contact');
     await expect(page.getByLabel(/^your name$/i)).toHaveValue('Launch Owner');
     await expect(page.getByLabel(/mobile for summaries/i)).toHaveValue(testPhone);
   } finally {
@@ -221,7 +247,7 @@ test('form data persists when navigating back and forward inside onboarding', as
   }
 });
 
-test('receptionist, business, services, hours, contact, and ready steps can be completed', async ({ page }) => {
+test('every onboarding step, diary included, can be completed', async ({ page }) => {
   const account = await seedOnboardingAccount();
   const businessName = `Complete ${uniqueId('biz').slice(-8)} Plumbing`;
   let rebuildBody: unknown;
@@ -292,7 +318,7 @@ test('refresh mid-onboarding preserves progress', async ({ page }) => {
     await fillServicesStep(page);
     await page.getByRole('button', { name: /^continue$/i }).click();
 
-    await expectStep(page, 'hours', 3);
+    await expectStep(page, 'hours');
     await fillHoursStep(page);
     await expect(page.getByLabel(/start time/i)).toHaveValue('07:30');
 
@@ -305,16 +331,16 @@ test('refresh mid-onboarding preserves progress', async ({ page }) => {
 
     await page.reload();
 
-    await expectStep(page, 'hours', 3);
+    await expectStep(page, 'hours');
     await expect(page.getByLabel(/start time/i)).toHaveValue('07:30');
     await expect(page.getByLabel(/end time/i)).toHaveValue('17:30');
 
     await page.getByRole('button', { name: /^back$/i }).click();
-    await expectStep(page, 'services', 2);
+    await expectStep(page, 'services');
     await expect(page.getByTestId('onboarding-step-services').getByText('Kitchen tap repair')).toBeVisible();
 
     await page.getByRole('button', { name: /^back$/i }).click();
-    await expectStep(page, 'business', 1);
+    await expectStep(page, 'business');
     await expect(page.getByLabel(/business name/i)).toHaveValue(businessName);
     await expect(page.getByLabel(/trade type/i)).toHaveValue('Plumber');
     await expect(page.getByLabel(/city \/ area/i)).toHaveValue('South London');

@@ -24,9 +24,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { syncGoogleCalendarToken } from '../lib/calendar';
 import { Logo } from '../../components/Logo';
-import type { ReceptionistTone } from '../../shared/types';
+import DiaryConnect from '../components/dashboard/DiaryConnect';
+import type { CalendarProvider, ReceptionistTone } from '../../shared/types';
 
-type Step = 'receptionist' | 'business' | 'services' | 'hours' | 'contact' | 'ready';
+type Step = 'receptionist' | 'business' | 'services' | 'hours' | 'diary' | 'contact' | 'ready';
 
 interface FormData {
   receptionist_name: string;
@@ -49,6 +50,7 @@ const STEPS: { key: Step; label: string; shortLabel: string; icon: ElementType }
   { key: 'business', label: 'Business', shortLabel: 'Business', icon: Briefcase },
   { key: 'services', label: 'Services', shortLabel: 'Services', icon: Wrench },
   { key: 'hours', label: 'Hours', shortLabel: 'Hours', icon: Clock },
+  { key: 'diary', label: 'Diary', shortLabel: 'Diary', icon: CalendarDays },
   { key: 'contact', label: 'Contact', shortLabel: 'Alerts', icon: User },
   { key: 'ready', label: 'Ready', shortLabel: 'Launch', icon: CheckCircle2 },
 ];
@@ -110,6 +112,18 @@ const STEP_META: Record<
       'Clear working window',
       'Accurate callback expectations',
       'Out-of-hours covered professionally',
+    ],
+  },
+  diary: {
+    eyebrow: 'Diary & booking',
+    title: 'Connect your diary so calls become booked jobs.',
+    description: 'With your diary connected, your receptionist can see when you are free and book the job while the caller is still on the phone. Without it, it can take a message but never book.',
+    asideTitle: 'Why this step matters most',
+    asideCopy: 'Taking a message is what an answering service does. Booking the job while you are under a sink is the part you are paying for.',
+    checkpoints: [
+      'Sees when you are genuinely free',
+      'Books the job on the call',
+      'Works with Google, Outlook or iPhone',
     ],
   },
   contact: {
@@ -671,6 +685,20 @@ function SupportPanel({ step, form }: { step: Step; form: FormData }) {
         </div>
       )}
 
+      {step === 'diary' && (
+        <div
+          className="rounded-[20px] p-4"
+          style={{ background: 'rgba(255,255,255,0.045)', boxShadow: '0 0 0 1px rgba(255,255,255,0.07)' }}
+        >
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent/70">Your iPhone is not the answer</p>
+          <p className="text-[14px] leading-relaxed text-offwhite/70">
+            An iPhone shows your diary but does not store it — that is Google, Outlook or iCloud,
+            depending on the email you use. Pick "My iPhone" and we will ask which, then connect
+            the right one.
+          </p>
+        </div>
+      )}
+
       {step === 'contact' && (
         <div
           className="rounded-[20px] p-4"
@@ -748,6 +776,10 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   const [draftReady, setDraftReady] = useState(preview);
   const [customService, setCustomService] = useState('');
   const [showSetupCall, setShowSetupCall] = useState(false);
+  // Which diary the tenant has connected, if any. Read from the server rather
+  // than tracked in the draft: the OAuth flow leaves the page entirely and comes
+  // back through a redirect, so local state does not survive it.
+  const [calendarProvider, setCalendarProvider] = useState<CalendarProvider | null>(null);
 
   const [form, setForm] = useState<FormData>({
     ...(preview ? PREVIEW_FORM : DEFAULT_FORM),
@@ -756,6 +788,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
   useEffect(() => {
     if (preview) {
       setClientId('preview-client');
+      setCalendarProvider('google');
       return;
     }
 
@@ -769,11 +802,12 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
 
       const { data: client } = await supabase
         .from('clients')
-        .select('id, owner_name, owner_mobile, business_name, onboarding_complete')
+        .select('id, owner_name, owner_mobile, business_name, onboarding_complete, calendar_provider')
         .eq('owner_email', user.email)
         .maybeSingle();
 
       if (!client) return;
+      setCalendarProvider((client.calendar_provider as CalendarProvider | null) ?? null);
       if (client.onboarding_complete) {
         clearDraft(client.id as string);
         navigate('/dashboard', { replace: true });
@@ -791,6 +825,13 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
       setClientId(client.id as string);
       setForm(draft?.form ?? serverForm);
       if (draft) setStep(draft.step);
+
+      // A provider redirect returns with ?connected=<provider>. Land on the diary
+      // step so the tenant sees it worked, rather than dropping them wherever the
+      // draft happened to be.
+      if (new URLSearchParams(window.location.search).get('connected')) {
+        setStep('diary');
+      }
       setDraftReady(true);
     }
 
@@ -1434,6 +1475,38 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                           <SecondaryBtn onClick={() => setStep('services')} className="flex-1">
                             Back
                           </SecondaryBtn>
+                          <PrimaryBtn onClick={() => setStep('diary')} className="flex-[1.3]">
+                            Continue
+                            <ArrowRight size={15} aria-hidden="true" />
+                          </PrimaryBtn>
+                        </div>
+                      </div>
+                    </StepPane>
+                  )}
+
+                  {step === 'diary' && (
+                    <StepPane stepKey="diary">
+                      <div className="space-y-6">
+                        {clientId ? (
+                          <DiaryConnect
+                            clientId={clientId}
+                            connectedProvider={calendarProvider}
+                            onConnected={(provider) => setCalendarProvider(provider)}
+                            onSkip={() => setStep('contact')}
+                          />
+                        ) : (
+                          // clientId is string | null and this project's web
+                          // tsconfig has strictNullChecks off, so nothing would
+                          // have caught passing null through. Guard explicitly.
+                          <p className="text-[14px] leading-relaxed text-offwhite/70">
+                            Loading your account…
+                          </p>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                          <SecondaryBtn onClick={() => setStep('hours')} className="flex-1">
+                            Back
+                          </SecondaryBtn>
                           <PrimaryBtn onClick={() => setStep('contact')} className="flex-[1.3]">
                             Continue
                             <ArrowRight size={15} aria-hidden="true" />
@@ -1495,7 +1568,7 @@ export function OnboardingFlow({ preview = false }: { preview?: boolean }) {
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                          <SecondaryBtn onClick={() => setStep('hours')} className="flex-1">
+                          <SecondaryBtn onClick={() => setStep('diary')} className="flex-1">
                             Back
                           </SecondaryBtn>
                           <PrimaryBtn
