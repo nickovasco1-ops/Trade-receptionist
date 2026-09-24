@@ -31,6 +31,7 @@ import {
   toICalDate,
 } from '../lib/caldav-xml';
 import type { CalendarProvider, Client } from '../../../shared/types';
+import { GOOGLE_CALENDAR_SCOPE_STRING } from '../../../shared/types';
 
 // ── Shared shapes ─────────────────────────────────────────────────────────────
 
@@ -203,10 +204,9 @@ export function calendarIsConnected(client: CalendarColumns): boolean {
  * calendar.events. Dropping it would have broken every availability check while
  * still type-checking and still passing every existing test.
  */
-export const GOOGLE_SCOPES = [
-  'https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/calendar.freebusy',
-].join(' ');
+// Shared with LoginPage.tsx's Google sign-in, which grants the zero-tap calendar
+// connection — the two drifted once and the login button asked for full `auth/calendar`.
+export const GOOGLE_SCOPES = GOOGLE_CALENDAR_SCOPE_STRING;
 
 function googleOauthConfig(): { clientId: string; clientSecret: string } {
   const clientId = process.env.GOOGLE_CLIENT_ID;
