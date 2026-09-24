@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../../components/Logo';
+import { GOOGLE_CALENDAR_SCOPE_STRING } from '../../shared/types';
 
 function GoogleIcon() {
   return (
@@ -81,7 +82,7 @@ export default function LoginPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}${safeRedirectTarget(location.search)}`,
-        scopes: 'https://www.googleapis.com/auth/calendar',
+        scopes: GOOGLE_CALENDAR_SCOPE_STRING,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });

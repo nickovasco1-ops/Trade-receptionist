@@ -252,3 +252,28 @@ export type RetellWebhookEvent =
   | RetellCallStartedEvent
   | RetellCallEndedEvent
   | RetellCallAnalyzedEvent;
+
+// ── Google Calendar OAuth scopes ─────────────────────────────────────────────
+//
+// One list, because there are two places that ask Google for calendar access and
+// they drifted:
+//
+//   1. `server/src/services/calendar-providers.ts` — the Diary connect flow.
+//   2. `src/pages/LoginPage.tsx` — "Sign in with Google", whose returned token is
+//      captured by `src/lib/calendar.ts` as the zero-tap calendar connection.
+//
+// The first was deliberately narrowed from `auth/calendar` (full read/write over
+// every calendar the person owns) to these two. The second was missed and kept
+// asking for the broad scope, so the login button requested far more access than
+// the feature needs — and contradicted the "request minimum scopes" requirement in
+// Google's own OAuth verification review.
+//
+// `calendar.freebusy` must stay: it is NOT covered by `calendar.events`, and
+// dropping it breaks every availability check while still compiling.
+export const GOOGLE_CALENDAR_SCOPES: readonly string[] = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.freebusy',
+];
+
+/** Space-delimited, the form both Google and Supabase's `signInWithOAuth` expect. */
+export const GOOGLE_CALENDAR_SCOPE_STRING = GOOGLE_CALENDAR_SCOPES.join(' ');

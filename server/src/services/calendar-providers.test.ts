@@ -1,5 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   CalendarAuthError,
   GOOGLE_SCOPES,
@@ -21,6 +23,7 @@ import {
   stripZone,
   type CalendarColumns,
 } from './calendar-providers';
+import { GOOGLE_CALENDAR_SCOPE_STRING } from '../../../shared/types';
 
 /**
  * These exist because the calendar path has no automated coverage at all and is
@@ -130,6 +133,28 @@ describe('scopes', () => {
     assert.ok(GOOGLE_SCOPES.includes('calendar.freebusy'));
     assert.ok(!GOOGLE_SCOPES.includes('auth/calendar '));
     assert.ok(!/auth\/calendar$/.test(GOOGLE_SCOPES));
+  });
+
+  test('every place that asks Google for calendar access asks for the same thing', () => {
+    // Two OAuth clients request calendar access: this one, and the Supabase Google
+    // provider behind LoginPage's "Sign in with Google", whose returned token
+    // src/lib/calendar.ts captures as the zero-tap connection. Only this one was
+    // narrowed; the login button kept asking for full `auth/calendar` until
+    // 2026-09-24, so signing in granted read/write over every calendar the person
+    // owns — and contradicted the "request minimum scopes" requirement in Google's
+    // OAuth verification review, which was live at the time.
+    assert.equal(GOOGLE_SCOPES, GOOGLE_CALENDAR_SCOPE_STRING);
+
+    const loginPage = readFileSync(
+      resolve(__dirname, '../../../src/pages/LoginPage.tsx'),
+      'utf8',
+    );
+    // A literal scope string here is the drift. It must read the shared constant.
+    assert.ok(
+      !/scopes:\s*['\`"]https:\/\//.test(loginPage),
+      'LoginPage hard-codes an OAuth scope string — import GOOGLE_CALENDAR_SCOPE_STRING instead',
+    );
+    assert.ok(loginPage.includes('GOOGLE_CALENDAR_SCOPE_STRING'));
   });
 
   test('Microsoft asks for offline_access, or the connection dies in an hour', () => {
