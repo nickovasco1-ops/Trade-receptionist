@@ -1,9 +1,9 @@
 # Notion workspace
 
-Notion is a **working surface, not a source of truth**. The sync is one-way,
-Supabase → Notion, and it reconciles rather than appends: it finds the page by a
-stable id column and updates it in place. Anything typed into a synced column is
-overwritten on the next run. Columns the sync never writes are yours to use.
+Notion is a **working surface, not a source of truth**. The sync is one-way from
+the operational systems into Notion. Supabase supplies subscribers, leads and
+call usage; Stripe supplies revenue. Anything typed into a synced field is
+overwritten on the next run. Fields the sync never writes are yours to use.
 
 Run it with `POST /admin/sync-notion` (`x-admin-key`), or let
 `.github/workflows/notion-sync.yml` do it every two hours.
@@ -16,6 +16,11 @@ Run it with `POST /admin/sync-notion` (`x-admin-key`), or let
 | Leads | `NOTION_LEADS_DB_ID` | `Lead ID` | `syncLeads()` |
 | Call Log | `NOTION_CALL_LOG_DB_ID` | — (append-only) | `notion.ts` at call end |
 | Incidents | `NOTION_INCIDENTS_DB_ID` | — (append-only) | `notion.ts` on escalation |
+
+The **Revenue Tracker** is an existing page containing inline tables rather
+than a database. `syncRevenueTracker()` updates it using
+`NOTION_REVENUE_PAGE_ID`; the live page id is the default, so the variable is
+only needed for a replacement page.
 
 ### The live database ids
 
@@ -75,6 +80,45 @@ trialling, and sort by `Usage %` descending followed by `Overage calls`
 descending. Views are presentation owned by Notion; the sync manages fields and
 values, not a person's saved view layout.
 
+### Revenue Tracker
+
+`syncRevenueTracker()` reads every Stripe subscription with `status=all` and
+updates the existing **Revenue Tracker** page every two hours as part of
+`POST /admin/sync-notion`. Stripe remains authoritative; no revenue value is
+read from Supabase or from a hand-entered Notion number.
+
+The managed figures are:
+
+| Figure | Definition |
+|---|---|
+| MRR | Monthly-normalised value of `active` Stripe subscriptions only |
+| ARR | MRR × 12 |
+| Active paying clients | Count of `active` Stripe subscriptions |
+| Trial clients | Count of `trialing` Stripe subscriptions |
+| Past-due clients | Count of `past_due` Stripe subscriptions; excluded from MRR |
+| Churn this month | Subscriptions whose Stripe `canceled_at` falls in the current UTC month |
+| Net new MRR | Ending MRR less the month's stored starting MRR |
+| MRR by plan | Active clients and MRR grouped by the shared Stripe product-to-plan map |
+
+The Monthly Log is updated in place for the current month and appends one row
+when a new month begins. Its first automated month ends in `*`: historic
+opening MRR and upgrade/contraction movements cannot be reconstructed exactly
+from the current subscription list, so that bootstrap row uses a neutral
+baseline and keeps expansion/contraction at zero. Later months use the previous
+stored closing MRR. **Do not remove the `*`; it is also the idempotency marker
+that keeps reruns from pretending the bootstrap month is complete history.**
+
+The Churn Log is keyed internally by Stripe subscription id, stored at the end
+of the Reason cell, so rerunning the job updates a cancellation instead of
+duplicating it. Trial-to-paid conversion remains `—`: an exact cohort measure
+needs historical trial/payment events and must not be guessed from current
+subscription status.
+
+The sync fails visibly rather than publishing a misleading number if it sees a
+discounted or metered subscription, an unknown/mixed plan, or a non-GBP/mixed
+currency catalogue. Add explicit calculation support and tests before allowing
+one of those shapes.
+
 ## Setup — the integration needs access
 
 **This is the step that bites.** Creating an integration and setting
@@ -118,7 +162,7 @@ curl -s -X POST https://trade-receptionist-production.up.railway.app/admin/sync-
   -H "x-admin-key: $ADMIN_API_KEY" -H 'Content-Type: application/json' -d '{}'
 ```
 
-A clean run reports `failed: 0` for every database.
+A clean run reports `failed: 0` for every database and for Revenue Tracker.
 
 Migration `020_plan_usage_tracking.sql` must be applied before deploying the
 matching server code. It adds `clients.current_period_start` and the

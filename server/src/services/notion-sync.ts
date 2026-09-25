@@ -1,15 +1,15 @@
 /**
- * Supabase → Notion sync.
+ * Operational systems → Notion sync.
  *
  * The existing `notion.ts` is write-once and fire-and-forget: it appends a row
  * when a call finishes or a subscriber signs up, and never touches it again. So
  * Notion drifts from reality the moment anything changes — a plan upgrade, a
  * churn, a lead being worked — and leads were never written there at all.
  *
- * This is a reconciling sync instead. It reads Supabase, finds the matching
- * Notion page by a stable id property, and updates it in place or creates it.
- * Running it twice changes nothing the second time, so it is safe on a cron and
- * safe to re-run by hand after a bad day.
+ * This is a reconciling sync instead. It reads Supabase for tenant operations
+ * and Stripe for revenue, then updates the matching Notion rows or inline
+ * tables. Running it twice is idempotent, so it is safe on a cron and safe to
+ * re-run by hand after a bad day.
  *
  * Direction is deliberately one-way. Notion is a working surface, not a source
  * of truth — anything typed into a synced column is overwritten on the next
@@ -27,6 +27,7 @@ import {
   type UsageSnapshot,
   type UsageThreshold,
 } from '../lib/plan-usage';
+import { syncRevenueTracker } from './revenue-tracker';
 
 let cached: NotionClient | null = null;
 
@@ -504,5 +505,5 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
 }
 
 export async function syncAll(): Promise<SyncResult[]> {
-  return [await syncSubscribers(), await syncLeads()];
+  return [await syncSubscribers(), await syncLeads(), await syncRevenueTracker()];
 }

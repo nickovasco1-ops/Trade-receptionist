@@ -9,7 +9,7 @@ on:
 
 jobs:
   sync:
-    name: Reconcile Supabase into Notion
+    name: Reconcile ops data into Notion
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
