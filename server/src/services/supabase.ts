@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type {
-  Client, BusinessConfig, Call, Transcript, Lead, Booking,
+  Client, BusinessConfig, Call, Transcript, Lead, Booking, UsageAlert,
 } from '../../../shared/types';
 
 // Type map so callers get typed results from supabase.from('table')
@@ -11,6 +11,7 @@ export interface Database {
   transcripts:     Transcript;
   leads:           Lead;
   bookings:        Booking;
+  usage_alerts:     UsageAlert;
 }
 
 const url = process.env.SUPABASE_URL;

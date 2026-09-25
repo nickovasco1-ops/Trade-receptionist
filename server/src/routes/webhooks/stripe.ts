@@ -79,6 +79,14 @@ function invoiceCurrentPeriodEnd(invoice: StripeObject): string | null {
   return unixSecondsToIso(period?.['end']) ?? unixSecondsToIso(invoice['period_end']);
 }
 
+function invoiceCurrentPeriodStart(invoice: StripeObject): string | null {
+  const lines = asRecord(invoice['lines']);
+  const data = Array.isArray(lines?.['data']) ? lines['data'] as unknown[] : [];
+  const firstLine = asRecord(data[0]);
+  const period = asRecord(firstLine?.['period']);
+  return unixSecondsToIso(period?.['start']) ?? unixSecondsToIso(invoice['period_start']);
+}
+
 async function findClientForStripe(opts: {
   customerId?: string | null;
   subscriptionId?: string | null;
@@ -161,6 +169,7 @@ async function updateClientStripeState(
 }
 
 async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<void> {
+  const periodStart = invoiceCurrentPeriodStart(invoice);
   await updateClientStripeState(
     'invoice.payment_succeeded',
     {
@@ -172,6 +181,7 @@ async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<voi
       subscription_status: 'active',
       payment_status: 'current',
       is_active: true,
+      ...(periodStart ? { current_period_start: periodStart } : {}),
       current_period_end: invoiceCurrentPeriodEnd(invoice),
       last_payment_at: unixSecondsToIso(invoice['created']) ?? new Date().toISOString(),
       last_payment_failed_at: null,
@@ -181,6 +191,7 @@ async function handleInvoicePaymentSucceeded(invoice: StripeObject): Promise<voi
 
 async function handleInvoicePaymentFailed(invoice: StripeObject): Promise<void> {
   const email = typeof invoice['customer_email'] === 'string' ? invoice['customer_email'] : null;
+  const periodStart = invoiceCurrentPeriodStart(invoice);
   fireOpsAlert({
     tone:     'warn',
     subject:  `Payment failed — ${email ?? 'unknown customer'}`,
@@ -205,6 +216,7 @@ async function handleInvoicePaymentFailed(invoice: StripeObject): Promise<void> 
       subscription_status: 'past_due',
       payment_status: 'failed',
       is_active: false,
+      ...(periodStart ? { current_period_start: periodStart } : {}),
       current_period_end: invoiceCurrentPeriodEnd(invoice),
       last_payment_failed_at: unixSecondsToIso(invoice['created']) ?? new Date().toISOString(),
     },
@@ -215,6 +227,7 @@ async function handleSubscriptionDeleted(subscription: StripeObject): Promise<vo
   const details = subscription['cancellation_details'] as Record<string, unknown> | null;
   const comment = typeof details?.['comment'] === 'string' ? details['comment'] : null;
   const reason  = typeof details?.['feedback'] === 'string' ? details['feedback'] : null;
+  const periodStart = unixSecondsToIso(subscription['current_period_start']);
 
   fireOpsAlert({
     tone:     'bad',
@@ -241,6 +254,7 @@ async function handleSubscriptionDeleted(subscription: StripeObject): Promise<vo
       subscription_status: 'canceled',
       payment_status: 'canceled',
       is_active: false,
+      ...(periodStart ? { current_period_start: periodStart } : {}),
       current_period_end: unixSecondsToIso(subscription['current_period_end']),
     },
   );
