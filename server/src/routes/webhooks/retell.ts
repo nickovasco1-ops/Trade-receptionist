@@ -9,7 +9,9 @@ import {
   deriveOutcome,
   extractLeadData,
   hasStructuredAnalysis,
+  resolveOutcome,
 } from '../../lib/lead-extraction';
+import { applyAnalysedOutcome, callHasBooking } from '../../services/call-outcome';
 import type {
   RetellCallStartedEvent,
   RetellCallEndedEvent,
@@ -99,8 +101,10 @@ async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
   const transcript   = event.transcript ?? '';
   const summary      = event.call_analysis?.call_summary ?? '';
   const customData   = event.call_analysis?.custom_analysis_data;
-  const outcome      = deriveOutcome(summary, customData);
-  const isEmergency  = outcome === 'emergency' || detectEmergency(transcript);
+  const derivedOutcome = deriveOutcome(summary, customData);
+  // Emergency is judged on the analysis, before a booking can relabel the call.
+  const isEmergency  = derivedOutcome === 'emergency' || detectEmergency(transcript);
+  const outcome      = resolveOutcome(derivedOutcome, await callHasBooking(event.call_id));
   // Urgent tier: significant inconvenience (boiler out, blocked drain, no hot water)
   // but not life-threatening — still needs same-day attention, just not full escalation.
   const emergencyLevel = getEmergencyLevel(transcript);
@@ -302,13 +306,26 @@ async function handleCallAnalyzed(event: RetellCallAnalyzedEvent): Promise<void>
   // Find the stored call
   const { data: callRow } = await supabase
     .from('calls')
-    .select('id, recording_url')
+    .select('id, recording_url, outcome')
     .eq('retell_call_id', event.call_id)
     .single();
 
   if (!callRow) {
     logEvent('warn', 'retell.webhook.call_not_found', { eventType: 'call_analyzed' });
     return;
+  }
+
+  // The outcome call_ended stored was usually derived before any analysis
+  // existed (see services/call-outcome.ts). Only rewrite it when there is
+  // analysis to go on, so a partial event cannot knock a good outcome back to
+  // the `enquiry` default.
+  const analysis = event.call_analysis;
+  if (hasStructuredAnalysis(analysis?.custom_analysis_data) || analysis?.call_summary) {
+    const outcome = resolveOutcome(
+      deriveOutcome(analysis?.call_summary ?? '', analysis?.custom_analysis_data),
+      await callHasBooking(event.call_id),
+    );
+    await applyAnalysedOutcome(callRow.id, callRow.outcome as CallOutcome | null, outcome, 'call_analyzed');
   }
 
   // Backfill the recording URL if it wasn't ready at call_ended time. Retell

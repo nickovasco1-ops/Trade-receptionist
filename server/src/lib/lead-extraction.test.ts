@@ -5,6 +5,7 @@ import {
   extractLeadData,
   hasStructuredAnalysis,
   isLeadEmpty,
+  resolveOutcome,
 } from './lead-extraction';
 
 /**
@@ -162,5 +163,19 @@ describe('isLeadEmpty', () => {
   test('any real detail makes it non-empty, so the backfill leaves it alone', () => {
     assert.equal(isLeadEmpty({ caller_name: 'Tito', job_type: null, notes: null, postcode: null }), false);
     assert.equal(isLeadEmpty({ caller_name: null, job_type: null, notes: 'rang twice', postcode: null }), false);
+  });
+});
+
+describe('resolveOutcome', () => {
+  // 2026-09-25: a call that put a job in the customer's diary was stored as
+  // `enquiry`, so the dashboard showed none of the jobs the agent had won.
+  test('a booking made on the call outranks whatever the analysis said', () => {
+    assert.equal(resolveOutcome('enquiry', true), 'booked');
+    assert.equal(resolveOutcome('lead_captured', true), 'booked');
+  });
+
+  test('without a booking the analysed outcome stands', () => {
+    assert.equal(resolveOutcome('no_answer', false), 'no_answer');
+    assert.equal(resolveOutcome('booked', false), 'booked');
   });
 });

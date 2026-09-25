@@ -189,3 +189,14 @@ export function deriveOutcome(summary: string, customData?: Record<string, unkno
   if (/\bname and number|details taken|contact details\b/.test(text)) return 'lead_captured';
   return 'enquiry';
 }
+
+/**
+ * The outcome to store, given what the analysis says and whether a booking row
+ * exists for the call. A booking the agent actually made outranks the LLM's
+ * reading of the transcript — it is a fact, not an inference. Emergency status
+ * is not lost by this: it lives in `calls.is_emergency`, which is decided
+ * separately, and escalation runs off that.
+ */
+export function resolveOutcome(derived: CallOutcome, hasBooking: boolean): CallOutcome {
+  return hasBooking ? 'booked' : derived;
+}
