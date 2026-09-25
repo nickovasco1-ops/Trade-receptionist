@@ -44,6 +44,37 @@ Notion formula someone can edit. It is the one column worth scanning:
 - `no diary` — taking calls but no calendar connected, so it can capture a lead but cannot book a job
 - `ok`
 
+### Plan usage
+
+`syncSubscribers()` derives monthly usage from Supabase call rows and Stripe's
+billing-period dates. Supabase remains authoritative; the append-only Call Log
+is not used for totals because provider outages can leave gaps in it.
+
+The sync creates these managed properties when they are missing, then refreshes
+them every two hours:
+
+| Property | Type | Meaning |
+|---|---|---|
+| Calls this period | Number | Inbound calls whose `started_at` falls in the current monthly allowance window |
+| Plan limit | Number | Starter 50, Pro 150, Business 350, Agency 600 |
+| Calls remaining | Number | Allowance minus usage, never below zero |
+| Usage % | Number | Usage divided by the allowance |
+| Usage status | Select | `OK`, `Approaching limit`, `Limit reached`, `Over limit` |
+| Overage calls | Number | Calls beyond the allowance |
+| Billing period starts | Date | Start of the current monthly allowance window |
+| Billing period ends | Date | End of the current monthly allowance window |
+| Over limit at | Date | Exact `started_at` of the first call beyond the allowance |
+
+The first observed crossing at 80% and 100% sends an operational email through
+`ALERT_EMAIL` (falling back to `INTEGRITY_ALERT_EMAIL`). `usage_alerts` records
+one send per subscriber, period and threshold so a two-hour cron cannot repeat
+the same warning. Calls continue to be answered after the allowance is reached.
+
+For a useful Notion view, create **Plan Usage**, filter `Status` to active or
+trialling, and sort by `Usage %` descending followed by `Overage calls`
+descending. Views are presentation owned by Notion; the sync manages fields and
+values, not a person's saved view layout.
+
 ## Setup — the integration needs access
 
 **This is the step that bites.** Creating an integration and setting
@@ -88,6 +119,10 @@ curl -s -X POST https://trade-receptionist-production.up.railway.app/admin/sync-
 ```
 
 A clean run reports `failed: 0` for every database.
+
+Migration `020_plan_usage_tracking.sql` must be applied before deploying the
+matching server code. It adds `clients.current_period_start` and the
+service-role-only `usage_alerts` audit table.
 
 ## Creating the Leads database
 

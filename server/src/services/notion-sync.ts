@@ -19,6 +19,14 @@
 import { Client as NotionClient } from '@notionhq/client';
 import { supabase } from './supabase';
 import { errorMessage, logEvent } from '../lib/observability';
+import { sendOpsAlert } from './alerts';
+import {
+  resolveUsagePeriod,
+  summariseUsage,
+  type UsagePeriod,
+  type UsageSnapshot,
+  type UsageThreshold,
+} from '../lib/plan-usage';
 
 let cached: NotionClient | null = null;
 
@@ -34,7 +42,7 @@ interface ClientRow {
   owner_mobile: string | null; twilio_number: string | null; plan: string;
   subscription_status: string | null; is_active: boolean | null;
   google_cal_id: string | null; calendar_provider: string | null; onboarding_complete: boolean | null;
-  created_at: string; current_period_end: string | null;
+  created_at: string; current_period_start: string | null; current_period_end: string | null;
 }
 
 interface LeadRow {
@@ -69,6 +77,27 @@ export interface SyncResult {
  */
 const dataSourceCache = new Map<string, string>();
 
+const USAGE_SCHEMA = {
+  'Calls this period': { number: { format: 'number' as const } },
+  'Plan limit':        { number: { format: 'number' as const } },
+  'Calls remaining':   { number: { format: 'number' as const } },
+  'Usage %':           { number: { format: 'number' as const } },
+  'Usage status':      {
+    select: {
+      options: [
+        { name: 'OK', color: 'green' as const },
+        { name: 'Approaching limit', color: 'yellow' as const },
+        { name: 'Limit reached', color: 'orange' as const },
+        { name: 'Over limit', color: 'red' as const },
+      ],
+    },
+  },
+  'Overage calls':         { number: { format: 'number' as const } },
+  'Billing period starts': { date: {} },
+  'Billing period ends':   { date: {} },
+  'Over limit at':         { date: {} },
+};
+
 async function dataSourceIdFor(client: NotionClient, databaseId: string): Promise<string> {
   const hit = dataSourceCache.get(databaseId);
   if (hit) return hit;
@@ -97,6 +126,28 @@ async function probeAccess(client: NotionClient, databaseId: string): Promise<st
   } catch (err: unknown) {
     return errorMessage(err);
   }
+}
+
+/** Add the managed usage columns once; never alter or remove user-owned columns. */
+async function ensureUsageSchema(client: NotionClient, databaseId: string): Promise<void> {
+  const dataSourceId = await dataSourceIdFor(client, databaseId);
+  const source = await client.dataSources.retrieve({ data_source_id: dataSourceId }) as unknown as {
+    properties?: Record<string, unknown>;
+  };
+  const existing = source.properties ?? {};
+  const missing = Object.fromEntries(
+    Object.entries(USAGE_SCHEMA).filter(([name]) => !(name in existing)),
+  );
+  if (Object.keys(missing).length === 0) return;
+
+  await client.dataSources.update({
+    data_source_id: dataSourceId,
+    properties: missing,
+  } as Parameters<typeof client.dataSources.update>[0]);
+  logEvent('info', 'notion_sync.usage_schema_extended', {
+    database: 'subscribers',
+    properties: Object.keys(missing).join(','),
+  });
 }
 
 /** Find an existing page by an exact match on a rich-text id column. */
@@ -144,6 +195,94 @@ function healthOf(c: {
   return 'ok';
 }
 
+async function claimUsageAlert(
+  clientId: string,
+  periodStart: string,
+  threshold: UsageThreshold,
+  usageCount: number,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('usage_alerts')
+    .insert({
+      client_id: clientId,
+      period_start: periodStart,
+      threshold_percent: threshold,
+      usage_count: usageCount,
+    })
+    .select('id')
+    .maybeSingle();
+
+  if (error?.code === '23505') return null;
+  if (error) throw new Error(`usage alert claim failed: ${error.message}`);
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+async function releaseUsageAlert(alertId: string): Promise<void> {
+  await supabase.from('usage_alerts').delete().eq('id', alertId);
+}
+
+async function markUsageAlertSent(alertId: string): Promise<void> {
+  await supabase.from('usage_alerts').update({ sent_at: new Date().toISOString() }).eq('id', alertId);
+}
+
+/** One operational email per threshold, tenant and allowance period. */
+async function sendUsageAlerts(
+  client: ClientRow,
+  period: UsagePeriod,
+  usage: UsageSnapshot,
+): Promise<void> {
+  for (const threshold of usage.reachedThresholds) {
+    let alertId: string | null = null;
+    try {
+      alertId = await claimUsageAlert(client.id, period.start, threshold, usage.calls);
+      if (!alertId) continue;
+
+      const atLimit = threshold === 100;
+      const sent = await sendOpsAlert({
+        tone: atLimit ? 'bad' : 'warn',
+        subject: atLimit
+          ? `Call allowance reached — ${client.business_name}`
+          : `Call allowance at ${threshold}% — ${client.business_name}`,
+        headline: atLimit
+          ? `${client.business_name} has reached its monthly call allowance`
+          : `${client.business_name} is approaching its monthly call allowance`,
+        facts: [
+          ['Plan', client.plan],
+          ['Usage', `${usage.calls} of ${usage.limit} calls (${usage.usagePercent}%)`],
+          ['Calls remaining', String(usage.remaining)],
+          ['Overage calls', String(usage.overageCalls)],
+          ['Period ends', new Date(period.end).toLocaleString('en-GB', { timeZone: 'Europe/London' })],
+          ...(usage.overLimitAt
+            ? [['First over-limit call', new Date(usage.overLimitAt).toLocaleString('en-GB', { timeZone: 'Europe/London' })] as [string, string]]
+            : []),
+        ],
+        action: atLimit
+          ? 'Calls are still being answered. Contact the subscriber to agree an upgrade or overage arrangement.'
+          : 'Contact the subscriber before the allowance is exhausted and offer the next plan.',
+      });
+
+      if (sent) await markUsageAlertSent(alertId);
+      else await releaseUsageAlert(alertId);
+    } catch (err: unknown) {
+      if (alertId) {
+        try {
+          await releaseUsageAlert(alertId);
+        } catch (releaseErr: unknown) {
+          logEvent('error', 'notion_sync.usage_alert_release_failed', {
+            alertId,
+            error: errorMessage(releaseErr),
+          });
+        }
+      }
+      logEvent('error', 'notion_sync.usage_alert_failed', {
+        clientId: client.id,
+        threshold,
+        error: errorMessage(err),
+      });
+    }
+  }
+}
+
 /** Upsert every tenant into the Subscribers database. */
 export async function syncSubscribers(): Promise<SyncResult> {
   const client = notion();
@@ -167,10 +306,20 @@ export async function syncSubscribers(): Promise<SyncResult> {
     return result;
   }
 
+  try {
+    await ensureUsageSchema(client, databaseId);
+  } catch (err: unknown) {
+    result.failed = 1;
+    result.reason = `Could not add plan-usage columns: ${errorMessage(err)}`;
+    logEvent('error', 'notion_sync.usage_schema_failed', { error: errorMessage(err) });
+    return result;
+  }
+
   const { data: clientData, error } = await supabase
     .from('clients')
     .select('id,business_name,owner_name,owner_email,owner_mobile,twilio_number,plan,'
-          + 'subscription_status,is_active,google_cal_id,calendar_provider,onboarding_complete,created_at,current_period_end');
+          + 'subscription_status,is_active,google_cal_id,calendar_provider,onboarding_complete,created_at,'
+          + 'current_period_start,current_period_end');
   if (error) throw new Error(`notion sync: client fetch failed: ${error.message}`);
   const clients = (clientData ?? []) as unknown as ClientRow[];
 
@@ -178,12 +327,39 @@ export async function syncSubscribers(): Promise<SyncResult> {
 
   for (const c of clients) {
     try {
-      const [{ count: callCount }, { count: leadCount }, { data: lastCall }] = await Promise.all([
+      const period = resolveUsagePeriod({
+        subscriptionStatus: c.subscription_status,
+        createdAt: c.created_at,
+        currentPeriodStart: c.current_period_start,
+        currentPeriodEnd: c.current_period_end,
+      });
+      const planLimit = summariseUsage(c.plan, 0, []).limit;
+
+      const [callCountRes, leadCountRes, lastCallRes, periodCountRes, periodCallsRes] = await Promise.all([
         supabase.from('calls').select('id', { count: 'exact', head: true }).eq('client_id', c.id),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('client_id', c.id),
         supabase.from('calls').select('created_at').eq('client_id', c.id)
           .order('created_at', { ascending: false }).limit(1),
+        supabase.from('calls').select('id', { count: 'exact', head: true })
+          .eq('client_id', c.id).eq('direction', 'inbound')
+          .gte('started_at', period.start).lt('started_at', period.end),
+        supabase.from('calls').select('started_at').eq('client_id', c.id)
+          .eq('direction', 'inbound').gte('started_at', period.start).lt('started_at', period.end)
+          .order('started_at', { ascending: true }).range(0, planLimit),
       ]);
+      const queryError = callCountRes.error ?? leadCountRes.error ?? lastCallRes.error
+        ?? periodCountRes.error ?? periodCallsRes.error;
+      if (queryError) throw new Error(`usage query failed: ${queryError.message}`);
+
+      const callCount = callCountRes.count;
+      const leadCount = leadCountRes.count;
+      const lastCall = lastCallRes.data;
+      const periodCallCount = periodCountRes.count;
+      const periodCalls = periodCallsRes.data;
+      const orderedStarts = ((periodCalls ?? []) as Array<{ started_at: string | null }>)
+        .map((call) => call.started_at)
+        .filter((value): value is string => Boolean(value));
+      const usage = summariseUsage(c.plan, periodCallCount ?? 0, orderedStarts);
 
       const properties = {
         'Business Name':       title(c.business_name),
@@ -197,6 +373,15 @@ export async function syncSubscribers(): Promise<SyncResult> {
         'Diary Connected':     check(Boolean(c.calendar_provider ?? c.google_cal_id)),
         'Onboarding Complete': check(Boolean(c.onboarding_complete)),
         'Calls (all time)':    num(callCount ?? 0),
+        'Calls this period':   num(usage.calls),
+        'Plan limit':          num(usage.limit),
+        'Calls remaining':     num(usage.remaining),
+        'Usage %':             num(usage.usagePercent),
+        'Usage status':        select(usage.status),
+        'Overage calls':       num(usage.overageCalls),
+        'Billing period starts': date(period.start),
+        'Billing period ends':   date(period.end),
+        'Over limit at':         date(usage.overLimitAt),
         'Leads (all time)':    num(leadCount ?? 0),
         'Last Call':           date((lastCall as Array<{ created_at: string }> | null)?.[0]?.created_at ?? null),
         'Signup Date':         date(c.created_at),
@@ -219,6 +404,8 @@ export async function syncSubscribers(): Promise<SyncResult> {
         await client.pages.create({ parent: { database_id: databaseId }, properties });
         result.created += 1;
       }
+
+      await sendUsageAlerts(c, period, usage);
     } catch (err: unknown) {
       result.failed += 1;
       result.reason ??= errorMessage(err);

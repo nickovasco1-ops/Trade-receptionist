@@ -81,6 +81,7 @@ export interface Client {
   stripe_subscription_id: string | null;
   subscription_status: SubscriptionStatus | null;
   payment_status: PaymentStatus | null;
+  current_period_start: string | null;
   current_period_end: string | null;
   last_payment_at: string | null;
   last_payment_failed_at: string | null;
@@ -174,6 +175,17 @@ export interface Booking {
   created_at: string;
 }
 
+/** Service-role-only audit row for idempotent monthly usage warnings. */
+export interface UsageAlert {
+  id: string;
+  client_id: string;
+  period_start: string;
+  threshold_percent: 80 | 100;
+  usage_count: number;
+  created_at: string;
+  sent_at: string | null;
+}
+
 // ── Insert DTOs (omit generated fields) ──────────────────────────────────────
 
 export type ClientInsert = Omit<Client, 'id' | 'created_at' | 'updated_at'>;
@@ -182,6 +194,7 @@ export type CallInsert = Omit<Call, 'id' | 'created_at'>;
 export type TranscriptInsert = Omit<Transcript, 'id' | 'created_at'>;
 export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at'>;
 export type BookingInsert = Omit<Booking, 'id' | 'created_at'>;
+export type UsageAlertInsert = Omit<UsageAlert, 'id' | 'created_at'>;
 
 // ── API envelope ──────────────────────────────────────────────────────────────
 

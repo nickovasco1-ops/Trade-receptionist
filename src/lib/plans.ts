@@ -1,4 +1,5 @@
 import type { Plan } from '../../shared/types';
+import { PLAN_CALL_LIMITS } from '../../shared/plan-limits';
 
 export interface PlanConfig {
   key:        Plan;
@@ -42,7 +43,7 @@ export const PLANS: PlanConfig[] = [
     name:      'Starter',
     price:     49,
     calls:     'Up to 50 calls/month',
-    callLimit: 50,
+    callLimit: PLAN_CALL_LIMITS.starter,
     features:  ['AI call answering 24/7', 'SMS + email job summaries', 'Diary integration (Google Calendar)', 'Call transcripts'],
     stripeUrl: urls.starter,
     popular:   false,
@@ -52,7 +53,7 @@ export const PLANS: PlanConfig[] = [
     name:      'Pro',
     price:     89,
     calls:     'Up to 150 calls/month',
-    callLimit: 150,
+    callLimit: PLAN_CALL_LIMITS.pro,
     features:  ['Everything in Starter', 'Priority call routing', 'Custom greetings', 'Calendar booking', 'Priority support'],
     stripeUrl: urls.pro,
     popular:   true,
@@ -62,7 +63,7 @@ export const PLANS: PlanConfig[] = [
     name:      'Business',
     price:     159,
     calls:     'Up to 350 calls/month',
-    callLimit: 350,
+    callLimit: PLAN_CALL_LIMITS.business,
     features:  ['Everything in Pro', 'Multiple phone numbers', 'Shared team access', 'Advanced reporting'],
     stripeUrl: urls.business,
     popular:   false,
@@ -72,7 +73,7 @@ export const PLANS: PlanConfig[] = [
     name:      'Agency',
     price:     249,
     calls:     'Up to 600 calls/month',
-    callLimit: 600,
+    callLimit: PLAN_CALL_LIMITS.agency,
     features:  ['Everything in Business', 'Multiple departments', 'Dedicated account manager', 'Custom integrations'],
     stripeUrl: urls.agency,
     popular:   false,
