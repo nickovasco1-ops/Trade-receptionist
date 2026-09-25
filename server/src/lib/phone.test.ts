@@ -14,6 +14,8 @@ import {
   divertActivationCode,
   DIVERT_CANCEL_ALL,
   DIVERT_CHECK,
+  toE164,
+  chooseCallerNumber,
 } from '../../../shared/phone';
 
 describe('toNationalDialling', () => {
@@ -70,5 +72,87 @@ describe('divert control codes', () => {
 
   test('a check code exists so a customer can confirm it registered', () => {
     assert.equal(DIVERT_CHECK, '*#004#');
+  });
+});
+
+// ── Contact numbers ───────────────────────────────────────────────────────────
+//
+// The case that prompted these: a live booking on 2026-09-25 where the agent
+// transcribed a UK mobile one digit short. Twilio rejected the confirmation SMS
+// (21211) and the short number went into the tradesperson's diary event, while
+// the caller ID on the same request was correct all along.
+
+describe('toE164', () => {
+  test('accepts a UK mobile in every shape a caller or the LLM produces', () => {
+    for (const raw of [
+      '07700900123',
+      '07700 900123',
+      '07700 900 123',
+      '07700-900-123',
+      '+447700900123',
+      '+44 7700 900123',
+      '+44 (0)7700 900123',
+      '447700900123',
+      '00447700900123',
+    ]) {
+      assert.equal(toE164(raw), '+447700900123', raw);
+    }
+  });
+
+  // The production failure, stated as an assertion.
+  test('rejects a UK mobile one digit short', () => {
+    assert.equal(toE164('+44770090012'), null);
+    assert.equal(toE164('0770090012'), null);
+  });
+
+  test('rejects a UK mobile one digit long', () => {
+    assert.equal(toE164('077009001234'), null);
+  });
+
+  test('accepts UK landlines, including the nine-digit geographic areas', () => {
+    assert.equal(toE164('020 7946 0123'), '+442079460123');
+    assert.equal(toE164('01632 960123'), '+441632960123');
+    assert.equal(toE164('016977 3456'), '+44169773456');
+  });
+
+  test('passes through a foreign number already in international form', () => {
+    assert.equal(toE164('+353 85 123 4567'), '+353851234567');
+    assert.equal(toE164('00353851234567'), '+353851234567');
+  });
+
+  test('refuses anything that is not a number at all', () => {
+    for (const raw of [null, undefined, '', '   ', 'anonymous', 'withheld', '0770O900123', '7700900123']) {
+      assert.equal(toE164(raw), null, String(raw));
+    }
+  });
+});
+
+describe('chooseCallerNumber', () => {
+  test('prefers a valid number the caller gave — they may want texts elsewhere', () => {
+    assert.deepEqual(
+      chooseCallerNumber('07700 900456', '+447700900123'),
+      { number: '+447700900456', source: 'heard' },
+    );
+  });
+
+  test('falls back to caller ID when the heard number cannot exist', () => {
+    assert.deepEqual(
+      chooseCallerNumber('+44770090012', '+447700900123'),
+      { number: '+447700900123', source: 'caller_id' },
+    );
+  });
+
+  test('uses caller ID when the agent passed no number', () => {
+    assert.deepEqual(
+      chooseCallerNumber(undefined, '+447700900123'),
+      { number: '+447700900123', source: 'caller_id' },
+    );
+  });
+
+  test('gives up cleanly when neither is usable, e.g. a withheld number', () => {
+    assert.deepEqual(
+      chooseCallerNumber('+44770090012', 'anonymous'),
+      { number: null, source: 'none' },
+    );
   });
 });

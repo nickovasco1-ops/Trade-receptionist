@@ -23,7 +23,8 @@ import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
-import { deriveOutcome, extractLeadData, isLeadEmpty } from './lib/lead-extraction';
+import { deriveOutcome, extractLeadData, hasStructuredAnalysis, isLeadEmpty, resolveOutcome } from './lib/lead-extraction';
+import { applyAnalysedOutcome, callHasBooking } from './services/call-outcome';
 import { sendTrialReminderEmail, sendEmail } from './services/resend';
 import { runTenantIntegrityCheck } from './services/tenant-integrity';
 import { sweepCalendars } from './services/calendar';
@@ -674,7 +675,7 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
 
       const { data: existing } = await supabase
         .from('calls')
-        .select('id, recording_url')
+        .select('id, recording_url, outcome')
         .eq('retell_call_id', retellCallId)
         .maybeSingle();
 
@@ -745,6 +746,19 @@ app.post('/admin/sync-calls', express.json(), async (req, res) => {
         if (tErr) {
           logEvent('error', 'admin.sync_calls.transcript_failed', { retellCallId, error: tErr.message });
         } else {
+          didRepair = true;
+        }
+      }
+
+      // The outcome stored at call_ended usually predates the analysis, and
+      // nothing corrected it (services/call-outcome.ts). Existing rows only —
+      // a freshly inserted row was just written from this same analysis, and
+      // a booking can only reference a call row that already existed. An
+      // analysis with neither a summary nor fields says nothing, so it must not
+      // knock a good outcome back to the `enquiry` default.
+      if (existing && (summary || hasStructuredAnalysis(customData))) {
+        const resolved = resolveOutcome(outcome, await callHasBooking(retellCallId));
+        if (await applyAnalysedOutcome(callId, existing.outcome as CallOutcome | null, resolved, 'sync_calls')) {
           didRepair = true;
         }
       }

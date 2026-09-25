@@ -3,6 +3,7 @@ import { verify as retellVerify } from 'retell-sdk';
 import { z } from 'zod';
 import { supabase } from '../../services/supabase';
 import { logEvent, requestId } from '../../lib/observability';
+import { chooseCallerNumber } from '../../../../shared/phone';
 import {
   bookingErrorDetails,
   createBookingForClient,
@@ -202,6 +203,20 @@ router.post('/create-booking', async (req: Request, res: Response) => {
         .maybeSingle()
     : { data: null };
 
+  // The heard number used to win outright, so a digit the LLM dropped went
+  // into the diary event and failed the confirmation SMS (Twilio 21211) while
+  // the caller ID on this same request was correct. See shared/phone.ts.
+  const heardNumber = parsed.data.caller_number ?? null;
+  const contact = chooseCallerNumber(heardNumber, envelope.call?.from_number);
+  if (heardNumber && contact.source !== 'heard') {
+    // Digit count only — never the number itself.
+    logEvent('warn', 'retell_tools.caller_number_invalid', {
+      clientId: context.client.id,
+      heardDigits: heardNumber.replace(/\D/g, '').length,
+      usedInstead: contact.source,
+    });
+  }
+
   try {
     const result = await createBookingForClient(context, {
       scheduledAt: parsed.data.start_time_iso,
@@ -210,7 +225,7 @@ router.post('/create-booking', async (req: Request, res: Response) => {
       notes: parsed.data.notes ?? null,
       callId: callRow?.id ?? null,
       customerName: parsed.data.customer_name,
-      callerNumber: parsed.data.caller_number ?? envelope.call?.from_number ?? null,
+      callerNumber: contact.number,
       callerEmail: parsed.data.caller_email ?? null,
       jobType: parsed.data.job_type,
       confirmationChannel: parsed.data.confirmation_channel ?? 'auto',
