@@ -11,34 +11,11 @@ import { forwardingInstructionsHtml } from '../../lib/forwarding-email';
 import type { Client, BusinessConfig, Plan } from '../../../../shared/types';
 import { fireOpsAlert } from '../../services/alerts';
 import { calendarIsConnected } from '../../services/calendar';
+import { STRIPE_PRODUCT_TO_PLAN } from '../../lib/stripe-plans';
 
 const router = Router();
 
 // ── Plan detection ────────────────────────────────────────────────────────────
-
-// Maps a Stripe *product* to a plan tier. A product can carry several prices —
-// the Starter and Pro products each hold both their original April price and
-// the current one — so this map stays correct across a price change and must
-// never be keyed on a price id.
-//
-// The £49/£89 comments here were aspirational until 2026-09-10: the only live
-// prices on these two products were £29 and £59, and the Payment Links sold
-// them at that while the site advertised £49 and £89. Comments are not
-// billing; check the amount in Stripe before trusting a line like these.
-const PRODUCT_TO_PLAN: Record<string, Plan> = {
-  // Live-mode products — get IDs from Stripe dashboard → Products
-  'prod_UOE4uHDjaA2p2A': 'starter',  // £49/mo — price_1UEGpV…
-  'prod_UOE4eMY23okJjd': 'pro',      // £89/mo — price_1UEGox…
-  'prod_UehtOIroOuNd9l': 'business', // £159/mo — price_1TfOU6…
-  'prod_UehtHB44FF2E1Y': 'agency',   // £249/mo — price_1TfOU7…
-  'prod_UOE5UUmEp0cXnD': 'agency',   // £119/mo — the original Agency product,
-                                     // kept so existing subscribers on it
-                                     // still resolve to the right tier.
-  // Test-mode products
-  'prod_UQeX2QnK9ev3bK': 'starter',
-  'prod_UQeX0UFytNZhFH': 'pro',
-  'prod_UQeXswCVtfNvZq': 'agency',
-};
 
 /** Mirrors src/lib/plans.ts — for alert copy only, never for billing. */
 const PLAN_PRICE: Record<string, number> = {
@@ -310,7 +287,7 @@ async function planFromStripeSession(sessionId: string): Promise<Plan> {
     };
     const raw = body.data[0]?.price?.product;
     const productId = typeof raw === 'string' ? raw : raw?.id;
-    return PRODUCT_TO_PLAN[productId ?? ''] ?? 'starter';
+    return STRIPE_PRODUCT_TO_PLAN[productId ?? ''] ?? 'starter';
   } catch {
     return 'starter';
   }
@@ -461,7 +438,7 @@ async function provisionClient(session: Record<string, unknown>): Promise<void> 
   // Prefer metadata.plan (set on Stripe Payment Link); fall back to product-ID lookup
   const metaPlan = metadata?.['plan'] as string | undefined;
   const plan: Plan = (metaPlan && metaPlan in Object.fromEntries(
-    Object.values(PRODUCT_TO_PLAN).map((p) => [p, true])
+    Object.values(STRIPE_PRODUCT_TO_PLAN).map((p) => [p, true])
   ))
     ? (metaPlan as Plan)
     : await planFromStripeSession(session['id'] as string);
