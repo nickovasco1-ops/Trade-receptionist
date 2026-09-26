@@ -20,6 +20,7 @@ import { Client as NotionClient } from '@notionhq/client';
 import { supabase } from './supabase';
 import { errorMessage, logEvent } from '../lib/observability';
 import { sendOpsAlert } from './alerts';
+import { customerAttention, leadAction } from '../lib/notion-ops';
 import {
   resolveUsagePeriod,
   summariseUsage,
@@ -28,6 +29,9 @@ import {
   type UsageThreshold,
 } from '../lib/plan-usage';
 import { syncRevenueTracker } from './revenue-tracker';
+import { syncOnboardingTracker, syncOwnerDashboard } from './notion-operations';
+
+const DEFAULT_LEADS_DATABASE_ID = '62c4cf9f9fde4c91af694c7f3c362739';
 
 let cached: NotionClient | null = null;
 
@@ -40,8 +44,9 @@ function notion(): NotionClient | null {
 
 interface ClientRow {
   id: string; business_name: string; owner_name: string | null; owner_email: string;
-  owner_mobile: string | null; twilio_number: string | null; plan: string;
+  owner_mobile: string | null; retell_agent_id: string | null; twilio_number: string | null; plan: string;
   subscription_status: string | null; is_active: boolean | null;
+  payment_status: string | null;
   google_cal_id: string | null; calendar_provider: string | null; onboarding_complete: boolean | null;
   created_at: string; current_period_start: string | null; current_period_end: string | null;
 }
@@ -69,6 +74,7 @@ export interface SyncResult {
    * back out to whoever reads the alert.
    */
   reason?:  string;
+  metrics?: Record<string, number>;
 }
 
 /**
@@ -97,6 +103,26 @@ const USAGE_SCHEMA = {
   'Billing period starts': { date: {} },
   'Billing period ends':   { date: {} },
   'Over limit at':         { date: {} },
+  'Attention': {
+    select: {
+      options: [
+        { name: 'None', color: 'green' as const },
+        { name: 'Needs attention', color: 'yellow' as const },
+        { name: 'At risk', color: 'red' as const },
+        { name: 'Churned', color: 'gray' as const },
+      ],
+    },
+  },
+  'Next Action': { rich_text: {} },
+  'Payment Status': {
+    select: {
+      options: [
+        { name: 'current', color: 'green' as const },
+        { name: 'failed', color: 'red' as const },
+        { name: 'canceled', color: 'gray' as const },
+      ],
+    },
+  },
 };
 
 async function dataSourceIdFor(client: NotionClient, databaseId: string): Promise<string> {
@@ -289,6 +315,13 @@ export async function syncSubscribers(): Promise<SyncResult> {
   const client = notion();
   const databaseId = process.env.NOTION_SUBSCRIBERS_DB_ID;
   const result: SyncResult = { database: 'Subscribers', created: 0, updated: 0, skipped: 0, failed: 0 };
+  result.metrics = {
+    activeClients: 0,
+    trialClients: 0,
+    atRiskClients: 0,
+    needsAttentionClients: 0,
+    usageWarnings: 0,
+  };
 
   if (!client || !databaseId) {
     result.skipped = 1;
@@ -318,8 +351,8 @@ export async function syncSubscribers(): Promise<SyncResult> {
 
   const { data: clientData, error } = await supabase
     .from('clients')
-    .select('id,business_name,owner_name,owner_email,owner_mobile,twilio_number,plan,'
-          + 'subscription_status,is_active,google_cal_id,calendar_provider,onboarding_complete,created_at,'
+    .select('id,business_name,owner_name,owner_email,owner_mobile,retell_agent_id,twilio_number,plan,'
+          + 'subscription_status,payment_status,is_active,google_cal_id,calendar_provider,onboarding_complete,created_at,'
           + 'current_period_start,current_period_end');
   if (error) throw new Error(`notion sync: client fetch failed: ${error.message}`);
   const clients = (clientData ?? []) as unknown as ClientRow[];
@@ -361,6 +394,27 @@ export async function syncSubscribers(): Promise<SyncResult> {
         .map((call) => call.started_at)
         .filter((value): value is string => Boolean(value));
       const usage = summariseUsage(c.plan, periodCallCount ?? 0, orderedStarts);
+      const ageHours = Math.max(0, Math.floor(
+        (new Date(now).getTime() - new Date(c.created_at).getTime()) / 3_600_000,
+      ));
+      const attention = customerAttention({
+        isActive: Boolean(c.is_active),
+        subscriptionStatus: c.subscription_status,
+        paymentStatus: c.payment_status,
+        hasAgent: Boolean(c.retell_agent_id),
+        hasNumber: Boolean(c.twilio_number),
+        diaryConnected: Boolean(c.calendar_provider ?? c.google_cal_id),
+        onboardingComplete: Boolean(c.onboarding_complete),
+        callCount: callCount ?? 0,
+        usageStatus: usage.status,
+        ageHours,
+      });
+
+      if (c.is_active && c.subscription_status === 'active') result.metrics!.activeClients += 1;
+      if (c.is_active && c.subscription_status === 'trialing') result.metrics!.trialClients += 1;
+      if (attention.attention === 'At risk') result.metrics!.atRiskClients += 1;
+      if (attention.attention === 'Needs attention') result.metrics!.needsAttentionClients += 1;
+      if (usage.status !== 'OK') result.metrics!.usageWarnings += 1;
 
       const properties = {
         'Business Name':       title(c.business_name),
@@ -371,6 +425,7 @@ export async function syncSubscribers(): Promise<SyncResult> {
         'Receptionist Number': phone(c.twilio_number),
         'Plan':                select(c.plan),
         'Status':              select(c.subscription_status),
+        'Payment Status':      select(c.payment_status),
         'Diary Connected':     check(Boolean(c.calendar_provider ?? c.google_cal_id)),
         'Onboarding Complete': check(Boolean(c.onboarding_complete)),
         'Calls (all time)':    num(callCount ?? 0),
@@ -394,6 +449,8 @@ export async function syncSubscribers(): Promise<SyncResult> {
                                  calendar_provider: c.calendar_provider,
                                  callCount: callCount ?? 0,
                                })),
+        'Attention':           select(attention.attention),
+        'Next Action':         text(attention.nextAction),
         'Last Synced':         date(now),
       } as Parameters<typeof client.pages.create>[0]['properties'];
 
@@ -416,7 +473,10 @@ export async function syncSubscribers(): Promise<SyncResult> {
     }
   }
 
-  logEvent('info', 'notion_sync.complete', { ...result });
+  logEvent('info', 'notion_sync.complete', {
+    ...result,
+    metrics: JSON.stringify(result.metrics ?? {}),
+  });
   return result;
 }
 
@@ -428,14 +488,15 @@ export async function syncSubscribers(): Promise<SyncResult> {
  */
 export async function syncLeads(limit = 500): Promise<SyncResult> {
   const client = notion();
-  const databaseId = process.env.NOTION_LEADS_DB_ID;
-  const result: SyncResult = { database: 'Leads', created: 0, updated: 0, skipped: 0, failed: 0 };
+  const databaseId = process.env.NOTION_LEADS_DB_ID?.trim() || DEFAULT_LEADS_DATABASE_ID;
+  const result: SyncResult = {
+    database: 'Live Leads', created: 0, updated: 0, skipped: 0, failed: 0,
+    metrics: { leadsWaiting: 0, urgentLeads: 0 },
+  };
 
-  if (!client || !databaseId) {
+  if (!client) {
     result.skipped = 1;
-    result.reason  = client
-      ? 'NOTION_LEADS_DB_ID is not set, so no lead has ever reached Notion'
-      : 'NOTION_API_KEY is not set';
+    result.reason  = 'NOTION_API_KEY is not set';
     logEvent('warn', 'notion_sync.skipped', { database: 'leads', reason: result.reason });
     return result;
   }
@@ -466,6 +527,15 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
 
   for (const l of leads) {
     try {
+      const action = leadAction({
+        status: l.status,
+        urgency: l.urgency,
+        createdAt: l.created_at,
+      }, new Date(now));
+      if (action.needsAction) result.metrics!.leadsWaiting += 1;
+      if (action.needsAction && ['urgent', 'emergency'].includes(l.urgency ?? '')) {
+        result.metrics!.urgentLeads += 1;
+      }
       const properties = {
         'Caller':      title(l.caller_name),
         'Lead ID':     text(l.id),
@@ -476,6 +546,10 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
         'Job Type':    text(l.job_type),
         'Urgency':     select(l.urgency),
         'Status':      select(l.status),
+        'Needs Action': check(action.needsAction),
+        'Next Action': text(action.nextAction),
+        'Action Due':  date(action.actionDue),
+        'Age (hours)': num(action.ageHours),
         'Notes':       text(l.notes),
         'Received':    date(l.created_at),
         'Followed Up': date(l.follow_up_sent_at),
@@ -500,10 +574,19 @@ export async function syncLeads(limit = 500): Promise<SyncResult> {
     }
   }
 
-  logEvent('info', 'notion_sync.complete', { ...result });
+  logEvent('info', 'notion_sync.complete', {
+    ...result,
+    metrics: JSON.stringify(result.metrics ?? {}),
+  });
   return result;
 }
 
 export async function syncAll(): Promise<SyncResult[]> {
-  return [await syncSubscribers(), await syncLeads(), await syncRevenueTracker()];
+  const subscribers = await syncSubscribers();
+  const leads = await syncLeads();
+  const onboarding = await syncOnboardingTracker();
+  const revenue = await syncRevenueTracker();
+  const sources = [subscribers, leads, onboarding, revenue];
+  const dashboard = await syncOwnerDashboard(sources);
+  return [...sources, dashboard];
 }
