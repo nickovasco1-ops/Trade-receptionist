@@ -7,6 +7,7 @@ import {
   GOOGLE_SCOPES,
   MICROSOFT_SCOPES,
   adapterFor,
+  authRejectionDetail,
   buildICalEvent,
   calendarConnection,
   calendarIsConnected,
@@ -110,8 +111,8 @@ describe('isAuthRejection', () => {
   });
 
   test('400 invalid_grant means the refresh token is dead', () => {
-    // This is how Google reports a revoked token — and how it reports the
-    // 7-day expiry that applies while the OAuth consent screen is in Testing.
+    // This is how Google reports a token the account holder has revoked. (The
+    // 7-day Testing-mode expiry never applied: the project is In production.)
     assert.equal(isAuthRejection(400, '{"error":"invalid_grant"}'), true);
     assert.equal(isAuthRejection(400, '{"error":"unauthorized_client"}'), true);
   });
@@ -122,6 +123,59 @@ describe('isAuthRejection', () => {
     assert.equal(isAuthRejection(400, '{"error":"invalid_request"}'), false);
     assert.equal(isAuthRejection(500, 'backend error'), false);
     assert.equal(isAuthRejection(503, ''), false);
+  });
+});
+
+describe('authRejectionDetail', () => {
+  // A customer's diary died on 2026-09-25 and the stored reason was a fixed
+  // sentence; the provider's own answer had been thrown away. These pin down
+  // that the reason now survives, and that it cannot leak what it must not.
+
+  test('keeps Google\'s code and description for a revoked token', () => {
+    const body = '{"error":"invalid_grant","error_description":"Token has been expired or revoked."}';
+    assert.equal(authRejectionDetail(400, body), 'HTTP 400 invalid_grant: Token has been expired or revoked.');
+  });
+
+  test('reads the nested shape Google\'s APIs use', () => {
+    const body = JSON.stringify({ error: { code: 401, message: 'Request had invalid authentication credentials.', status: 'UNAUTHENTICATED' } });
+    assert.equal(authRejectionDetail(401, body), 'HTTP 401 UNAUTHENTICATED: Request had invalid authentication credentials.');
+  });
+
+  test('reads Graph\'s error code', () => {
+    const body = JSON.stringify({ error: { code: 'InvalidAuthenticationToken', message: 'Access token has expired or is not yet valid.' } });
+    assert.equal(authRejectionDetail(401, body), 'HTTP 401 InvalidAuthenticationToken: Access token has expired or is not yet valid.');
+  });
+
+  test('drops Microsoft\'s trace and correlation lines', () => {
+    const body = JSON.stringify({
+      error: 'invalid_grant',
+      error_description: 'AADSTS700082: The refresh token has expired due to inactivity.\r\nTrace ID: abc\r\nCorrelation ID: def',
+    });
+    const detail = authRejectionDetail(400, body);
+    assert.equal(detail, 'HTTP 400 invalid_grant: AADSTS700082: The refresh token has expired due to inactivity.');
+    assert.ok(!detail.includes('Trace ID'));
+  });
+
+  test('says plainly when it is our client, not the customer, that was refused', () => {
+    // invalid_client means every tenant on this provider is dead, and no amount
+    // of asking the customer to reconnect will fix it.
+    const detail = authRejectionDetail(401, '{"error":"invalid_client","error_description":"The OAuth client was not found."}');
+    assert.ok(detail.startsWith('HTTP 401 invalid_client: The OAuth client was not found.'));
+    assert.ok(detail.includes('affects every tenant'));
+    assert.ok(!authRejectionDetail(400, '{"error":"invalid_grant"}').includes('affects every tenant'));
+  });
+
+  test('masks email addresses and caps the length', () => {
+    const long = JSON.stringify({ error: 'invalid_grant', error_description: `Grant for someone@example.com revoked. ${'x'.repeat(400)}` });
+    const detail = authRejectionDetail(400, long);
+    assert.ok(!detail.includes('someone@example.com'));
+    assert.ok(detail.includes('[email]'));
+    assert.ok(detail.length <= 200);
+  });
+
+  test('falls back to the status alone for a non-JSON body such as CalDAV', () => {
+    assert.equal(authRejectionDetail(401, '<html><body>Unauthorized</body></html>'), 'HTTP 401');
+    assert.equal(authRejectionDetail(403, ''), 'HTTP 403');
   });
 });
 
