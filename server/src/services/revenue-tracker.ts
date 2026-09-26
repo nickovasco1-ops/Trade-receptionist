@@ -19,6 +19,7 @@ export interface RevenueSyncResult {
   skipped: number;
   failed: number;
   reason?: string;
+  metrics?: Record<string, number>;
 }
 
 type Block = {
@@ -199,6 +200,14 @@ export async function syncRevenueTracker(now = new Date()): Promise<RevenueSyncR
       listStripeSubscriptions(stripeKey),
     ]);
     const snapshot = buildRevenueSnapshot(subscriptions, now);
+    result.metrics = {
+      mrrPence: snapshot.mrrPence,
+      arrPence: snapshot.arrPence,
+      activePayingClients: snapshot.activePayingClients,
+      trialClients: snapshot.trialClients,
+      pastDueClients: snapshot.pastDueClients,
+      churnedClientsThisMonth: snapshot.churnedClientsThisMonth,
+    };
     const intro = blocks.find((block) => block.type === 'paragraph');
     const firstAutomationRun = !intro || !blockText(intro).includes('Automated from Stripe');
 
@@ -321,6 +330,7 @@ export async function syncRevenueTracker(now = new Date()): Promise<RevenueSyncR
       pastDueClients: snapshot.pastDueClients,
       mrrPence: snapshot.mrrPence,
       ...result,
+      metrics: JSON.stringify(result.metrics ?? {}),
     });
   } catch (err: unknown) {
     result.failed = 1;
