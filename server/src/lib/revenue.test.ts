@@ -6,6 +6,8 @@ import {
   formatGbp,
   monthlyPenceForItem,
   parseGbp,
+  revenueMonthKeyFromLabel,
+  revenueMonthLabel,
   type StripeRevenueSubscription,
 } from './revenue';
 
@@ -162,5 +164,17 @@ describe('GBP formatting', () => {
     assert.equal(formatGbp(-4_000), '-£40');
     assert.equal(parseGbp('£1,249.50'), 124_950);
     assert.equal(parseGbp('—'), null);
+  });
+});
+
+describe('revenue month labels', () => {
+  it('uses a deterministic three-letter September label', () => {
+    assert.equal(revenueMonthLabel(new Date('2026-09-25T12:00:00Z')), 'Sep 2026');
+  });
+
+  it('recognises both Sep and the existing UK Sept bootstrap row', () => {
+    assert.equal(revenueMonthKeyFromLabel('Sep 2026*'), '2026-09');
+    assert.equal(revenueMonthKeyFromLabel('Sept 2026*'), '2026-09');
+    assert.equal(revenueMonthKeyFromLabel('September 2026'), null);
   });
 });

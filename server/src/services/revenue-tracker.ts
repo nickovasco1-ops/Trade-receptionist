@@ -6,6 +6,7 @@ import {
   formatGbp,
   parseGbp,
   revenueMonthKey,
+  revenueMonthKeyFromLabel,
   type StripeRevenueSubscription,
 } from '../lib/revenue';
 
@@ -165,17 +166,12 @@ async function listStripeSubscriptions(secretKey: string): Promise<StripeRevenue
   return subscriptions;
 }
 
-function rowMonthKey(label: string): string | null {
-  const match = label.replace(/\*$/, '').trim().match(/^([A-Z][a-z]{2}) (\d{4})$/);
-  if (!match) return null;
-  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    .indexOf(match[1]) + 1;
-  return month > 0 ? `${match[2]}-${String(month).padStart(2, '0')}` : null;
-}
-
 function previousEndingMrr(rows: TableRow[], currentMonthKey: string): number | null {
   const candidates = rows
-    .map((row) => ({ key: rowMonthKey(row.cells[0] ?? ''), value: parseGbp(row.cells[5] ?? '') }))
+    .map((row) => ({
+      key: revenueMonthKeyFromLabel(row.cells[0] ?? ''),
+      value: parseGbp(row.cells[5] ?? ''),
+    }))
     .filter((row): row is { key: string; value: number } => Boolean(row.key) && row.value !== null)
     .filter((row) => row.key < currentMonthKey)
     .sort((a, b) => b.key.localeCompare(a.key));
@@ -219,7 +215,7 @@ export async function syncRevenueTracker(now = new Date()): Promise<RevenueSyncR
     const monthlyTable = tableAfterHeading(blocks, 'Monthly Log');
     const monthlyRows = await readRows(client, monthlyTable.id);
     const currentMonthRow = monthlyRows.find(
-      (row) => rowMonthKey(row.cells[0] ?? '') === snapshot.monthKey,
+      (row) => revenueMonthKeyFromLabel(row.cells[0] ?? '') === snapshot.monthKey,
     );
     const storedStarting = currentMonthRow ? parseGbp(currentMonthRow.cells[1] ?? '') : null;
     const starting = currentMonthRow

@@ -144,9 +144,22 @@ export function revenueMonthKey(date: Date): string {
 }
 
 export function revenueMonthLabel(date: Date): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    month: 'short', year: 'numeric', timeZone: 'UTC',
-  }).format(date);
+  const month = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ][date.getUTCMonth()];
+  return `${month} ${date.getUTCFullYear()}`;
+}
+
+export function revenueMonthKeyFromLabel(label: string): string | null {
+  const match = label.replace(/\*$/, '').trim().match(/^([A-Z][a-z]{2,3}) (\d{4})$/);
+  if (!match) return null;
+  const abbreviation = match[1] === 'Sept' ? 'Sep' : match[1];
+  const month = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ].indexOf(abbreviation) + 1;
+  return month > 0 ? `${match[2]}-${String(month).padStart(2, '0')}` : null;
 }
 
 function isWithinMonth(timestamp: number | null | undefined, now: Date): boolean {
