@@ -122,13 +122,68 @@ export function eventDescription(event: CalendarEventInput): string {
  * Whether a provider's rejection means "reconnect" rather than "retry".
  *
  * 400 with invalid_grant is how both Google and Microsoft report a refresh token
- * that has been revoked, has expired, or — the case that bites an unverified
- * Google app — has passed the 7-day lifetime that applies while the OAuth
- * consent screen is still in Testing mode.
+ * that has been revoked (usually by the account holder removing access) or has
+ * expired. The Google project is In production, so the 7-day Testing-mode
+ * expiry does not apply (see CLAUDE.md §10).
  */
 export function isAuthRejection(status: number, body: string): boolean {
   if (status === 401 || status === 403) return true;
   return status === 400 && /invalid_grant|invalid_client|unauthorized_client/i.test(body);
+}
+
+/** Codes meaning the provider rejected *our* OAuth client, not the customer's grant. */
+const APP_CREDENTIAL_CODES = new Set(['invalid_client', 'unauthorized_client']);
+
+/**
+ * A short, log-safe account of why a provider refused a credential.
+ *
+ * The rejection used to be stored as a fixed sentence — "Google has revoked or
+ * expired this calendar connection" — and the provider's own answer was thrown
+ * away. When a customer's diary died on 2026-09-25 the only way to learn why was
+ * to ring the customer. The provider's code tells the cases apart: invalid_grant
+ * is the customer's access being withdrawn, while invalid_client means our own
+ * client ID or secret is wrong and every tenant on that provider is affected.
+ *
+ * First line only (Microsoft appends trace and correlation ids), email
+ * addresses masked, and capped, because this lands in the database, Sentry and
+ * the alert email.
+ */
+export function authRejectionDetail(status: number, body: string): string {
+  let code: string | undefined;
+  let description: string | undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (parsed && typeof parsed === 'object') {
+      const error = (parsed as Record<string, unknown>).error;
+      if (typeof error === 'string') {
+        // OAuth token endpoints: { error, error_description }
+        code = error;
+        const desc = (parsed as Record<string, unknown>).error_description;
+        if (typeof desc === 'string') description = desc;
+      } else if (error && typeof error === 'object') {
+        // Google APIs: { error: { status, message } }; Graph: { error: { code, message } }
+        const e = error as Record<string, unknown>;
+        if (typeof e.status === 'string') code = e.status;
+        else if (typeof e.code === 'string') code = e.code;
+        if (typeof e.message === 'string') description = e.message;
+      }
+    }
+  } catch {
+    // Not JSON — CalDAV answers in XML or HTML. The status code is all we keep.
+  }
+
+  let detail = code ? `HTTP ${status} ${code}` : `HTTP ${status}`;
+  if (description) {
+    const firstLine = description.split(/\r?\n/)[0].trim();
+    detail += `: ${firstLine}`;
+  }
+  detail = detail.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]').slice(0, 200);
+
+  if (code && APP_CREDENTIAL_CODES.has(code)) {
+    detail += ' — our OAuth client was rejected, not the customer\'s access: check the client ID and secret in Railway (affects every tenant on this provider)';
+  }
+  return detail;
 }
 
 // ── Connection resolution ─────────────────────────────────────────────────────
@@ -234,7 +289,7 @@ async function googleAccessToken(refreshToken: string): Promise<string> {
   if (!res.ok) {
     const body = await res.text();
     if (isAuthRejection(res.status, body)) {
-      throw new CalendarAuthError('google', 'Google has revoked or expired this calendar connection');
+      throw new CalendarAuthError('google', `Google has revoked or expired this calendar connection (${authRejectionDetail(res.status, body)})`);
     }
     throw new Error(`Google token refresh failed: ${body}`);
   }
@@ -256,7 +311,7 @@ export const googleAdapter: CalendarAdapter = {
     if (!res.ok) {
       const body = await res.text();
       if (isAuthRejection(res.status, body)) {
-        throw new CalendarAuthError('google', 'Google rejected the stored calendar access');
+        throw new CalendarAuthError('google', `Google rejected the stored calendar access (${authRejectionDetail(res.status, body)})`);
       }
       throw new Error(`Google freeBusy failed: ${body}`);
     }
@@ -353,7 +408,7 @@ async function microsoftAccessToken(refreshToken: string): Promise<string> {
   if (!res.ok) {
     const body = await res.text();
     if (isAuthRejection(res.status, body)) {
-      throw new CalendarAuthError('microsoft', 'Microsoft has revoked or expired this calendar connection');
+      throw new CalendarAuthError('microsoft', `Microsoft has revoked or expired this calendar connection (${authRejectionDetail(res.status, body)})`);
     }
     throw new Error(`Microsoft token refresh failed: ${body}`);
   }
@@ -378,7 +433,7 @@ async function graph(
   if (!res.ok) {
     const body = await res.text();
     if (isAuthRejection(res.status, body)) {
-      throw new CalendarAuthError('microsoft', 'Microsoft rejected the stored calendar access');
+      throw new CalendarAuthError('microsoft', `Microsoft rejected the stored calendar access (${authRejectionDetail(res.status, body)})`);
     }
     throw new Error(`Microsoft Graph ${path} failed (${res.status}): ${body}`);
   }
@@ -513,7 +568,7 @@ async function caldavRequest(
   if (isAuthRejection(res.status, text)) {
     throw new CalendarAuthError(
       'caldav',
-      'Apple rejected the stored app-specific password. It may have been revoked in the Apple ID settings.',
+      `Apple rejected the stored app-specific password (${authRejectionDetail(res.status, text)}). It may have been revoked in the Apple ID settings.`,
     );
   }
   return { status: res.status, text };

@@ -25,7 +25,7 @@ import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
 import { deriveOutcome, extractLeadData, hasStructuredAnalysis, isLeadEmpty, resolveOutcome } from './lib/lead-extraction';
 import { applyAnalysedOutcome, callHasBooking } from './services/call-outcome';
-import { sendTrialReminderEmail, sendEmail } from './services/resend';
+import { sendTrialReminderEmail, sendEmail, escapeHtml } from './services/resend';
 import { runTenantIntegrityCheck } from './services/tenant-integrity';
 import { sweepCalendars } from './services/calendar';
 import type { Call, CallOutcome, Client } from '../../shared/types';
@@ -253,7 +253,9 @@ app.post('/admin/check-calendars', async (req, res) => {
     const alertTo = process.env.CALENDAR_ALERT_EMAIL ?? process.env.INTEGRITY_ALERT_EMAIL;
     if (dead.length && alertTo) {
       const rows = dead
-        .map((r) => `<li><strong>${r.businessName}</strong> (${r.ownerEmail}) — ${r.provider} rejected the stored credential: ${r.detail ?? 'no detail'}</li>`)
+        // detail now carries the provider's own error text, so it is escaped
+        // like any other external string going into HTML.
+        .map((r) => `<li><strong>${escapeHtml(r.businessName)}</strong> (${escapeHtml(r.ownerEmail)}) — ${r.provider} rejected the stored credential: ${escapeHtml(r.detail ?? 'no detail')}</li>`)
         .join('');
       try {
         await sendEmail({
