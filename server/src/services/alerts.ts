@@ -15,10 +15,11 @@
 import { sendEmail } from './resend';
 import { errorMessage, logEvent } from '../lib/observability';
 
-/** Where operational alerts go. Falls back to the integrity address. */
+/** Where operational alerts go. Falls back to the integrity, then calendar, address. */
 function alertAddress(): string | null {
   return process.env.ALERT_EMAIL?.trim()
     || process.env.INTEGRITY_ALERT_EMAIL?.trim()
+    || process.env.CALENDAR_ALERT_EMAIL?.trim()
     || null;
 }
 
