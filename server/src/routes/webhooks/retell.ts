@@ -12,6 +12,8 @@ import {
   resolveOutcome,
 } from '../../lib/lead-extraction';
 import { applyAnalysedOutcome, callHasBooking } from '../../services/call-outcome';
+import { fireOpsAlert } from '../../services/alerts';
+import { classifyDisconnection, shouldAlert } from '../../lib/call-health';
 import type {
   RetellCallStartedEvent,
   RetellCallEndedEvent,
@@ -84,7 +86,45 @@ async function handleCallStarted(event: RetellCallStartedEvent): Promise<void> {
   logEvent('info', 'retell.webhook.call_started_persisted', { eventType: 'call_started', clientId: client.id });
 }
 
+// ── Line faults ───────────────────────────────────────────────────────────────
+//
+// Retell says why every call ended. When the answer is the platform rather than
+// the caller — no valid payment, concurrency limit, routing — every caller on
+// every line is hearing an engaged tone until someone acts. On 2026-09-28 that
+// ran for half an hour and was found by the founder ringing his own customer.
+const lineFaultAlertsSent = new Map<string, number>();
+
+function alertOnLineFault(event: RetellCallEndedEvent): void {
+  const reason = event.disconnection_reason;
+  const fault = classifyDisconnection(reason);
+  if (!fault || !reason) return;
+
+  logEvent('error', 'retell.call.platform_fault', {
+    eventType: 'call_ended',
+    reason,
+    agentId: event.agent_id,
+  });
+  if (!shouldAlert(reason, Date.now(), lineFaultAlertsSent)) return;
+
+  fireOpsAlert({
+    tone:     fault.tone,
+    subject:  `[Trade Receptionist] Calls failing: ${reason}`,
+    headline: fault.tone === 'bad' ? 'Calls are not being answered' : 'A call failed on the platform',
+    facts: [
+      ['Reason', reason],
+      ['What it means', fault.meaning],
+      ['Retell call', event.call_id],
+      ['When', new Date().toISOString()],
+    ],
+    action: `${fault.action} You will get at most one of these per hour for this reason.`,
+  });
+}
+
 async function handleCallEnded(event: RetellCallEndedEvent): Promise<void> {
+  // Before anything that could return early: a fault on a line whose tenant
+  // row is missing is still a fault.
+  alertOnLineFault(event);
+
   // Look up client
   const { data: clientRow } = await supabase
     .from('clients')

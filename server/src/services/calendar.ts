@@ -328,10 +328,10 @@ export interface CalendarSweepReport {
 /**
  * Probe every active tenant's diary and report which credentials are dead.
  *
- * This exists because of Google's 7-day refresh-token expiry for OAuth projects
- * still in Testing. A token dies overnight, and without this the first thing that
- * notices is a real caller asking for an appointment — mid-call, where a failed
- * tool is simply spoken around and nothing is logged as a fault.
+ * A credential can die at any time (revoked access, a changed password, a
+ * rotated app-specific password), and without this the first thing that notices
+ * is a real caller asking for an appointment — mid-call, where a failed tool is
+ * simply spoken around and nothing is logged as a fault.
  *
  * Read-only as far as the providers go. It does write `calendar_status`, because
  * probeCalendar() runs through withCredentialWatch(): checking flags a tenant whose

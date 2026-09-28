@@ -878,6 +878,38 @@ export async function listCallsForAgent(
 }
 
 /**
+ * Every call an agent took since `sinceMs`, for the morning report. Filtered
+ * server-side on start time so a busy tenant's history is not paged through.
+ */
+export async function listRecentCallsForAgent(
+  agentId: string,
+  sinceMs: number,
+): Promise<Record<string, unknown>[]> {
+  if (isE2ETestMode()) return [];
+
+  const client = retellSdk();
+  const calls: Record<string, unknown>[] = [];
+  let paginationKey: string | undefined;
+
+  do {
+    const page = await client.call.list({
+      filter_criteria: {
+        agent: [{ agent_id: agentId }],
+        start_timestamp: { op: 'ge', type: 'number', value: sinceMs },
+      },
+      limit: 100,
+      sort_order: 'descending',
+      ...(paginationKey ? { pagination_key: paginationKey } : {}),
+    });
+
+    calls.push(...((page.items ?? []) as unknown as Record<string, unknown>[]));
+    paginationKey = page.has_more ? page.pagination_key : undefined;
+  } while (paginationKey && calls.length < 1000);
+
+  return calls;
+}
+
+/**
  * Fetch one call in full.
  *
  * The v3 list response omits `transcript`; this endpoint still returns it. The

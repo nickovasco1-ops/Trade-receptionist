@@ -20,7 +20,9 @@ import { applyE2ETestProviderEnv } from './config/e2e';
 import { syncAll } from './services/notion-sync';
 import { applySipAuthToNumber, applyTierToAgent, getRetellAgent, updateAgentConfiguration } from './services/retell';
 import { runLeadFollowUp } from './services/lead-followup';
-import { listCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
+import { listCallsForAgent, listRecentCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
+import { sendOpsAlert } from './services/alerts';
+import { buildDailyReport, summariseLine, type CallSummaryInput, type LineSummary } from './lib/call-health';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
 import { deriveOutcome, extractLeadData, hasStructuredAnalysis, isLeadEmpty, resolveOutcome } from './lib/lead-extraction';
@@ -228,12 +230,10 @@ app.post('/admin/check-tenant-integrity', async (req, res) => {
 // ── POST /admin/check-calendars ──────────────────────────────────────────────
 // Probes every active tenant's diary and reports which credentials are dead.
 //
-// Why this is not optional while the Google OAuth project sits in Testing: Google
-// expires refresh tokens after 7 days for an unverified app with sensitive scopes.
-// A tenant connects their diary, it works, and a week later it silently does not.
-// Without a sweep the first thing that notices is a caller asking for an
-// appointment — and a failed tool mid-call is spoken around by the LLM, so the
-// customer hears a plausible answer and we hear nothing.
+// A credential can die at any time — revoked access, a changed password, a
+// rotated app-specific password — and without a sweep the first thing that
+// notices is a caller asking for an appointment, where a failed tool is spoken
+// around by the LLM: the customer hears a plausible answer and we hear nothing.
 //
 // Intended daily, ahead of the working day, on the same external cron as the
 // other /admin routes. Emails CALENDAR_ALERT_EMAIL (falling back to
@@ -276,6 +276,70 @@ app.post('/admin/check-calendars', async (req, res) => {
       error: err instanceof Error ? err.message : String(err),
     });
     res.status(500).json({ success: false, error: 'Calendar sweep failed' });
+  }
+});
+
+// ── POST /admin/daily-report ─────────────────────────────────────────────────
+// The owner's morning email: every tenant's line (calls in the last 24h, and
+// any the platform ended — no valid payment, routing, concurrency) and every
+// tenant's diary (working / dead / not connected). Always sent, including when
+// everything is fine, so silence can never be mistaken for health.
+//
+// Runs the calendar sweep itself, so it replaces /admin/check-calendars in the
+// daily cron. The response carries needsReconnect and failedCalls so the
+// workflow can fail loudly as well.
+app.post('/admin/daily-report', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const sinceMs = Date.now() - 24 * 60 * 60 * 1000;
+    const calendars = await sweepCalendars();
+
+    const { data: clients, error } = await supabase
+      .from('clients')
+      .select('business_name, retell_agent_id')
+      .eq('is_active', true)
+      .not('retell_agent_id', 'is', null);
+    if (error) throw error;
+
+    const lines: LineSummary[] = [];
+    for (const c of (clients ?? []) as Array<Pick<Client, 'business_name' | 'retell_agent_id'>>) {
+      const name = c.business_name ?? '(unnamed)';
+      try {
+        const calls = await listRecentCallsForAgent(c.retell_agent_id as string, sinceMs);
+        lines.push(summariseLine(name, calls as CallSummaryInput[], sinceMs));
+      } catch (err: unknown) {
+        // A line we could not ask about is reported as such, never as "0 calls".
+        lines.push({ businessName: name, calls: 0, faults: {}, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    const date = new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London', day: 'numeric', month: 'short' });
+    const report = buildDailyReport(calendars, lines, date);
+    const emailed = await sendOpsAlert(report);
+    const failedCalls = lines.reduce((n, l) => n + Object.values(l.faults).reduce((a, b) => a + b, 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        emailed,
+        subject:        report.subject,
+        tenantsChecked: calendars.tenantsChecked,
+        needsReconnect: calendars.needsReconnect,
+        notConnected:   calendars.notConnected,
+        failedCalls,
+        linesUnchecked: lines.filter((l) => l.error).length,
+        calendars:      calendars.rows.map(({ businessName, provider, status }) => ({ businessName, provider, status })),
+        lines,
+      },
+    });
+  } catch (err: unknown) {
+    logEvent('error', 'admin.daily_report.failed', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ success: false, error: 'Daily report failed' });
   }
 });
 
