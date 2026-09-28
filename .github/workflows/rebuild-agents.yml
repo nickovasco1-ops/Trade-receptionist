@@ -1,0 +1,35 @@
+name: Rebuild all receptionists
+
+# Manual only. Run it after a change to the agent's prompt or tools, which
+# otherwise only reaches a tenant when they press Save in Settings.
+on:
+  workflow_dispatch:
+
+jobs:
+  rebuild:
+    name: POST /admin/rebuild-agents
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Rebuild every active agent from current code
+        run: |
+          STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/rebuild-agents \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "HTTP $STATUS"
+          jq . /tmp/body.txt || cat /tmp/body.txt
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::rebuild-agents returned HTTP $STATUS"
+            exit 1
+          fi
+
+          FAILED=$(jq -r '.data.failed // 0' /tmp/body.txt)
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::$FAILED agent(s) failed to rebuild — see the results above"
+            exit 1
+          fi
+          echo "rebuilt=$(jq -r '.data.rebuilt' /tmp/body.txt)"
