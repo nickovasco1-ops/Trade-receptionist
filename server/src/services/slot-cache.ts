@@ -1,4 +1,5 @@
 import { calendarConnection, getAvailableSlots } from './calendar';
+import { parseBookingRules } from '../lib/booking-rules';
 import { logEvent, errorMessage } from '../lib/observability';
 import { normaliseHour } from '../lib/time';
 import type { Client, BusinessConfig } from '../../../shared/types';
@@ -37,6 +38,10 @@ export async function getNextAvailableSlots(
 ): Promise<string[]> {
   const connection = calendarConnection(client);
   if (!connection) return [];
+  // This hint is baked into the prompt as plain hour-long slots. A tenant with
+  // booking rules books by job size, so a generic slot would contradict the
+  // rules the tool enforces — the tool is the only source of availability there.
+  if (parseBookingRules(config.booking_rules)) return [];
 
   const cached = cache.get(client.id);
   if (cached && cached.expiresAt > Date.now()) return cached.slots;

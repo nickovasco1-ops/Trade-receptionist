@@ -9,6 +9,7 @@ import {
   createBookingForClient,
   getClientAvailability,
   loadBookingContextByAgentId,
+  rulesFor,
 } from '../../services/booking';
 
 const router = Router();
@@ -94,10 +95,18 @@ function spokenTime(iso: string, timeZone: string): string {
   });
 }
 
+const jobSizeSchema = z.enum(['small', 'medium', 'large', 'emergency']);
+
+// Spoken back to the model, which then retries with a size. Without a size a
+// rules tenant's diary rules cannot be applied, so the call is refused rather
+// than booked on the plain hours.
+const JOB_SIZE_REQUIRED = 'This business books by job size. Decide whether it is a small, medium, large or emergency job and call again with job_size.';
+
 const availabilityArgsSchema = z.object({
   requested_date: z.string().trim().optional(),
   time_preference: z.enum(['any', 'morning', 'afternoon']).optional(),
   duration_mins: z.number().int().min(15).max(240).optional(),
+  job_size: jobSizeSchema.optional(),
 });
 
 const createBookingArgsSchema = z.object({
@@ -110,6 +119,7 @@ const createBookingArgsSchema = z.object({
   notes: z.string().trim().optional(),
   confirmation_channel: z.enum(['sms', 'email', 'both', 'none']).optional(),
   duration_mins: z.number().int().min(15).max(240).optional(),
+  job_size: jobSizeSchema.optional(),
 });
 
 router.post('/check-availability', async (req: Request, res: Response) => {
@@ -137,13 +147,20 @@ router.post('/check-availability', async (req: Request, res: Response) => {
     return;
   }
 
+  if (!parsed.data.job_size && rulesFor(context.config)) {
+    res.json({ success: false, error: JOB_SIZE_REQUIRED });
+    return;
+  }
+
   try {
     const slots = await getClientAvailability(context, {
       requestedDate: parsed.data.requested_date ?? null,
       period: parsed.data.time_preference ?? 'any',
       durationMins: parsed.data.duration_mins ?? 60,
-      days: 7,
+      // No fixed window here: the engine starts at the requested date (so a job
+      // three weeks out is findable) and each tenant's rules set their own range.
       maxSlots: 5,
+      jobSize: parsed.data.job_size,
     });
 
     if (slots.length === 0) {
@@ -217,6 +234,11 @@ router.post('/create-booking', async (req: Request, res: Response) => {
     });
   }
 
+  if (!parsed.data.job_size && rulesFor(context.config)) {
+    res.json({ success: false, error: JOB_SIZE_REQUIRED });
+    return;
+  }
+
   try {
     const result = await createBookingForClient(context, {
       scheduledAt: parsed.data.start_time_iso,
@@ -229,6 +251,7 @@ router.post('/create-booking', async (req: Request, res: Response) => {
       callerEmail: parsed.data.caller_email ?? null,
       jobType: parsed.data.job_type,
       confirmationChannel: parsed.data.confirmation_channel ?? 'auto',
+      jobSize: parsed.data.job_size,
     });
 
     res.json({

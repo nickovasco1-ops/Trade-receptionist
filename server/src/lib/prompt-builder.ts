@@ -1,5 +1,6 @@
 import type { Client, BusinessConfig } from '../../../shared/types';
 import { normaliseHour } from './time';
+import { parseBookingRules } from './booking-rules';
 import { calendarIsConnected } from '../services/calendar';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
@@ -75,6 +76,7 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig, availa
   const afterHoursMessage = formatAfterHoursMessage(config, client);
   const hasCalendar      = calendarIsConnected(client);
   const tone             = toneInstructions(config.receptionist_tone);
+  const bookingRules     = parseBookingRules(config.booking_rules);
 
   const slotHint = hasCalendar && availableSlots.length > 0
     ? `\n- CURRENT AVAILABILITY (as of this call): ${availableSlots.join(' / ')}. Lead with these when a caller asks what's free — then confirm with check_calendar_availability before booking.`
@@ -82,7 +84,8 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig, availa
 
   const bookingSection = hasCalendar
     ? `# BOOKING INTO THE DIARY (tools)${slotHint}
-- When the caller wants a specific time, or asks what's available, CALL check_calendar_availability — pass their preferred date or time-of-day if they gave one. Wait for the result.
+${bookingRules ? `- This business books by job size. Decide whether the job is small, medium, large or emergency (the instructions below say which is which) and pass it as job_size to BOTH tools. Never skip it.
+` : ''}- When the caller wants a specific time, or asks what's available, CALL check_calendar_availability — pass their preferred date or time-of-day if they gave one. Wait for the result.
 - Offer the real slots it returns, in plain spoken language, at most two at a time: "I've got Thursday afternoon or Friday morning — which suits you better?"
 - NEVER invent availability or promise a slot you haven't checked. If the tool returns no slots, say the diary's a bit tight just now and offer a callback to arrange a time.
 - Only AFTER the caller has agreed a specific slot AND you have their name and number, CALL create_calendar_booking with: the agreed start time, their full name, the job type, address or postcode, any useful notes, and confirmation_channel — use "sms" when you have a mobile, "email" if you only have an email, "both" if they want both, "none" only if they decline. If they'd like an email confirmation, ask for their email first.
