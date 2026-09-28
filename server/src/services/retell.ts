@@ -8,6 +8,7 @@ import { calendarIsConnected } from './calendar';
 import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 import { toE164 } from '../../../shared/phone';
+import { buildTransferTool } from '../lib/transfer-tool';
 
 const BASE_URL = 'https://api.retellai.com';
 
@@ -299,7 +300,7 @@ function buildCalendarTools(baseUrl: string): Record<string, unknown>[] {
           },
           caller_number: {
             type: 'string',
-            description: 'Caller mobile or phone number in international format if available.',
+            description: 'Only if the caller gives a DIFFERENT number to contact them on. Leave empty to use the number they are calling from — the system already has it.',
           },
           caller_email: {
             type: 'string',
@@ -348,20 +349,12 @@ function buildRetellTools(
     },
   ];
 
-  if (ownerNumber) {
-    tools.push({
-      type:        'bridge_transfer',
-      name:        'TransferToOwner',
-      description: [
-        'Transfer the call to the business owner when the customer explicitly asks',
-        'to speak with a real person, or when an emergency requires immediate',
-        'human response.',
-      ].join(' '),
-      transfer_option: {
-        type:   'external',
-        number: ownerNumber,
-      },
-    });
+  // Retell's transfer destination must be E.164. owner_mobile is stored as
+  // typed ("07…"), so normalise here too — transferNumberFor() already does for
+  // the rebuild path, but provisioning passes the raw mobile straight in.
+  const transferTo = toE164(ownerNumber) ?? ownerNumber;
+  if (transferTo) {
+    tools.push(buildTransferTool(transferTo) as unknown as Record<string, unknown>);
   }
 
   if (calendarBookingEnabled) {

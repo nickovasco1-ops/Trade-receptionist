@@ -18,7 +18,7 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { syncAll } from './services/notion-sync';
-import { applyTierToAgent, getRetellAgent } from './services/retell';
+import { applyTierToAgent, getRetellAgent, updateAgentConfiguration } from './services/retell';
 import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
@@ -28,7 +28,7 @@ import { applyAnalysedOutcome, callHasBooking } from './services/call-outcome';
 import { sendTrialReminderEmail, sendEmail, escapeHtml } from './services/resend';
 import { runTenantIntegrityCheck } from './services/tenant-integrity';
 import { sweepCalendars } from './services/calendar';
-import type { Call, CallOutcome, Client } from '../../shared/types';
+import type { BusinessConfig, Call, CallOutcome, Client } from '../../shared/types';
 
 /**
  * Outcomes that deserve a lead row. Mirrors the list in the Retell webhook —
@@ -331,6 +331,55 @@ app.post('/admin/apply-tiers', async (req, res) => {
       error: err instanceof Error ? err.message : String(err),
     });
     res.status(500).json({ success: false, error: 'Apply tiers failed' });
+  }
+});
+
+// ── POST /admin/rebuild-agents ───────────────────────────────────────────────
+// Re-pushes every active tenant's prompt and tools from the code as it now
+// stands. A fix to the tools (e.g. the owner transfer, which was sent in a
+// shape Retell cannot run until 2026-09-28) only reaches an agent when that
+// agent is rebuilt, and the only other trigger is the tenant pressing Save.
+// Idempotent. One tenant failing does not stop the rest, and is reported.
+app.post('/admin/rebuild-agents', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const { data: clients, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('is_active', true)
+      .not('retell_agent_id', 'is', null);
+    if (error) throw error;
+
+    const results: Array<{ business: string; ok: boolean; error?: string }> = [];
+    for (const client of (clients ?? []) as Client[]) {
+      try {
+        const { data: config } = await supabase
+          .from('business_config')
+          .select('*')
+          .eq('client_id', client.id)
+          .maybeSingle();
+        if (!config) {
+          results.push({ business: client.business_name, ok: false, error: 'no business_config' });
+          continue;
+        }
+        await updateAgentConfiguration(client, config as BusinessConfig);
+        results.push({ business: client.business_name, ok: true });
+      } catch (err: unknown) {
+        results.push({ business: client.business_name, ok: false, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    const failed = results.filter((r) => !r.ok).length;
+    logEvent(failed ? 'error' : 'info', 'admin.rebuild_agents.complete', { rebuilt: results.length - failed, failed });
+    res.json({ success: failed === 0, data: { rebuilt: results.length - failed, failed, results } });
+  } catch (err: unknown) {
+    logEvent('error', 'admin.rebuild_agents.failed', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ success: false, error: 'Rebuild failed' });
   }
 });
 
