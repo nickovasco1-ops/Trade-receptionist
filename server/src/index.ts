@@ -18,7 +18,7 @@ import retellToolsRouter from './routes/retell-tools';
 import billingRouter  from './routes/billing';
 import { applyE2ETestProviderEnv } from './config/e2e';
 import { syncAll } from './services/notion-sync';
-import { applyTierToAgent, getRetellAgent, updateAgentConfiguration } from './services/retell';
+import { applySipAuthToNumber, applyTierToAgent, getRetellAgent, updateAgentConfiguration } from './services/retell';
 import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { supabase } from './services/supabase';
@@ -380,6 +380,44 @@ app.post('/admin/rebuild-agents', async (req, res) => {
   } catch (err: unknown) {
     logEvent('error', 'admin.rebuild_agents.failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(500).json({ success: false, error: 'Rebuild failed' });
+  }
+});
+
+// ── POST /admin/apply-sip-auth ───────────────────────────────────────────────
+// Gives every tenant's number the SIP trunk credentials Retell needs to dial
+// out. Numbers were imported without them, so Twilio refused every transfer
+// before it became a call. Idempotent; one number failing does not stop the rest.
+app.post('/admin/apply-sip-auth', async (req, res) => {
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || req.headers['x-admin-key'] !== adminKey) {
+    res.status(401).json({ success: false, error: 'Unauthorised' });
+    return;
+  }
+
+  try {
+    const { data: clients, error } = await supabase
+      .from('clients')
+      .select('business_name, twilio_number')
+      .eq('is_active', true)
+      .not('twilio_number', 'is', null);
+    if (error) throw error;
+
+    const results: Array<{ business: string; ok: boolean; error?: string }> = [];
+    for (const client of (clients ?? []) as Array<Pick<Client, 'business_name' | 'twilio_number'>>) {
+      try {
+        await applySipAuthToNumber(client.twilio_number as string);
+        results.push({ business: client.business_name, ok: true });
+      } catch (err: unknown) {
+        results.push({ business: client.business_name, ok: false, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    const failed = results.filter((r) => !r.ok).length;
+    logEvent(failed ? 'error' : 'info', 'admin.apply_sip_auth.complete', { updated: results.length - failed, failed });
+    res.json({ success: failed === 0, data: { updated: results.length - failed, failed, results } });
+  } catch (err: unknown) {
+    logEvent('error', 'admin.apply_sip_auth.failed', { error: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ success: false, error: 'Apply SIP auth failed' });
   }
 });
 

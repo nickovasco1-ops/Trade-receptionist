@@ -1,0 +1,37 @@
+name: Apply SIP trunk credentials
+
+# Manual only. Gives every tenant's number the credentials Retell needs to
+# dial out through the Twilio trunk — without them no call transfer connects.
+# Needs RETELL_SIP_AUTH_USERNAME / RETELL_SIP_AUTH_PASSWORD set in Railway,
+# matching a credential in the trunk's Termination Credential List.
+on:
+  workflow_dispatch:
+
+jobs:
+  apply:
+    name: POST /admin/apply-sip-auth
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Apply trunk credentials to every tenant number
+        run: |
+          STATUS=$(curl -s -o /tmp/body.txt -w "%{http_code}" \
+            -X POST https://trade-receptionist-production.up.railway.app/admin/apply-sip-auth \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "HTTP $STATUS"
+          jq . /tmp/body.txt || cat /tmp/body.txt
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::apply-sip-auth returned HTTP $STATUS"
+            exit 1
+          fi
+
+          FAILED=$(jq -r '.data.failed // 0' /tmp/body.txt)
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::$FAILED number(s) failed — see the results above"
+            exit 1
+          fi
+          echo "updated=$(jq -r '.data.updated' /tmp/body.txt)"

@@ -9,6 +9,7 @@ import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
 import { toE164 } from '../../../shared/phone';
 import { buildTransferTool } from '../lib/transfer-tool';
+import { sipAuthFromEnv } from '../lib/sip-auth';
 
 const BASE_URL = 'https://api.retellai.com';
 
@@ -591,6 +592,15 @@ export async function importTwilioNumber(
   // never routed into an agent. Omitting `agent_version` binds the number to the
   // agent's latest version, so prompt rebuilds apply without re-importing.
   // https://docs.retellai.com/deprecation-notice/2026/03-31_phone_number_agent_fields
+  //
+  // The credentials are what let Retell dial *out* through the trunk (a
+  // transfer). Without them the number answers calls but can never transfer
+  // one — see lib/sip-auth.ts. Missing credentials do not block the import:
+  // a number that answers is worth more than none, and the gap is logged.
+  const sip = sipAuthFromEnv(process.env);
+  if (!sip.ok) {
+    logEvent('error', 'retell.import_number.no_sip_auth', { reason: sip.reason });
+  }
   const res = await fetch(`${BASE_URL}/import-phone-number`, {
     method:  'POST',
     headers: headers(),
@@ -598,9 +608,37 @@ export async function importTwilioNumber(
       phone_number:    phoneNumber,
       termination_uri: terminationUri,
       inbound_agents:  [{ agent_id: agentId, weight: 1 }],
+      ...(sip.ok && {
+        sip_trunk_auth_username: sip.auth.username,
+        sip_trunk_auth_password: sip.auth.password,
+      }),
     }),
   });
   if (!res.ok) throw new Error(`Retell importPhoneNumber failed: ${await res.text()}`);
+}
+
+/**
+ * Give an already-imported number the trunk credentials (and termination URI)
+ * it needs to dial out. Numbers imported before 2026-09-28 have none, so no
+ * transfer from them has ever connected.
+ */
+export async function applySipAuthToNumber(phoneNumber: string): Promise<void> {
+  if (isE2ETestMode()) return;
+
+  const terminationUri = process.env.RETELL_SIP_TERMINATION_URI;
+  if (!terminationUri) throw new Error('RETELL_SIP_TERMINATION_URI not set');
+  const sip = sipAuthFromEnv(process.env);
+  if (!sip.ok) {
+    throw new Error(sip.reason === 'partial'
+      ? 'Only one of RETELL_SIP_AUTH_USERNAME / RETELL_SIP_AUTH_PASSWORD is set'
+      : 'RETELL_SIP_AUTH_USERNAME / RETELL_SIP_AUTH_PASSWORD not set');
+  }
+
+  await retellSdk().phoneNumber.update(phoneNumber, {
+    termination_uri: terminationUri,
+    auth_username:   sip.auth.username,
+    auth_password:   sip.auth.password,
+  });
 }
 
 /**
