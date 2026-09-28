@@ -52,6 +52,8 @@ export interface Client {
   owner_name: string;
   owner_email: string;
   owner_mobile: string | null;
+  /** Where "put me through" rings (migration 021). Null = owner_mobile. Kept separate so a diverted mobile cannot loop a transfer back to the agent. */
+  transfer_number?: string | null;
   retell_agent_id: string | null;
   twilio_number: string | null;
   own_number: string | null;
@@ -116,8 +118,42 @@ export interface BusinessConfig {
   timezone: string;
   system_prompt_override: string | null;
   avg_job_value: number | null;           // £ used for missed revenue estimate
+  /** Per-tenant diary rules by job size (migration 021). Null = the plain working-days/hours behaviour. */
+  booking_rules?: BookingRules | null;
   created_at: string;
   updated_at: string;
+}
+
+// ── Booking rules (migration 021) ─────────────────────────────────────────────
+//
+// Diary rules a tradesperson actually works to, which working_days + hours
+// cannot express: different job sizes on different days, travel before the
+// first job, a gap after each one, big jobs only weeks ahead, emergencies any
+// time. Validated at read time by server/src/lib/booking-rules.ts.
+
+export type JobSize = 'small' | 'medium' | 'large' | 'emergency';
+
+export interface JobSizeRule {
+  /** Length of the diary entry. Ignored when fullDay is set. */
+  durationMins?: number;
+  /** Days this size may be booked on, 0 = Sun … 6 = Sat. Ignored for anyTime sizes. */
+  days?: number[];
+  /** Days to offer first, in order of preference. */
+  preferDays?: number[];
+  /** Occupies the whole working day, so the day must be completely free. */
+  fullDay?: boolean;
+  /** Earliest booking, in whole days from today. */
+  minLeadDays?: number;
+  /** Any day, any hour (emergencies). Working days and hours do not apply. */
+  anyTime?: boolean;
+}
+
+export interface BookingRules {
+  /** Travel before the first job of the day, after opening time. */
+  travelBeforeMins: number;
+  /** Clear time after every job before the next can start (covers travel to it). */
+  gapAfterMins: number;
+  sizes: Partial<Record<JobSize, JobSizeRule>>;
 }
 
 export interface Call {

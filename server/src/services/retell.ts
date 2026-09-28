@@ -7,6 +7,7 @@ import { isE2ETestMode } from '../config/e2e';
 import { calendarIsConnected } from './calendar';
 import { captureError, errorMessage, logEvent } from '../lib/observability';
 import type { Client, Call, BusinessConfig } from '../../../shared/types';
+import { toE164 } from '../../../shared/phone';
 
 const BASE_URL = 'https://api.retellai.com';
 
@@ -265,6 +266,11 @@ function buildCalendarTools(baseUrl: string): Record<string, unknown>[] {
             type: 'number',
             description: 'Length of the booking in minutes. Use 60 unless you have a specific reason to use a different length.',
           },
+          job_size: {
+            type: 'string',
+            enum: ['small', 'medium', 'large', 'emergency'],
+            description: 'Size of the job, if the business books by job size (its instructions will say which jobs are which). Use exactly one of: small, medium, large, emergency. Pass the same value to check_calendar_availability and create_calendar_booking.',
+          },
         },
       },
     },
@@ -318,6 +324,11 @@ function buildCalendarTools(baseUrl: string): Record<string, unknown>[] {
           duration_mins: {
             type: 'number',
             description: 'Length of the booking in minutes. Use 60 unless a different duration was clearly agreed.',
+          },
+          job_size: {
+            type: 'string',
+            enum: ['small', 'medium', 'large', 'emergency'],
+            description: 'Size of the job, if the business books by job size (its instructions will say which jobs are which). Use exactly one of: small, medium, large, emergency. Pass the same value to check_calendar_availability and create_calendar_booking.',
           },
         },
       },
@@ -902,6 +913,19 @@ export async function patchRetellAgent(
   if (!res.ok) throw new Error(`Retell patchAgent failed: ${await res.text()}`);
 }
 
+/**
+ * Where "put me through" rings.
+ *
+ * A separate transfer_number exists because the owner's mobile is often the very
+ * number diverted to the agent, so transferring to it rang the agent again and
+ * the caller went round in a circle (TAPS, 2026-09-25). Normalised to E.164,
+ * which Retell's external transfer expects; owner_mobile had been passed as
+ * typed, e.g. "07…".
+ */
+export function transferNumberFor(client: Pick<Client, 'transfer_number' | 'owner_mobile'>): string | null {
+  return toE164(client.transfer_number) ?? toE164(client.owner_mobile) ?? client.owner_mobile ?? null;
+}
+
 export async function updateAgentConfiguration(
   client: Client,
   config: BusinessConfig
@@ -924,7 +948,7 @@ export async function updateAgentConfiguration(
     };
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
-      await updateRetellLlmConfig(llmId, prompt, client.owner_mobile, calendarIsConnected(client), beginMessage);
+      await updateRetellLlmConfig(llmId, prompt, transferNumberFor(client), calendarIsConnected(client), beginMessage);
       llmUpdated = true;
     }
   }

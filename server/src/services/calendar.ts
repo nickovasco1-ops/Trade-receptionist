@@ -12,6 +12,7 @@
 
 import { supabase } from './supabase';
 import { logEvent, errorMessage } from '../lib/observability';
+import { dateStringInTz, dayOfWeekInTz, localMinutesInTz, localToUtc } from '../lib/tz';
 import {
   CalendarAuthError,
   adapterFor,
@@ -113,55 +114,8 @@ async function withCredentialWatch<T>(
 }
 
 // ── Timezone utilities ────────────────────────────────────────────────────────
-
-/**
- * Convert an ISO-like local time string (no Z suffix) to a UTC Date for a given
- * IANA timezone. Works correctly across DST transitions.
- *
- * Example: localToUtc("2024-06-15T08:00:00", "Europe/London") → Date at 07:00 UTC
- */
-function localToUtc(isoLocal: string, tz: string): Date {
-  // Treat isoLocal as UTC first to get an approximate timestamp
-  const approx = new Date(`${isoLocal}Z`);
-
-  // Find what local time corresponds to that UTC instant
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false,
-  });
-
-  const localStr = fmt.format(approx).replace(', ', 'T');
-  const localDate = new Date(`${localStr}Z`);
-
-  // offset = how far approx is ahead of localDate
-  const offsetMs = approx.getTime() - localDate.getTime();
-  return new Date(approx.getTime() + offsetMs);
-}
-
-function dayOfWeekInTz(date: Date, tz: string): number {
-  const name = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(date);
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(name);
-}
-
-function dateStringInTz(date: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(date); // YYYY-MM-DD
-}
-
-function localMinutesInTz(date: Date, tz: string): number {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: tz,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(date);
-
-  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? '0');
-  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? '0');
-
-  return (hour * 60) + minute;
-}
+// Live in lib/tz.ts so the booking-rules planner can be unit-tested; this file
+// imports the Supabase client and cannot be.
 
 export function busyWindowsOverlap(
   busy: BusyWindow[],
@@ -178,6 +132,11 @@ async function getBusyWindows(
 ): Promise<BusyWindow[]> {
   return withCredentialWatch(conn, 'get_busy_windows', () =>
     adapterFor(conn.provider).getBusyWindows(conn, timeMin, timeMax));
+}
+
+/** Busy windows between two instants, with the same dead-credential handling as every other read. */
+export async function getBusy(conn: CalendarConnection, from: Date, to: Date): Promise<BusyWindow[]> {
+  return getBusyWindows(conn, from.toISOString(), to.toISOString());
 }
 
 /**

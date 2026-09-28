@@ -1,7 +1,9 @@
 import type {
   Booking,
+  BookingRules,
   BusinessConfig,
   Client,
+  JobSize,
   Lead,
 } from '../../../shared/types';
 import { supabase } from './supabase';
@@ -11,12 +13,24 @@ import {
   createCalendarEvent,
   deleteCalendarEvent,
   getAvailableSlots,
+  getBusy,
   isSlotAvailable,
   providerLabel,
 } from './calendar';
 import { sendCallerSms } from './twilio';
 import { sendBookingConfirmationEmail } from './resend';
 import { logEvent, errorMessage } from '../lib/observability';
+import {
+  bookingRulesError,
+  busyRangeFor,
+  parseBookingRules,
+  planSlots,
+  slotFor,
+  slotProblem,
+  type WorkingHours,
+} from '../lib/booking-rules';
+import { normaliseHour } from '../lib/time';
+import { localDateTimeToUtc } from '../lib/tz';
 
 export interface BookingContext {
   client: Client;
@@ -32,6 +46,8 @@ export interface AvailabilityRequest {
   maxSlots?: number;
   requestedDate?: string | null;
   period?: AvailabilityPeriod;
+  /** Required when the tenant has booking rules; ignored otherwise. */
+  jobSize?: JobSize;
 }
 
 export interface CreateBookingRequest {
@@ -46,6 +62,8 @@ export interface CreateBookingRequest {
   callerEmail?: string | null;
   jobType?: string | null;
   confirmationChannel?: ConfirmationChannel;
+  /** Required when the tenant has booking rules; decides the length and which days are allowed. */
+  jobSize?: JobSize;
 }
 
 export interface BookingResult {
@@ -58,6 +76,46 @@ function bookingTitle(jobType: string | null | undefined, customerName: string |
   return jobType?.trim()
     ? `${jobType.trim()} - ${label}`
     : `Job visit - ${label}`;
+}
+
+const SIZE_TITLE_PREFIX: Partial<Record<JobSize, string>> = {
+  emergency: 'EMERGENCY - ',
+  large: 'BIG JOB (confirm details) - ',
+};
+
+/** The tenant's booking rules, or null. Malformed rules are logged, not half-applied. */
+export function rulesFor(config: BusinessConfig): BookingRules | null {
+  const raw = config.booking_rules ?? null;
+  const rules = parseBookingRules(raw);
+  if (!rules && raw) {
+    logEvent('error', 'booking.rules_invalid', { clientId: config.client_id, error: bookingRulesError(raw) });
+  }
+  return rules;
+}
+
+function workingHours(config: BusinessConfig): WorkingHours {
+  const toMins = (value: string | null, fallback: string): number => {
+    const [h, m] = (normaliseHour(value) ?? fallback).split(':').map(Number);
+    return (h * 60) + m;
+  };
+  const openMins = toMins(config.business_hours_start, '08:00');
+  let closeMins = toMins(config.business_hours_end, '18:00');
+  if (closeMins <= openMins) closeMins = 24 * 60;
+  return { openMins, closeMins };
+}
+
+/**
+ * Where a search starts: the caller's requested day, or now.
+ *
+ * The search used to always start now and run seven days, then filter to the
+ * requested date — so any date more than a week out came back empty and the
+ * agent told callers the diary was full.
+ */
+function searchStart(requestedDate: string | null | undefined, timeZone: string, now: Date): Date {
+  const date = requestedDate?.trim();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return now;
+  const startOfDay = localDateTimeToUtc(date, 0, timeZone);
+  return startOfDay.getTime() > now.getTime() ? startOfDay : now;
 }
 
 function dateStringInTimeZone(date: Date, timeZone: string): string {
@@ -202,8 +260,45 @@ export async function getClientAvailability(
     throw new Error('No diary is connected for this business yet.');
   }
 
+  const now = new Date();
+  const fromDate = searchStart(request.requestedDate, config.timezone, now);
+  const rules = rulesFor(config);
+
+  // Rules apply when a size is given. The agent's tools always give one for a
+  // rules tenant (routes/retell-tools refuses without it); the owner booking
+  // from their own dashboard does not, and is not bound by rules meant for callers.
+  if (rules && request.jobSize) {
+    const emergency = request.jobSize === 'emergency';
+    const from = emergency ? now : fromDate;
+    const days = emergency ? 2 : (request.days ?? 14);
+    const range = busyRangeFor(from, new Date(from.getTime() + (days + 1) * 86_400_000), rules);
+    // A lead time moves the search later than `from`, so fetch far enough ahead to cover it.
+    const lead = rules.sizes[request.jobSize]?.minLeadDays ?? 0;
+    const busy = await getBusy(connection, range.from, new Date(range.to.getTime() + lead * 86_400_000));
+    const planned = planSlots({
+      rules,
+      size: request.jobSize,
+      busy,
+      now,
+      from,
+      days,
+      hours: workingHours(config),
+      timezone: config.timezone,
+      maxSlots: 50,
+    }).map((slot) => slot.start);
+
+    const maxSlots = request.maxSlots ?? 10;
+    if (emergency) return planned.slice(0, maxSlots);
+    // Honour the caller's day and time of day where the rules allow it; if they
+    // do not, offer the nearest alternatives rather than nothing.
+    const wanted = filterSlotsByRequest(planned, config.timezone, request);
+    return (wanted.length ? wanted : filterSlotsByRequest(planned, config.timezone, { ...request, requestedDate: null }))
+      .slice(0, maxSlots);
+  }
+
   const slots = await getAvailableSlots({
     connection,
+    fromDate,
     durationMins: request.durationMins ?? 60,
     days: request.days ?? 7,
     maxSlots: request.maxSlots ?? 10,
@@ -272,11 +367,30 @@ export async function createBookingForClient(
     throw new Error('No diary is connected for this business yet.');
   }
 
-  const durationMins = request.durationMins ?? 60;
-  const scheduledAt = new Date(request.scheduledAt);
+  const requestedStart = new Date(request.scheduledAt);
 
-  if (Number.isNaN(scheduledAt.getTime())) {
+  if (Number.isNaN(requestedStart.getTime())) {
     throw new Error('scheduledAt must be a valid ISO datetime');
+  }
+
+  // With booking rules the size decides the length and the allowed days, and the
+  // slot is re-checked against them here — the agent cannot talk its way past a
+  // rule the availability tool enforced.
+  const rules = request.jobSize ? rulesFor(config) : null;
+  let scheduledAt = requestedStart;
+  let durationMins = request.durationMins ?? 60;
+  if (rules && request.jobSize) {
+    const hours = workingHours(config);
+    const slot = slotFor(rules, request.jobSize, requestedStart, hours, config.timezone);
+    if (!slot) throw new Error(`This business does not take ${request.jobSize} jobs through the diary.`);
+    const range = busyRangeFor(slot.start, slot.end, rules);
+    const busy = await getBusy(connection, range.from, range.to);
+    const problem = slotProblem({
+      rules, size: request.jobSize, busy, now: new Date(), hours, timezone: config.timezone, start: requestedStart,
+    });
+    if (problem) throw new Error(problem);
+    scheduledAt = slot.start;
+    durationMins = Math.round((slot.end.getTime() - slot.start.getTime()) / 60_000);
   }
 
   if (request.lead) {
@@ -304,7 +418,7 @@ export async function createBookingForClient(
     throw new Error('That slot has already been taken. Please choose another one.');
   }
 
-  const slotStillAvailable = await isSlotAvailable({
+  const slotStillAvailable = rules ? true : await isSlotAvailable({
     connection,
     startTime: scheduledAt,
     durationMins,
@@ -334,7 +448,7 @@ export async function createBookingForClient(
   const googleEventId = await createCalendarEvent(
     connection,
     {
-      title: bookingTitle(jobType, customerName),
+      title: `${request.jobSize ? SIZE_TITLE_PREFIX[request.jobSize] ?? '' : ''}${bookingTitle(jobType, customerName)}`,
       startTime: scheduledAt.toISOString(),
       endTime,
       customerName,
