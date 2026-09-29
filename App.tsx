@@ -109,7 +109,10 @@ import { BlueprintGrid } from './components/BlueprintGrid';
 import { Logo } from './components/Logo';
 const WaitlistModal     = React.lazy(() => import('./components/WaitlistModal').then(m => ({ default: m.WaitlistModal })));
 const StripeCheckoutModal = React.lazy(() => import('./components/StripeCheckoutModal').then(m => ({ default: m.StripeCheckoutModal })));
-import { FAQItem, PricingTier } from './types';
+import { PricingTier } from './types';
+import { HOME_FAQS } from './src/marketing/content/home-faqs';
+import { PLANS } from './src/lib/plans';
+import { TRADE_ROUTE_SEEDS } from './src/marketing/routes';
 
 // Lazy-loaded below-fold components — keeps initial JS bundle lean
 const AudioPlayer  = React.lazy(() => import('./components/AudioPlayer').then(m => ({ default: m.AudioPlayer })));
@@ -123,7 +126,13 @@ const LazyFallback = ({ height = 200 }: { height?: number }) => (
   </div>
 );
 
-const GENERATED_HERO_IMAGE_SRC = '/assets/generated/landing-hero-generated.png';
+// The hero image is the homepage's LCP element. The 5504 px PNG master
+// (landing-hero-generated.png, 4.9 MB) is served as WebP at three widths
+// instead; it never renders wider than 84rem (1344 CSS px).
+const GENERATED_HERO_IMAGE_SRC = '/assets/generated/landing-hero-1920.webp';
+const GENERATED_HERO_IMAGE_SRCSET = [768, 1280, 1920]
+  .map((w) => `/assets/generated/landing-hero-${w}.webp ${w}w`)
+  .join(', ');
 const FALLBACK_HERO_IMAGE_SRC = '/assets/hero-phone-upscaled-transparent.png';
 
 type View = 'home' | 'book-demo';
@@ -359,8 +368,13 @@ const Hero = ({ onWaitlist }: { onWaitlist: () => void }) => {
             <img
               className={`hero-scene-image select-none ${allowMotion ? 'animate-float-primary' : ''}`}
               src={heroImageSrc}
+              srcSet={heroImageSrc === GENERATED_HERO_IMAGE_SRC ? GENERATED_HERO_IMAGE_SRCSET : undefined}
+              sizes="(max-width: 1344px) 98vw, 1344px"
+              width={1920}
+              height={1072}
               alt=""
               loading="eager"
+              fetchPriority="high"
               decoding="async"
               onError={() => {
                 if (heroImageSrc !== FALLBACK_HERO_IMAGE_SRC) {
@@ -554,18 +568,10 @@ const PAIN_STATS = [
     sub: "and that's your year",
     detail: "That's a van service, a week's holiday, or new tools. Gone.",
   },
-  {
-    value: '27%',
-    label: 'of callers never ring back',
-    sub: 'when they hit voicemail',
-    detail: 'They called your competitor instead. You never knew.',
-  },
-  {
-    value: '3 in 5',
-    label: 'jobs go to whoever answers first',
-    sub: 'speed wins the work',
-    detail: "Being on a job costs you the next one. Not anymore.",
-  },
+  // Two uncited third-party statistics (a never-rings-back percentage and a
+  // first-to-answer ratio) were removed 2026-09-29: neither had a named
+  // independent source (CLAUDE.md §1.1). claims.no_retired_claims fails the
+  // health run if either returns.
 ];
 
 // ─── Use Cases ────────────────────────────────────────────────────────────────
@@ -897,10 +903,13 @@ const HowItWorks = () => (
 );
 
 // ─── ROI Section ──────────────────────────────────────────────────────────────
+// Every figure here is checkable: the first is stated arithmetic (£350 × 12),
+// the other two come from src/lib/plans.ts and the Payment Links' trial.
+// Uncited third-party statistics were removed 2026-09-29 (CLAUDE.md §1.1).
 const ROI_STATS = [
   { value: '£4,200', label: 'one £350 job a month', sub: 'over a year' },
-  { value: '27%', label: 'of callers', sub: 'never ring back' },
-  { value: '3 in 5', label: 'jobs go to whoever', sub: 'answers first' },
+  { value: `£${Math.min(...PLANS.map((plan) => plan.price))}`, label: 'plans from', sub: 'a month + VAT' },
+  { value: '14 days', label: 'free trial', sub: 'no charge today' },
 ];
 
 const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (
@@ -1301,36 +1310,7 @@ const Pricing = ({ onWaitlist, onStripe }: { onWaitlist: () => void; onStripe?: 
 const FAQ = ({ onWaitlist }: { onWaitlist: () => void }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const faqs: FAQItem[] = [
-    {
-      question: 'Do I need to change my phone number?',
-      answer: "No. You keep your current mobile or landline. Trade Receptionist works with call forwarding, so customers still ring the number they already know.",
-    },
-    {
-      question: "Will customers know it's AI?",
-      answer: 'Most callers just notice that the phone was answered quickly and professionally. The voice is natural, British, and focused on taking the details properly.',
-    },
-    {
-      question: 'Can it book into my Google Calendar?',
-      answer: 'Yes. If you connect your calendar, it can work around your availability and help place qualified enquiries into the right slot.',
-    },
-    {
-      question: 'What happens if the call is urgent?',
-      answer: 'Urgent enquiries can be flagged and handled differently, including sending them straight through or marking them clearly so you can act fast.',
-    },
-    {
-      question: 'Can I stop it from quoting prices?',
-      answer: "Yes. You decide what it can and cannot say. If you don't want prices discussed on calls, it can simply capture the enquiry and pass it back to you.",
-    },
-    {
-      question: 'What if it gets something wrong?',
-      answer: 'You still see the enquiry summary, call record, and transcript, so you can correct anything quickly. The goal is to stop missed work, not take control away from you.',
-    },
-    {
-      question: 'Can I cancel anytime?',
-      answer: "Yes. There's no long contract tying you in. If it's not right for your business, you can stop.",
-    },
-  ];
+  const faqs = HOME_FAQS;
 
   return (
     <Section bg="gray" id="faq">
@@ -1556,14 +1536,15 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
             An AI receptionist built for UK tradespeople. Never miss a call. Never lose a job.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            {['Plumbers', 'Electricians', 'Builders', 'HVAC', 'Carpenters'].map((trade) => (
-              <span
-                key={trade}
-                className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-offwhite/66"
+            {TRADE_ROUTE_SEEDS.map(({ slug, name }) => (
+              <a
+                key={slug}
+                href={`/trades/${slug}`}
+                className="inline-flex min-h-[44px] items-center rounded-full px-3.5 text-[12px] font-semibold text-offwhite/66 transition-colors duration-200 hover:text-offwhite"
                 style={{ background: 'rgba(255,255,255,0.04)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }}
               >
-                {trade}
-              </span>
+                {name}
+              </a>
             ))}
           </div>
         </div>
@@ -1572,12 +1553,19 @@ const Footer = ({ onWaitlist }: { onWaitlist: () => void }) => (
           <h4 className="font-bold text-[12px] tracking-[0.12em] uppercase text-offwhite/58 mb-5">Product</h4>
           <ul className="space-y-0.5 text-[14px] text-offwhite/62">
             <li>
-              <button
-                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors"
-              >
+              <a href="/pricing" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
                 Pricing
-              </button>
+              </a>
+            </li>
+            <li>
+              <a href="/trades" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
+                Trades we cover
+              </a>
+            </li>
+            <li>
+              <a href="/guides" className="inline-flex min-h-[44px] items-center hover:text-offwhite transition-colors">
+                Guides
+              </a>
             </li>
             <li>
               <button onClick={onWaitlist} className="inline-flex min-h-[44px] items-center text-left hover:text-offwhite transition-colors">
