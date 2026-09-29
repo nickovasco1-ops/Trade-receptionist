@@ -2,6 +2,10 @@ import { Link } from 'react-router-dom';
 import { Logo } from '../../../components/Logo';
 
 const EFFECTIVE = '1 May 2026';
+// §3 corrected: it said no card was needed and the account would pause at the
+// end of the trial, but every Payment Link collects a card and the trial
+// converts to a paid subscription (CLAUDE.md §1.1, §14).
+const UPDATED = '29 September 2026';
 const COMPANY   = 'Trade Receptionist Ltd';
 const EMAIL     = 'legal@tradereceptionist.co.uk';
 
@@ -54,7 +58,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="text-[14px] text-offwhite/35 font-body">
-            Effective {EFFECTIVE} · {COMPANY} · Registered in England &amp; Wales
+            Effective {EFFECTIVE} · Last updated {UPDATED} · {COMPANY} · Registered in England &amp; Wales
           </p>
         </div>
 
@@ -90,10 +94,12 @@ export default function TermsPage() {
 
         <Section title="3. Free Trial">
           <P>
-            We offer a 14-day free trial to new Subscribers. No payment card is required to start
-            a trial. At the end of the trial period, your account will be paused unless you
-            subscribe to a paid plan. Trial usage is subject to a fair-use limit of 50 inbound
-            calls.
+            We offer a 14-day free trial to new Subscribers. A payment card is required to start
+            a trial, and nothing is charged during it. Unless you cancel before the trial ends,
+            your subscription starts automatically at the end of the 14 days and the card on file
+            is charged the price of the plan you chose, then on each renewal date after that. You
+            can cancel at any time during the trial from your account settings and you will not
+            be charged. Trial usage is subject to a fair-use limit of 50 inbound calls.
           </P>
         </Section>
 

@@ -13,7 +13,9 @@ import { repoRoot } from '../lib/env.mjs';
  * legal exposure, not a copy nit. Regexes, because the exact wording drifts.
  */
 const RETIRED_CLAIMS = [
-  { re: /\bNo card required\b/i, why: 'false — every Payment Link is payment_method_collection=always' },
+  // Broadened 2026-09-29: the Terms said "No payment card is required", which
+  // the exact-phrase pattern missed.
+  { re: /\bno\s+(payment\s+)?card\s+(is\s+)?(required|needed)\b/i, why: 'false — every Payment Link is payment_method_collection=always' },
   { re: /\b98\.7\s*%/, why: 'fabricated answer rate; the DB holds 29 calls total' },
   { re: /\b500\+\s*(UK\s*)?trades/i, why: 'fabricated customer volume; the DB holds 5 clients' },
   { re: /Join\s+500\+/i, why: 'fabricated customer volume' },

@@ -98,6 +98,12 @@ no substantiation burden. State the inputs, never present the output as research
 > true and keeps the risk reversal. If you ever want the literal claim back, the
 > product has to change first: set `payment_method_collection=if_required` on all
 > four links. Copy follows behaviour, never the reverse.
+>
+> **An eighth instance survived until 2026-09-29**: Terms §3 said "No payment card
+> is required to start a trial" and that the account would be *paused* at the end,
+> when in fact the card is charged and the subscription starts unless cancelled.
+> The health check had matched only the exact phrase "No card required", so it
+> missed this wording; the pattern now covers the variants.
 
 > Swept on 2026-08-11: removed "500+", "98.7%" (×3, incl. a customer-facing Resend
 > template) and "UK's #1". `CLAUDE_CODE_PROMPT.md` was also corrected — it had been
