@@ -6,6 +6,7 @@ import {
   ALERT_COOLDOWN_MS,
   buildDailyReport,
   classifyDisconnection,
+  formatLondonTime,
   shouldAlert,
   summariseLine,
 } from './call-health';
@@ -55,6 +56,71 @@ describe('summariseLine', () => {
     ], since);
     assert.equal(line.calls, 3);
     assert.deepEqual(line.faults, { no_valid_payment: 2 });
+    assert.equal(line.lastFaultMs, 4_000);
+    assert.equal(line.connectedSince, 0);
+  });
+
+  test('a healthy line carries no fault timing', () => {
+    const line = summariseLine('TAPS', [{ start_timestamp: 2_000, disconnection_reason: 'user_hangup' }], since);
+    assert.equal(line.lastFaultMs, undefined);
+    assert.equal(line.connectedSince, undefined);
+  });
+});
+
+/**
+ * 2026-09-29: the morning report said "3 calls failed" about an outage fixed
+ * the previous afternoon, and could not say whether it was still happening.
+ * This is TAPS's real 28 Sept timeline.
+ */
+describe('fault recency', () => {
+  const at = (iso: string) => Date.parse(iso);
+  const since = at('2026-09-28T06:30:00Z');
+  const outage = [
+    { start_timestamp: at('2026-09-28T13:27:24Z'), disconnection_reason: 'user_hangup' },
+    { start_timestamp: at('2026-09-28T16:35:04Z'), disconnection_reason: 'no_valid_payment' },
+    { start_timestamp: at('2026-09-28T16:36:06Z'), disconnection_reason: 'no_valid_payment' },
+    { start_timestamp: at('2026-09-28T16:57:44Z'), disconnection_reason: 'no_valid_payment' },
+  ];
+  const afterwards = [
+    { start_timestamp: at('2026-09-28T17:13:36Z'), disconnection_reason: 'user_hangup' },
+    { start_timestamp: at('2026-09-28T17:15:30Z'), disconnection_reason: 'call_transfer' },
+    { start_timestamp: at('2026-09-28T20:22:00Z'), disconnection_reason: 'call_transfer' },
+  ];
+
+  test('times are UK wall-clock, BST included', () => {
+    assert.equal(formatLondonTime(at('2026-09-28T16:57:44Z')), '17:57 28 Sept');
+    assert.equal(formatLondonTime(at('2026-12-01T09:05:00Z')), '09:05 1 Dec');
+  });
+
+  test('a fixed outage says when it ended and that calls got through since', () => {
+    const line = summariseLine('TAPS', [...outage, ...afterwards], since);
+    assert.equal(line.connectedSince, 3);
+    const r = buildDailyReport(calendars([row('TAPS', 'ok')]), [line], '29 Sept');
+    assert.match(r.facts[0][1], /last 17:57 28 Sept, 3 calls connected since/);
+    assert.match(r.subject, /3 calls failed \(since recovered\)/);
+    assert.equal(r.tone, 'warn');
+    assert.match(r.action ?? '', /recovered/);
+    assert.doesNotMatch(r.action ?? '', /engaged tone until you do/);
+  });
+
+  test('an outage with nothing through since stays loud', () => {
+    const line = summariseLine('TAPS', outage, since);
+    const r = buildDailyReport(calendars([row('TAPS', 'ok')]), [line], '29 Sept');
+    assert.match(r.facts[0][1], /no call has connected since/);
+    assert.doesNotMatch(r.subject, /recovered/);
+    assert.equal(r.tone, 'bad');
+    assert.match(r.action ?? '', /Retell dashboard → Billing/);
+  });
+
+  test('one recovered line does not quieten a reason still failing on another', () => {
+    const r = buildDailyReport(
+      calendars([row('TAPS', 'ok'), row('Vasco', 'ok')]),
+      [summariseLine('TAPS', [...outage, ...afterwards], since), summariseLine('Vasco', outage, since)],
+      '29 Sept',
+    );
+    assert.equal(r.tone, 'bad');
+    assert.doesNotMatch(r.subject, /recovered/);
+    assert.match(r.action ?? '', /Retell dashboard → Billing/);
   });
 });
 
