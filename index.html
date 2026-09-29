@@ -4,38 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- Primary SEO -->
-    <title>Trade Receptionist | AI Receptionist for UK Tradespeople</title>
-    <meta name="title" content="Trade Receptionist | AI Receptionist for UK Tradespeople">
-    <meta name="description" content="Trade Receptionist gives UK trades businesses a premium AI receptionist that answers calls, captures job details, books work, and keeps your diary moving while you're on the tools." />
-    <meta name="keywords" content="AI receptionist UK, never miss a call, call answering app trades, virtual receptionist, call handling plumbers, builders answering service" />
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="English" />
-    <meta name="author" content="Trade Receptionist Ltd" />
-
-    <!-- Geo-Targeting -->
-    <meta name="geo.region" content="GB" />
-    <meta name="geo.placename" content="London" />
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://tradereceptionist.com" />
-    <meta property="og:title" content="Trade Receptionist | AI Receptionist for UK Tradespeople" />
-    <meta property="og:description" content="Trade Receptionist gives UK trades businesses a premium AI receptionist that answers calls, captures job details, books work, and keeps your diary moving while you're on the tools." />
-    <meta property="og:image" content="https://tradereceptionist.com/assets/generated/og/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://tradereceptionist.com" />
-    <meta property="twitter:title" content="Trade Receptionist | AI Receptionist for UK Tradespeople" />
-    <meta property="twitter:description" content="Trade Receptionist gives UK trades businesses a premium AI receptionist that answers calls, captures job details, books work, and keeps your diary moving while you're on the tools." />
-    <meta property="twitter:image" content="https://tradereceptionist.com/assets/generated/og/og-image.png" />
+    <!-- seo:head:start -->
+    <!--
+      Everything between these markers is replaced at build time by
+      scripts/prerender.mjs, per page, from src/marketing/routes.ts: title,
+      description, canonical, Open Graph, Twitter and JSON-LD. What is written
+      here only shows up in `vite dev`. Edit the registry, not this block.
+    -->
+    <title>AI Receptionist for UK Tradespeople | Trade Receptionist</title>
+    <meta name="description" content="Trade Receptionist answers your calls while you are on the tools, takes the job details, books work into your diary and texts you a summary." />
+    <link rel="canonical" href="https://tradereceptionist.com/" />
+    <!-- seo:head:end -->
 
     <!-- Favicon — orange rounded square with phone icon, matching logo mark -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='36' y2='36' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23FF6B2B'/%3E%3Cstop offset='1' stop-color='%23FF8C55'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='36' height='36' rx='9' fill='url(%23g)'/%3E%3Cpath d='M23.5 20.17v2.08a1.39 1.39 0 01-1.51 1.39 13.76 13.76 0 01-6-2.13A13.56 13.56 0 0111.83 17a13.76 13.76 0 01-2.14-6.02 1.39 1.39 0 011.39-1.52h2.08a1.39 1.39 0 011.39 1.2c.088.666.25 1.32.485 1.95a1.39 1.39 0 01-.313 1.47l-.88.88a11.11 11.11 0 004.17 4.17l.88-.88a1.39 1.39 0 011.47-.313c.63.235 1.284.398 1.95.486a1.39 1.39 0 011.2 1.4z' stroke='white' stroke-width='1.45' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" type="image/svg+xml" />
-    <link rel="canonical" href="https://tradereceptionist.com" />
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -48,104 +30,76 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+    <!--
+      The homepage hero image is its LCP element, but React only requests it
+      after the bundle runs. Start the download while the head is still parsing.
+      Done in script, not a static <link rel=preload>, because this file is also
+      the SPA fallback for /login and /dashboard, which never show the hero.
+      Keep the srcset in step with GENERATED_HERO_IMAGE_SRCSET in App.tsx.
+    -->
+    <script>
+      if (location.pathname === '/') {
+        var heroPreload = document.createElement('link');
+        heroPreload.rel = 'preload';
+        heroPreload.as = 'image';
+        heroPreload.setAttribute('imagesrcset', '/assets/generated/landing-hero-768.webp 768w, /assets/generated/landing-hero-1280.webp 1280w, /assets/generated/landing-hero-1920.webp 1920w');
+        heroPreload.setAttribute('imagesizes', '(max-width: 1344px) 98vw, 1344px');
+        heroPreload.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(heroPreload);
+      }
+    </script>
+
     <!-- Industrial Luminescence: Space Grotesk (display) + Manrope (body) — trimmed to used weights only -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Schema.org Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "SoftwareApplication",
-          "name": "Trade Receptionist",
-          "applicationCategory": "BusinessApplication",
-          "operatingSystem": "Web",
-          "url": "https://tradereceptionist.com",
-          "description": "Trade Receptionist gives UK trades businesses an AI receptionist that answers calls, captures job details, books work, and keeps the diary moving while the team is on the tools.",
-          "offers": [
-            { "@type": "Offer", "price": "49.00", "priceCurrency": "GBP", "name": "Starter" },
-            { "@type": "Offer", "price": "89.00", "priceCurrency": "GBP", "name": "Pro" },
-            { "@type": "Offer", "price": "159.00", "priceCurrency": "GBP", "name": "Business" },
-            { "@type": "Offer", "price": "249.00", "priceCurrency": "GBP", "name": "Agency" }
-          ]
-        },
-        {
-          "@type": "Organization",
-          "name": "Trade Receptionist Ltd",
-          "url": "https://tradereceptionist.com",
-          "logo": "https://tradereceptionist.com/assets/generated/og/og-image.png",
-          "email": "hello@tradereceptionist.co.uk",
-          "sameAs": [
-            "https://www.instagram.com/tradereceptionist",
-            "https://www.facebook.com/share/16QddwsMk8/",
-            "https://tiktok.com/@tradereceptionist"
-          ]
-        },
-        {
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How does Trade Receptionist answer my calls?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "You divert your mobile's unanswered calls to your Trade Receptionist number. Our AI answers within seconds, collects the caller's details and job requirements, and sends you a summary by SMS."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Does it sound robotic?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No. We use a natural-sounding British AI voice that pauses naturally, handles interruptions, and understands UK trade terminology."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "How long does setup take?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Under 14 minutes. Complete the setup wizard, divert your unanswered calls, and your AI receptionist is live."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Is there a contract?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No. All plans are monthly with no long-term contract. Cancel anytime from your account settings."
-              }
-            }
-          ]
-        }
-      ]
-    }
-    </script>
   </head>
   <body class="bg-navy text-offwhite font-body">
+    <!-- noscript:start -->
     <noscript>
       <!--
-        Google's OAuth verification fetches the home page and rejected this project
-        once with "Your home page URL is unresponsive". The SPA body is a single
-        empty div, so anything that does not run JavaScript sees a blank document —
-        indistinguishable from a dead site. This is the minimum a crawler needs:
-        who we are, what the product does, and the legal links. Every claim here is
-        checkable against shipped behaviour, per CLAUDE.md §1.1.
+        The SPA body is a single empty div, so anything that does not run
+        JavaScript (Google's OAuth verifier, most AI crawlers) would otherwise see
+        a blank document. This is the homepage in plain HTML: what the product
+        does, what it costs, and real links to every section of the site. Every
+        claim is checkable against shipped behaviour, per CLAUDE.md §1.1.
+        scripts/prerender.mjs removes this block from pages whose body it
+        prerenders, since those already carry their own content and H1.
       -->
       <main style="max-width:65ch;margin:0 auto;padding:48px 24px;font-family:Manrope,sans-serif;color:#F0F4F8;background:#051426;">
-        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:32px;line-height:1.1;">Trade Receptionist</h1>
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:32px;line-height:1.1;">Trade Receptionist: an AI receptionist for UK tradespeople</h1>
         <p style="font-size:18px;line-height:1.65;color:rgba(240,244,248,0.7);">
-          An AI receptionist for UK tradespeople. It answers your calls, books jobs
-          into your diary, filters out spam, and sends you an SMS and email summary
-          of every call — so you never lose a customer while you are under a sink or
-          on a roof.
+          Trade Receptionist answers your phone when you cannot. It picks up in your
+          business name, takes the caller's details and what the job is, books work
+          into your diary if you connect one, politely ends sales calls, and sends
+          you a text and email summary of every call. You keep your own number by
+          diverting unanswered calls to it.
         </p>
         <p style="font-size:16px;line-height:1.7;color:rgba(240,244,248,0.7);">
-          Plans start at £49 a month with a 14-day free trial. Trade Receptionist Ltd
-          is registered in England &amp; Wales.
+          Plans start at £49 a month plus VAT for up to 50 calls. Every plan starts
+          with a 14-day free trial, with no charge today, no setup fee and no
+          contract. Trade Receptionist Ltd is registered in England &amp; Wales.
         </p>
+        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;">By trade</h2>
+        <ul style="font-size:16px;line-height:1.9;">
+          <li><a href="/trades/plumbers" style="color:#FF6B2B;">AI receptionist for plumbers</a></li>
+          <li><a href="/trades/electricians" style="color:#FF6B2B;">AI receptionist for electricians</a></li>
+          <li><a href="/trades/builders" style="color:#FF6B2B;">Answering service for builders</a></li>
+          <li><a href="/trades/heating-engineers" style="color:#FF6B2B;">Answering service for heating engineers</a></li>
+          <li><a href="/trades/roofers" style="color:#FF6B2B;">Answering service for roofers</a></li>
+          <li><a href="/trades/locksmiths" style="color:#FF6B2B;">24/7 answering service for locksmiths</a></li>
+          <li><a href="/trades/landscapers" style="color:#FF6B2B;">Answering service for landscapers</a></li>
+          <li><a href="/trades/carpenters-and-joiners" style="color:#FF6B2B;">Answering service for carpenters and joiners</a></li>
+          <li><a href="/trades" style="color:#FF6B2B;">All trades</a></li>
+        </ul>
+        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;">Guides and pricing</h2>
+        <ul style="font-size:16px;line-height:1.9;">
+          <li><a href="/pricing" style="color:#FF6B2B;">Pricing</a></li>
+          <li><a href="/guides/cost-of-missed-calls-for-tradespeople" style="color:#FF6B2B;">The cost of missed calls for tradespeople</a></li>
+          <li><a href="/guides/how-to-never-miss-a-call-on-the-job" style="color:#FF6B2B;">How to never miss a call on the job</a></li>
+          <li><a href="/guides/ai-receptionist-vs-answering-service-vs-voicemail" style="color:#FF6B2B;">AI receptionist vs answering service vs voicemail</a></li>
+        </ul>
         <p style="font-size:16px;line-height:1.7;">
+          <a href="/partner" style="color:#FF6B2B;">Partner Programme</a> ·
           <a href="/privacy" style="color:#FF6B2B;">Privacy Policy</a> ·
           <a href="/terms" style="color:#FF6B2B;">Terms of Service</a> ·
           <a href="mailto:hello@tradereceptionist.co.uk" style="color:#FF6B2B;">hello@tradereceptionist.co.uk</a>
@@ -156,6 +110,7 @@
         </p>
       </main>
     </noscript>
+    <!-- noscript:end -->
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

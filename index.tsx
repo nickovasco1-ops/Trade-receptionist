@@ -101,6 +101,15 @@ const TestCallPage   = React.lazy(() => import('./src/pages/TestCallPage'));
 const NotFoundPage   = React.lazy(() => import('./src/pages/NotFoundPage'));
 const PartnerPage    = React.lazy(() => import('./src/pages/PartnerPage'));
 
+// Public SEO pages (trades, guides, pricing), registered from one list. Each is
+// prerendered to static HTML at build time by scripts/prerender.mjs.
+import { MARKETING_ROUTES, findMarketingRoute } from './src/marketing/routes';
+import { preloadable, type PreloadableComponent } from './src/marketing/preloadable';
+
+const MARKETING_PAGES: ReadonlyMap<string, PreloadableComponent> = new Map(
+  MARKETING_ROUTES.filter(route => route.spaRoute).map(route => [route.path, preloadable(route.load)]),
+);
+
 // Auth guard — simple: checks Supabase session cookie presence via storage
 import { supabase } from './src/lib/supabase';
 import type { ReactNode } from 'react';
@@ -204,11 +213,13 @@ const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Could not find root element to mount to');
 
 // React 19 error handlers — pipe all error types into Sentry automatically
-ReactDOM.createRoot(rootElement, {
+const root = ReactDOM.createRoot(rootElement, {
   onUncaughtError:    Sentry.reactErrorHandler(),
   onCaughtError:      Sentry.reactErrorHandler(),
   onRecoverableError: Sentry.reactErrorHandler(),
-}).render(
+});
+
+const app = (
   <React.StrictMode>
     <Sentry.ErrorBoundary fallback={({ resetError }) => <ErrorFallback onReset={resetError} />}>
     <BrowserRouter>
@@ -314,6 +325,12 @@ ReactDOM.createRoot(rootElement, {
           </React.Suspense>
         } />
 
+        {/* ── SEO marketing pages (public, prerendered) ──────────── */}
+        {MARKETING_ROUTES.filter(route => route.spaRoute).map(route => {
+          const Page = MARKETING_PAGES.get(route.path);
+          return Page ? <Route key={route.path} path={route.path} element={<Page {...route.props} />} /> : null;
+        })}
+
         {/* ── Agent test console (auth-gated, not linked publicly) ── */}
         <Route path="/test-call" element={
           <RequireAuth>
@@ -340,3 +357,13 @@ ReactDOM.createRoot(rootElement, {
     </Sentry.ErrorBoundary>
   </React.StrictMode>
 );
+
+// A prerendered marketing page already shows its content. Load its chunk before
+// the first render so createRoot swaps identical markup in one frame, instead
+// of committing an empty Suspense fallback first. Every other URL renders at once.
+const prerenderedPage = MARKETING_PAGES.get(findMarketingRoute(window.location.pathname)?.path ?? '');
+if (prerenderedPage) {
+  prerenderedPage.preload().catch(() => undefined).then(() => root.render(app));
+} else {
+  root.render(app);
+}
