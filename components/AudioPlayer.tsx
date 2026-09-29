@@ -18,7 +18,9 @@ export const AudioPlayer: React.FC = () => {
   // Create the audio element once on mount and clean up on unmount.
   useEffect(() => {
     const audio    = new Audio(AUDIO_SRC);
-    audio.preload  = 'auto';
+    // 'metadata', not 'auto': the file is ~4 MB of WAV and most visitors never
+    // press play. 'auto' made it the second-heaviest download on the homepage.
+    audio.preload  = 'metadata';
     audioRef.current = audio;
 
     const onMeta  = () => setDuration(audio.duration);

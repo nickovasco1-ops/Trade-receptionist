@@ -1,7 +1,29 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
 
+/**
+ * Vercel's catch-all rewrite answers every unknown URL with index.html and a
+ * 200, so without this a mistyped link is a soft 404 that Google may index as a
+ * copy of the homepage. A robots noindex added by JavaScript is honoured by
+ * Googlebot's renderer and is the standard SPA mitigation. A true 404 status
+ * needs the rewrite narrowed to known app routes (see SEO_REPORT.md).
+ */
+function useNoIndex(): void {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex';
+    document.head.querySelectorAll('meta[name="robots"]').forEach(el => el.remove());
+    document.head.querySelector('link[rel="canonical"]')?.remove();
+    document.head.appendChild(meta);
+    document.title = 'Page not found | Trade Receptionist';
+    return () => meta.remove();
+  }, []);
+}
+
 export default function NotFoundPage() {
+  useNoIndex();
   return (
     <main id="main-content" tabIndex={-1} className="min-h-screen flex flex-col items-center justify-center px-4 font-body bg-navy">
       <div

@@ -944,7 +944,7 @@ function ApplicationForm() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PartnerPage() {
   useEffect(() => {
-    document.title = 'Partner Programme — Trade Receptionist';
+    document.title = 'Partner Programme | Trade Receptionist';
     window.scrollTo(0, 0);
   }, []);
 
