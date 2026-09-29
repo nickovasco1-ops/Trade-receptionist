@@ -112,10 +112,13 @@ change the other. Searched 2026-08-11: **no independent source for £4,200 exist
 and the £24k–£45k figures circulating online all trace back to competitors' own
 marketing blogs — do not cite them.
 
-> ⚠️ **Still outstanding**: `PAIN_STATS` and `ROI_STATS` in `App.tsx` carry
-> "27% of callers never ring back" and "3 in 5 jobs go to whoever answers first",
-> both uncited third-party statistics. They need a named independent source or the
-> same worked-example treatment. Not yet actioned as of v3.2.
+> **Removed 2026-09-29**: "27% of callers never ring back" and "3 in 5 jobs go to
+> whoever answers first" (`ROI_STATS`, live on the homepage, and the unrendered
+> `PAIN_STATS` in `App.tsx`). Neither had a named independent source, and the
+> missed-call cost guide says so in print, so the homepage was contradicting the
+> site's own content. `ROI_STATS` now carries only figures checkable against
+> `plans.ts`. Both are in `claims.no_retired_claims` (`tests/health/checks/content.mjs`),
+> confirmed to FAIL against the old `App.tsx` before being trusted.
 
 ---
 
@@ -1236,6 +1239,7 @@ catalogue and the suite cannot drift apart.
 ---
 
 *Trade Receptionist Constitution — built to last, like the tools it serves.*
+*v5.5 · 2026-09-29 — removed the two uncited homepage statistics (§1.1) that had been flagged as outstanding since v3.2, and added both to the retired-claims health check.*
 *v5.4 · 2026-09-29 — SEO overhaul. Every public URL now comes from one registry (`src/marketing/routes.ts`, §6.6) that drives its head, JSON-LD, sitemap.xml and llms.txt; before this `/privacy`, `/terms` and `/partner` all claimed to be the homepage, `sitemap.xml` did not exist (robots.txt pointed at a 200 HTML page), and the FAQPage markup described four questions the page did not show. Added 8 trade pages, 3 guides, a pricing page and two hubs, all prerendered and build-checked. Homepage lab LCP 52.9 s → 3.3 s and page weight 11.6 MB → 1.5 MB: the LCP element was a 4.9 MB PNG, nine 48 px icons were 1.2 MB each, and a 3.9 MB WAV was preloaded on every visit. See SEO_AUDIT.md and SEO_REPORT.md.*
 *v5.3 · 2026-09-28 — transfers confirmed working end to end (the trunk credential had never been saved in Twilio; 32202 until it was). The same afternoon Retell's payment lapsed and every line returned an engaged tone with nobody told, though Retell named the cause on every call. The webhook now alerts on platform-caused call endings, and the daily calendar cron became a daily report of every line and every diary, sent even when all is well. Server tests 212 → 222.*
 *v5.2 · 2026-09-28 — the corrected transfer tool fired, and Twilio still refused it: our trunk's Termination side demands a Credential List, and every number had been registered with Retell with no credentials, so nothing could ever dial out. The caller hears "I couldn't get through" and Twilio's log shows no call at all. Numbers are now imported with the trunk credentials, and a one-click workflow applies them to existing numbers. Server tests 208 → 212.*
