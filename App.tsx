@@ -111,6 +111,7 @@ const WaitlistModal     = React.lazy(() => import('./components/WaitlistModal').
 const StripeCheckoutModal = React.lazy(() => import('./components/StripeCheckoutModal').then(m => ({ default: m.StripeCheckoutModal })));
 import { PricingTier } from './types';
 import { HOME_FAQS } from './src/marketing/content/home-faqs';
+import { PLANS } from './src/lib/plans';
 import { TRADE_ROUTE_SEEDS } from './src/marketing/routes';
 
 // Lazy-loaded below-fold components — keeps initial JS bundle lean
@@ -567,18 +568,10 @@ const PAIN_STATS = [
     sub: "and that's your year",
     detail: "That's a van service, a week's holiday, or new tools. Gone.",
   },
-  {
-    value: '27%',
-    label: 'of callers never ring back',
-    sub: 'when they hit voicemail',
-    detail: 'They called your competitor instead. You never knew.',
-  },
-  {
-    value: '3 in 5',
-    label: 'jobs go to whoever answers first',
-    sub: 'speed wins the work',
-    detail: "Being on a job costs you the next one. Not anymore.",
-  },
+  // Two uncited third-party statistics (a never-rings-back percentage and a
+  // first-to-answer ratio) were removed 2026-09-29: neither had a named
+  // independent source (CLAUDE.md §1.1). claims.no_retired_claims fails the
+  // health run if either returns.
 ];
 
 // ─── Use Cases ────────────────────────────────────────────────────────────────
@@ -910,10 +903,13 @@ const HowItWorks = () => (
 );
 
 // ─── ROI Section ──────────────────────────────────────────────────────────────
+// Every figure here is checkable: the first is stated arithmetic (£350 × 12),
+// the other two come from src/lib/plans.ts and the Payment Links' trial.
+// Uncited third-party statistics were removed 2026-09-29 (CLAUDE.md §1.1).
 const ROI_STATS = [
   { value: '£4,200', label: 'one £350 job a month', sub: 'over a year' },
-  { value: '27%', label: 'of callers', sub: 'never ring back' },
-  { value: '3 in 5', label: 'jobs go to whoever', sub: 'answers first' },
+  { value: `£${Math.min(...PLANS.map((plan) => plan.price))}`, label: 'plans from', sub: 'a month + VAT' },
+  { value: '14 days', label: 'free trial', sub: 'no charge today' },
 ];
 
 const ROISection = ({ onWaitlist }: { onWaitlist: () => void }) => (

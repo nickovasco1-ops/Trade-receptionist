@@ -241,7 +241,7 @@ verification confirmed it.
 | **Recurrence** | 2 sweeps, 11+ individual claims |
 | **Blast radius** | Legal, not technical. DMCC Act 2024 gives the CMA direct fining power (to 10% of global turnover) since April 2025. |
 | **Evidence** | `fd10612` / `4e799c6` — removed "500+ tradespeople" (DB held 7 clients, 0 paying), "98.7% answer rate" ×3 (DB held 29 calls), "UK's #1"; corrected **"No card required", which was false and shipped in 7 places** including the checkout modal itself, while every Payment Link is `payment_method_collection=always` |
-| **Still outstanding** | `PAIN_STATS` and `ROI_STATS` in `App.tsx` carry "27% of callers never ring back" and "3 in 5 jobs go to whoever answers first" — **both uncited**, per CLAUDE.md §1.1 |
+| **Resolved 2026-09-29** | The uncited "27% of callers never ring back" and "3 in 5 jobs go to whoever answers first" were removed from `PAIN_STATS` and `ROI_STATS` in `App.tsx`, and added to the `claims.no_retired_claims` denylist. |
 | **Deterministically checkable?** | **Partly.** A regex denylist of retired claims is deterministic. Judging a *new* claim's substantiation is not — that belongs in `health:deep`. |
 
 ---

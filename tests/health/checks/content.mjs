@@ -20,6 +20,10 @@ const RETIRED_CLAIMS = [
   { re: /UK'?s\s+#1/i, why: 'unsubstantiable superlative' },
   { re: /Britain'?s\s+best/i, why: 'unsubstantiable superlative' },
   { re: /Powered by AI/i, why: 'banned by §1 voice rules' },
+  // Removed 2026-09-29. Neither had a named independent source; the matches
+  // allow the value and its label to sit in separate fields on one line.
+  { re: /27\s*%[^\n]{0,40}callers/i, why: 'uncited "27% of callers never ring back" statistic' },
+  { re: /\b3\s+in\s+5[^\n]{0,40}(jobs|whoever)/i, why: 'uncited "3 in 5 jobs go to whoever answers first" statistic' },
 ];
 
 const CONTENT_GLOBS = ['App.tsx', 'index.html', 'components', 'src'];
