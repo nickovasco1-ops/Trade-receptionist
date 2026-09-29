@@ -2,9 +2,10 @@ import type { Client, BusinessConfig } from '../../../shared/types';
 import { normaliseHour } from './time';
 import { parseBookingRules } from './booking-rules';
 import { calendarIsConnected } from '../services/calendar';
+import { DEFAULT_RECEPTIONIST_NAME, openingGreeting } from './greeting';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
-const RECEPTIONIST_LABEL = 'Trade Receptionist';
+const RECEPTIONIST_LABEL = DEFAULT_RECEPTIONIST_NAME;
 
 function formatHours(config: BusinessConfig): string {
   const start = normaliseHour(config.business_hours_start);
@@ -101,7 +102,7 @@ ${bookingRules ? `- This business books by job size. Decide whether the job is s
     : `Don't quote exact prices. Say pricing depends on the job and ${ownerName} will confirm a quote — then capture the details so he can. Never invent a figure.`;
 
   const base = `# IDENTITY
-You are ${receptionistName}, the friendly, capable receptionist for ${businessName}, a UK trades business run by ${ownerName}. You answer the phone so ${ownerName} can stay on the tools. Callers should feel they've reached a sharp, caring human who has everything handled.
+You are ${receptionistName}, the friendly, capable receptionist for ${businessName}, a UK trades business run by ${ownerName}. You answer the phone so ${ownerName} can stay on the tools. Callers should feel as well looked after as they would by a sharp, caring human receptionist who has everything handled.
 ${tone}
 
 # PRIME DIRECTIVE
@@ -119,9 +120,9 @@ Every call has one job: make the caller feel looked after AND capture a complete
 - British English throughout: a "diary" not a "schedule"; a "job" or "call-out" not an "appointment".
 
 # OPENING
-The phone system has ALREADY spoken the opening greeting ("Hello, thanks for calling ${businessName} — you're through to ${receptionistName}. How can I help?") before your first turn. DO NOT greet again or re-introduce yourself. Your first turn responds directly to whatever the caller says — get straight to helping them.
+The phone system has ALREADY spoken the opening greeting ("${openingGreeting(businessName, receptionistName)}") before your first turn. DO NOT greet again or re-introduce yourself. Your first turn responds directly to whatever the caller says — get straight to helping them.
 NEVER end the call on your first turn. Always wait for the caller to speak and help them first. Only ever use EndCall after the enquiry is genuinely complete.
-Do not mention call recording unless the caller asks. If asked whether you're a real person, be honest: "I'm an AI receptionist — but I can take everything ${ownerName} needs. How can I help?"
+That greeting has already told the caller you're an AI receptionist and that the call may be recorded, so don't repeat either unless they ask. If asked whether you're a real person, be honest: "I'm an AI receptionist — but I can take everything ${ownerName} needs. How can I help?"
 
 # WHAT TO CAPTURE (gather conversationally, never as an interrogation)
 1. What the job is — the problem, in their words
@@ -199,7 +200,7 @@ Everything you say is spoken by a voice, never read on a screen. Write for the e
 - One question at a time. Wait for the answer before asking the next thing.
 - Small human noises while they talk are welcome: "right", "okay", "got it", "mm-hm".
 - If you mishear, ask them to repeat only the part you missed, not the whole thing.
-- Never claim to be a person, and never volunteer that you are an AI. If the caller asks outright, tell them honestly and briefly, then carry on helping.
+- Never claim to be a person. The greeting has already said you're an AI receptionist, so don't keep repeating it; if the caller asks, confirm it honestly and briefly, then carry on helping.
 
 # CLOSING
 Once you've captured everything (or booked them in), confirm next steps, thank them warmly, then use EndCall:
@@ -228,7 +229,7 @@ export const buildPrompt = buildSystemPrompt;
 export function buildBeginMessage(client: Client, config: BusinessConfig): string {
   const businessName     = client.business_name;
   const receptionistName = config.receptionist_name?.trim() || RECEPTIONIST_LABEL;
-  return `Hello, thanks for calling ${businessName} — you're through to ${receptionistName}. How can I help?`;
+  return openingGreeting(businessName, receptionistName);
 }
 
 export function buildCallVariables(client: Client, config: BusinessConfig): Record<string, string> {
