@@ -154,7 +154,7 @@ export default function PrivacyPage() {
         <Section title="4. Call Recordings and Transcripts">
           <P>
             All calls handled by our service are recorded and transcribed using Retell AI to generate
-            call summaries. Our AI receptionist discloses this to callers at the start of each call.
+            call summaries. Our AI receptionist tells callers at the start of each call that the call is recorded.
           </P>
           <Ul items={[
             'Call recordings are retained for 90 days and then permanently deleted.',
@@ -163,8 +163,8 @@ export default function PrivacyPage() {
           ]} />
           <P>
             As a Subscriber, you act as a data controller for caller recordings and transcripts. You
-            must not disable the AI disclosure that informs callers their call may be recorded and
-            handled by an AI system.
+            must not disable the notice that informs callers their call is recorded, nor the AI
+            receptionist's confirmation that it is an AI when a caller asks.
           </P>
         </Section>
 
