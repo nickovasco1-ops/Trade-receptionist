@@ -5,7 +5,9 @@ const EFFECTIVE = '1 May 2026';
 // §3 corrected: it said no card was needed and the account would pause at the
 // end of the trial, but every Payment Link collects a card and the trial
 // converts to a paid subscription (CLAUDE.md §1.1, §14).
-const UPDATED = '29 September 2026';
+// §8 changed 1 Oct 2026: the greeting no longer volunteers that the agent is
+// an AI, so §8 now promises the recording notice and honesty when asked.
+const UPDATED = '1 October 2026';
 const COMPANY   = 'Trade Receptionist Ltd';
 const EMAIL     = 'legal@tradereceptionist.co.uk';
 
@@ -170,9 +172,10 @@ export default function TermsPage() {
         <Section title="8. Call Recording and Transcription">
           <P>
             Calls handled by our service may be recorded and transcribed to generate summaries
-            and improve service accuracy. Callers must be informed that their call may be recorded
-            and handled by an AI system. Our AI agent includes this disclosure at the start of
-            each call. You must not disable or circumvent this disclosure.
+            and improve service accuracy. Callers must be informed that their call may be recorded.
+            Our AI agent tells callers at the start of each call that the call is recorded, and
+            always confirms that it is an AI if a caller asks. You must not disable or circumvent
+            either of these.
           </P>
           <P>
             Call recordings are retained for 90 days and then deleted automatically. Transcripts

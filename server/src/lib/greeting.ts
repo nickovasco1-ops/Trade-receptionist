@@ -1,11 +1,13 @@
 /**
  * The opening line every receptionist speaks when a call connects.
  *
- * It tells the caller two things up front: that they are speaking to an AI
- * receptionist, and that the call may be recorded. The Terms of Service (§8)
- * promise exactly that disclosure "at the start of each call"; until
- * 2026-09-29 the greeting gave neither, and the system prompt told the agent
- * never to volunteer that it was an AI.
+ * "Hello, this is TAPS, Amy speaking. Calls are recorded. How can I help?"
+ *
+ * It names the business and the receptionist, and tells the caller the call is
+ * recorded (UK GDPR transparency; Privacy §4, Terms §8). It does not say the
+ * receptionist is an AI: that changed on 2026-10-01 at a tenant's request, and
+ * the Terms were changed with it. The agent is still told never to claim to be
+ * a person and to confirm it is an AI whenever a caller asks (prompt-builder).
  *
  * One function, used twice: prompt-builder's buildBeginMessage() sends it to
  * Retell as begin_message, and the system prompt quotes it so the LLM knows
@@ -20,10 +22,8 @@ export const DEFAULT_RECEPTIONIST_NAME = 'Trade Receptionist';
 
 export function openingGreeting(businessName: string, receptionistName: string): string {
   const name = receptionistName.trim();
-  // "You're through to Trade Receptionist, the AI receptionist" reads badly,
-  // so the default name is dropped rather than repeated.
-  const who = !name || name === DEFAULT_RECEPTIONIST_NAME
-    ? 'the AI receptionist'
-    : `${name}, the AI receptionist`;
-  return `Hello, thanks for calling ${businessName}. You're through to ${who}. This call may be recorded. How can I help?`;
+  // "Trade Receptionist speaking" is a product name, not a person, so a tenant
+  // who never chose a name gets the business alone.
+  const who = !name || name === DEFAULT_RECEPTIONIST_NAME ? '' : `, ${name} speaking`;
+  return `Hello, this is ${businessName}${who}. Calls are recorded. How can I help?`;
 }
