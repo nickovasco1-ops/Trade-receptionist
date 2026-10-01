@@ -120,6 +120,14 @@ export interface LineSummary {
   calls:        number;
   /** Calls the platform ended, keyed by disconnection reason. */
   faults:       Record<string, number>;
+  /** Start of the most recent platform-ended call, if any. */
+  lastFaultMs?:    number;
+  /**
+   * Calls Retell took after that last fault. Above zero means the line has
+   * recovered; zero means nothing has got through since — still down, or
+   * simply no callers yet, and the report cannot tell those apart.
+   */
+  connectedSince?: number;
   /** Set when Retell could not be asked at all. */
   error?:       string;
 }
@@ -131,12 +139,40 @@ export function summariseLine(
 ): LineSummary {
   const recent = calls.filter((c) => (c.start_timestamp ?? 0) >= sinceMs);
   const faults: Record<string, number> = {};
+  let lastFaultMs: number | undefined;
   for (const c of recent) {
     if (c.disconnection_reason && classifyDisconnection(c.disconnection_reason)) {
       faults[c.disconnection_reason] = (faults[c.disconnection_reason] ?? 0) + 1;
+      const at = c.start_timestamp ?? 0;
+      if (lastFaultMs === undefined || at > lastFaultMs) lastFaultMs = at;
     }
   }
-  return { businessName, calls: recent.length, faults };
+  if (lastFaultMs === undefined) return { businessName, calls: recent.length, faults };
+  const last = lastFaultMs;
+  const connectedSince = recent.filter((c) => (c.start_timestamp ?? 0) > last).length;
+  return { businessName, calls: recent.length, faults, lastFaultMs, connectedSince };
+}
+
+/**
+ * A 24-hour count alone cannot say whether a failure is still happening: an
+ * outage fixed yesterday afternoon read the next morning exactly like one in
+ * progress (2026-09-29). A line has recovered once a call has got through
+ * after its last fault.
+ */
+function hasRecovered(line: LineSummary): boolean {
+  return (line.connectedSince ?? 0) > 0;
+}
+
+// Fixed abbreviations rather than Intl's month names, which vary by ICU build.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+
+/** UK wall-clock time, e.g. "17:57 28 Sept" — the owner reads this in London. */
+export function formatLondonTime(ms: number): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(ms));
+  const get = (type: Intl.DateTimeFormatPartTypes): string => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('hour')}:${get('minute')} ${Number(get('day'))} ${MONTHS[Number(get('month')) - 1]}`;
 }
 
 function escapeHtml(s: string): string {
@@ -170,7 +206,13 @@ function lineText(line: LineSummary | undefined): string {
   const base = `${line.calls} call${line.calls === 1 ? '' : 's'} in 24h`;
   if (!failed) return base;
   const detail = Object.entries(line.faults).map(([r, n]) => `${r} ×${n}`).join(', ');
-  return `${base}, <strong>${failed} failed</strong> (${escapeHtml(detail)})`;
+  const since = line.connectedSince ?? 0;
+  const recency = line.lastFaultMs === undefined ? ''
+    : ` — last ${formatLondonTime(line.lastFaultMs)}, `
+      + (since > 0
+        ? `${since} call${since === 1 ? '' : 's'} connected since`
+        : '<strong>no call has connected since</strong>');
+  return `${base}, <strong>${failed} failed</strong> (${escapeHtml(detail)})${recency}`;
 }
 
 /**
@@ -187,16 +229,20 @@ export function buildDailyReport(
   const names = [...new Set([...calendars.rows.map((r) => r.businessName), ...lines.map((l) => l.businessName)])];
 
   const failedCalls = lines.reduce((n, l) => n + Object.values(l.faults).reduce((a, b) => a + b, 0), 0);
+  const faultedLines = lines.filter((l) => Object.keys(l.faults).length > 0);
+  const stillFailing = faultedLines.some((l) => !hasRecovered(l));
   const unchecked = lines.filter((l) => l.error).length;
   const deadDiaries = calendars.needsReconnect;
 
   const problems: string[] = [];
-  if (failedCalls) problems.push(`${failedCalls} call${failedCalls === 1 ? '' : 's'} failed`);
+  if (failedCalls) {
+    problems.push(`${failedCalls} call${failedCalls === 1 ? '' : 's'} failed${stillFailing ? '' : ' (since recovered)'}`);
+  }
   if (deadDiaries) problems.push(`${deadDiaries} diar${deadDiaries === 1 ? 'y' : 'ies'} dead`);
   if (unchecked) problems.push(`${unchecked} line${unchecked === 1 ? '' : 's'} not checked`);
 
-  const tone: AlertTone = failedCalls || deadDiaries ? 'bad'
-    : unchecked || calendars.notConnected || calendars.providerErrors ? 'warn'
+  const tone: AlertTone = stillFailing || deadDiaries ? 'bad'
+    : failedCalls || unchecked || calendars.notConnected || calendars.providerErrors ? 'warn'
     : 'good';
 
   const facts: Array<[string, string]> = names.map((name) => [
@@ -206,10 +252,14 @@ export function buildDailyReport(
 
   const actions: string[] = [];
   if (failedCalls) {
-    const reasons = new Set(lines.flatMap((l) => Object.keys(l.faults)));
+    const reasons = new Set(faultedLines.flatMap((l) => Object.keys(l.faults)));
     for (const r of reasons) {
       const f = classifyDisconnection(r);
-      if (f) actions.push(`<strong>${escapeHtml(r)}</strong>: ${escapeHtml(f.meaning)} ${escapeHtml(f.action)}`);
+      if (!f) continue;
+      const recovered = faultedLines.filter((l) => r in l.faults).every(hasRecovered);
+      actions.push(recovered
+        ? `<strong>${escapeHtml(r)}</strong> (recovered — calls have connected since): ${escapeHtml(f.meaning)} No action needed unless it happens again.`
+        : `<strong>${escapeHtml(r)}</strong>: ${escapeHtml(f.meaning)} ${escapeHtml(f.action)}`);
     }
   }
   if (deadDiaries) actions.push('A dead diary needs the customer to reconnect it from Settings → Diary connection.');
