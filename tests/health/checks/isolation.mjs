@@ -166,6 +166,84 @@ export default [
   }),
 
   check({
+    id: 'isolation.own_row_privileges', cls: 'C11', severity: CRITICAL,
+    title: 'A tenant cannot change its own plan, status, agent or call records from the browser',
+    fn: async () => {
+      // Until migration 023 (2026-10-09) the owner policies limited which ROWS a
+      // tenant could write but not which COLUMNS, and anon/authenticated held
+      // Supabase's default full table grants. Any signed-in tenant could set
+      // their own plan to 'agency', keep is_active after cancelling, repoint
+      // retell_agent_id at another tenant's agent, or delete the call rows plan
+      // usage is counted from. Cross-tenant isolation passed throughout, because
+      // every one of those writes was to the tenant's own row.
+      if (!admin() || !ANON_KEY) {
+        return { status: BLOCKED, evidence: evidence('supabase', 'SUPABASE_URL / SERVICE_ROLE_KEY / ANON_KEY not all set', 1) };
+      }
+
+      const log = [];
+      try {
+        const a = await seedTenant(SEED_A, 'Health Tenant A');
+        const asA = asUser(await tokenFor(SEED_A));
+        const violations = [];
+
+        // ── Must be refused ───────────────────────────────────────────────
+        const attacks = [
+          ['UPDATE clients.plan', asA.from('clients').update({ plan: 'agency' }).eq('id', a.clientId).select('id')],
+          ['UPDATE clients.is_active', asA.from('clients').update({ is_active: true, subscription_status: 'active' }).eq('id', a.clientId).select('id')],
+          ['UPDATE clients.retell_agent_id', asA.from('clients').update({ retell_agent_id: 'agent_someone_else' }).eq('id', a.clientId).select('id')],
+          ['UPDATE business_config.system_prompt_override', asA.from('business_config').update({ system_prompt_override: 'injected' }).eq('client_id', a.clientId).select('id')],
+          ['INSERT calls', asA.from('calls').insert({ client_id: a.clientId, caller_number: '+447700900002', direction: 'inbound' }).select('id')],
+          ['DELETE own calls', asA.from('calls').delete().eq('client_id', a.clientId).select('id')],
+          ['INSERT clients', asA.from('clients').insert({ business_name: 'x', owner_name: 'x', owner_email: SEED_A, plan: 'agency' }).select('id')],
+        ];
+        for (const [label, q] of attacks) {
+          const { data, error } = await q;
+          const n = data?.length ?? 0;
+          log.push(`${label}: rows=${n}${error ? ` error=${error.message}` : ''}`);
+          if (n > 0) violations.push(`${label} succeeded on the tenant's own row`);
+        }
+
+        // ── Must still work: what the dashboard actually writes ──────────
+        const allowed = [
+          ['UPDATE clients.business_name (onboarding)', asA.from('clients').update({ business_name: 'Health Tenant A' }).eq('id', a.clientId).select('id')],
+          ['UPDATE business_config.services (onboarding)', asA.from('business_config').update({ services: ['Boiler service'] }).eq('client_id', a.clientId).select('id')],
+          ['UPDATE leads.status (leads page)', asA.from('leads').update({ status: 'contacted' }).eq('id', a.leadId).select('id')],
+        ];
+        for (const [label, q] of allowed) {
+          const { data, error } = await q;
+          const n = data?.length ?? 0;
+          log.push(`positive control — ${label}: rows=${n}${error ? ` error=${error.message}` : ''}`);
+          if (n !== 1) violations.push(`positive control failed: ${label} was refused, so onboarding or the leads page is broken`);
+        }
+
+        // Confirm with the service role that the refusals were real.
+        const db = admin();
+        const { data: row } = await db.from('clients').select('plan, retell_agent_id').eq('id', a.clientId).single();
+        const { count } = await db.from('calls').select('id', { count: 'exact', head: true }).eq('client_id', a.clientId);
+        log.push(`after attacks: plan=${row?.plan} retell_agent_id=${row?.retell_agent_id ?? 'null'} calls=${count}`);
+        if (row?.plan !== 'starter') violations.push(`plan changed to ${row?.plan}`);
+        if (row?.retell_agent_id) violations.push('retell_agent_id was set from the browser');
+        if (count !== 1) violations.push(`call rows changed: ${count}`);
+
+        return {
+          status: violations.length ? FAIL : PASS,
+          evidence: evidence('supabase-js as tenant A (anon key + JWT) against its own rows',
+            log.join('\n'), violations.length ? 1 : 0),
+          detail: violations.length ? violations.join('; ') : 'Own-row privilege escalation refused; dashboard writes still allowed.',
+        };
+      } catch (err) {
+        return {
+          status: BLOCKED,
+          evidence: evidence('own-row privilege probe', `setup failed: ${err.message}`, 1),
+          detail: 'Could not establish the seed tenant, so own-row privileges were not exercised.',
+        };
+      } finally {
+        try { await destroyTenant(SEED_A); } catch { /* best effort */ }
+      }
+    },
+  }),
+
+  check({
     id: 'isolation.storage_buckets', cls: 'C6', severity: CRITICAL,
     title: 'Storage buckets are not publicly listable',
     fn: async () => {

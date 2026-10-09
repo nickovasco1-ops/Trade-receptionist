@@ -120,6 +120,8 @@ export interface BusinessConfig {
   avg_job_value: number | null;           // £ used for missed revenue estimate
   /** Per-tenant diary rules by job size (migration 021). Null = the plain working-days/hours behaviour. */
   booking_rules?: BookingRules | null;
+  /** The business only works on homes: the agent never asks "domestic or commercial?" (migration 022). */
+  domestic_only?: boolean;
   created_at: string;
   updated_at: string;
 }
