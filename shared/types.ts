@@ -122,6 +122,7 @@ export interface BusinessConfig {
   booking_rules?: BookingRules | null;
   /** The business only works on homes: the agent never asks "domestic or commercial?" (migration 022). */
   domestic_only?: boolean;
+  callback_only?: boolean;
   created_at: string;
   updated_at: string;
 }
