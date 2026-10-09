@@ -4,6 +4,7 @@ import { parseBookingRules } from './booking-rules';
 import { calendarIsConnected } from '../services/calendar';
 import { DEFAULT_RECEPTIONIST_NAME, openingGreeting } from './greeting';
 import { propertyStep } from './property-question';
+import { takesLiveBookings } from './booking-mode';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const RECEPTIONIST_LABEL = DEFAULT_RECEPTIONIST_NAME;
@@ -76,7 +77,7 @@ export function buildSystemPrompt(client: Client, config: BusinessConfig, availa
   const ratesLine        = formatRates(config);
   const emergencyKw      = formatEmergencyKeywords(config);
   const afterHoursMessage = formatAfterHoursMessage(config, client);
-  const hasCalendar      = calendarIsConnected(client);
+  const hasCalendar      = takesLiveBookings(calendarIsConnected(client), config);
   const tone             = toneInstructions(config.receptionist_tone);
   const bookingRules     = parseBookingRules(config.booking_rules);
 
@@ -94,6 +95,11 @@ ${bookingRules ? `- This business books by job size. Decide whether the job is s
 - Only AFTER the caller has agreed a specific slot AND you have their name and number, CALL create_calendar_booking with: the agreed start time, their full name, the job type, address or postcode, any useful notes, and confirmation_channel — use "sms" when you have a mobile, "email" if you only have an email, "both" if they want both, "none" only if they decline. If they'd like an email confirmation, ask for their email first.
 - After it confirms, read the booking back warmly: "Brilliant — you're booked in for Thursday at 2. ${ownerName} will see you then, and you'll get a text to confirm."
 - If a booking tool fails, mention it lightly once — never repeat "technical issues" — then fall back smoothly: take the details and promise ${ownerName} will confirm the time shortly.`
+    : config.callback_only === true
+    ? `# BOOKING (${ownerName} confirms every booking)
+- Don't book a time on this call: ${ownerName} confirms every booking himself. Never offer, hold or promise a specific slot.
+- Capture the job, full name, best number and postcode, then ask when would suit them: which days are best, and whether mornings or afternoons work. Note any days they can't do.
+- Then set a clear expectation: "Lovely, I'll pass that on to ${ownerName} and he'll give you a call back to confirm a day and time."`
     : `# BOOKING (no live diary on this call)
 - You cannot book directly into the diary on this call. Capture the job, full name, best number, and postcode, then set a clear expectation: "${ownerName} will ring you back within a couple of hours during working hours to sort a time."
 - Never leave it at a vague "someone will be in touch" — be specific about who and when.`;
@@ -239,6 +245,6 @@ export function buildCallVariables(client: Client, config: BusinessConfig): Reco
     owner_name:        client.owner_name,
     callback_number:   client.owner_mobile ?? '',
     receptionist_name: config.receptionist_name?.trim() || RECEPTIONIST_LABEL,
-    calendar_enabled:  String(calendarIsConnected(client)),
+    calendar_enabled:  String(takesLiveBookings(calendarIsConnected(client), config)),
   };
 }

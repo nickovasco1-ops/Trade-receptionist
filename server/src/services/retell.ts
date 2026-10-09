@@ -11,6 +11,7 @@ import { toE164 } from '../../../shared/phone';
 import { buildTransferTool } from '../lib/transfer-tool';
 import { sipAuthFromEnv } from '../lib/sip-auth';
 import { resolveVoice } from '../lib/agent-voice';
+import { takesLiveBookings } from '../lib/booking-mode';
 import { voiceOverrideFor } from './agent-overrides';
 
 const BASE_URL = 'https://api.retellai.com';
@@ -1126,14 +1127,15 @@ export async function updateAgentConfiguration(
         await rebuildThroughDraft(client.retell_agent_id, agent.version, llmId, {
           prompt,
           transferNumber: transferNumberFor(client),
-          calendarBookingEnabled: calendarIsConnected(client),
+          calendarBookingEnabled: takesLiveBookings(calendarIsConnected(client), config),
           beginMessage,
           voice: wanted,
         });
         return;
       }
 
-      await updateRetellLlmConfig(llmId, prompt, transferNumberFor(client), calendarIsConnected(client), beginMessage);
+      const liveBooking = takesLiveBookings(calendarIsConnected(client), config);
+      await updateRetellLlmConfig(llmId, prompt, transferNumberFor(client), liveBooking, beginMessage);
       llmUpdated = true;
     }
   }
