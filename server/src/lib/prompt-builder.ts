@@ -3,6 +3,7 @@ import { normaliseHour } from './time';
 import { parseBookingRules } from './booking-rules';
 import { calendarIsConnected } from '../services/calendar';
 import { DEFAULT_RECEPTIONIST_NAME, openingGreeting } from './greeting';
+import { propertyStep } from './property-question';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const RECEPTIONIST_LABEL = DEFAULT_RECEPTIONIST_NAME;
@@ -130,7 +131,7 @@ That greeting has already told the caller the call is recorded, so don't repeat 
 3. Best contact number
 4. Job address, or at least the postcode
 5. Urgency — is it an emergency / needs today, or can it wait?
-6. Property type — is it a house/flat or a commercial premises (office, shop, site)? Ask naturally: "Is that a domestic property or a commercial one?" Only ask if it's not obvious from context.
+${propertyStep(config.domestic_only === true, businessName, ownerName)}
 7. When they're available — ask for a day or window: "Is there a particular day or time of day that works best for you?" Capture their answer in their own words.
 Ask one at a time, in a logical order, and acknowledge each answer before the next ("Got it, thanks."). Spell back anything easily misheard — a name or postcode — to be sure: "That's M-A-R-K, postcode SE22 0AH — have I got that right?"
 

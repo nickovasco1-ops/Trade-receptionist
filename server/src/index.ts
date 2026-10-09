@@ -22,6 +22,7 @@ import { applySipAuthToNumber, applyTierToAgent, getRetellAgent, updateAgentConf
 import { runLeadFollowUp } from './services/lead-followup';
 import { listCallsForAgent, listRecentCallsForAgent, getRetellCall, postCallWorkflow, patchRetellAgent } from './services/retell';
 import { sendOpsAlert } from './services/alerts';
+import { voiceOverrideFor } from './services/agent-overrides';
 import { buildDailyReport, summariseLine, type CallSummaryInput, type LineSummary } from './lib/call-health';
 import { supabase } from './services/supabase';
 import { logEvent } from './lib/observability';
@@ -374,7 +375,7 @@ app.post('/admin/apply-tiers', async (req, res) => {
           results.push({ business: c.business_name, plan: c.plan, error: 'no llm on agent' });
           continue;
         }
-        const { applied, version } = await applyTierToAgent(c.retell_agent_id, llmId, c.plan);
+        const { applied, version } = await applyTierToAgent(c.retell_agent_id, llmId, c.plan, await voiceOverrideFor(c.id));
         results.push({
           business: c.business_name, plan: c.plan,
           tier: applied.label, voice: applied.voiceId,

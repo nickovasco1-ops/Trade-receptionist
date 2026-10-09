@@ -10,6 +10,8 @@ import type { Client, Call, BusinessConfig } from '../../../shared/types';
 import { toE164 } from '../../../shared/phone';
 import { buildTransferTool } from '../lib/transfer-tool';
 import { sipAuthFromEnv } from '../lib/sip-auth';
+import { resolveVoice } from '../lib/agent-voice';
+import { voiceOverrideFor } from './agent-overrides';
 
 const BASE_URL = 'https://api.retellai.com';
 
@@ -110,8 +112,20 @@ export const AGENT_TIER: Record<string, AgentTier> = {
   },
 };
 
-export function tierFor(plan: string | null | undefined): AgentTier {
-  return AGENT_TIER[(plan ?? 'starter').toLowerCase()] ?? AGENT_TIER.starter;
+/**
+ * The tier a plan entitles an agent to, with the tenant's voice override (if
+ * any) in place of the plan's voice. The override changes the voice only:
+ * model and Fast Tier still follow the plan.
+ */
+export function tierFor(plan: string | null | undefined, voiceOverride?: string | null): AgentTier {
+  const base = AGENT_TIER[(plan ?? 'starter').toLowerCase()] ?? AGENT_TIER.starter;
+  const resolved = resolveVoice({ voiceId: base.voiceId, voiceModel: base.voiceModel }, voiceOverride);
+  if ('ignoredOverride' in resolved) {
+    logEvent('error', 'retell.voice_override_unknown', { voice: resolved.ignoredOverride });
+  }
+  if (resolved.source === 'plan') return base;
+  const { voiceModel: _planModel, ...rest } = base;
+  return { ...rest, ...resolved.voice, label: `${base.label} + voice override` };
 }
 
 
@@ -207,6 +221,8 @@ export interface RetellAgentConfig {
    * and service areas. Appended to the shared trade vocabulary.
    */
   boostedKeywords?: string[];
+  /** A voice in place of the plan's (agent_overrides). Null = the plan's voice. */
+  voiceOverride?: string | null;
   /** Drives voice and latency. Defaults to starter if unknown. */
   plan?: string | null;
 }
@@ -484,7 +500,7 @@ export async function createRetellAgent(
     };
   }
 
-  const tier = tierFor(config.plan);
+  const tier = tierFor(config.plan, config.voiceOverride);
 
   const { llmId } = await createRetellLlm(
     config.prompt,
@@ -677,8 +693,9 @@ export async function applyTierToAgent(
   agentId: string,
   llmId: string,
   plan: string | null | undefined,
+  voiceOverride?: string | null,
 ): Promise<{ applied: AgentTier; version: number | null }> {
-  const tier = tierFor(plan);
+  const tier = tierFor(plan, voiceOverride);
   if (isE2ETestMode()) return { applied: tier, version: 0 };
 
   // Every step below throws on failure rather than being awaited and dropped.
@@ -1008,11 +1025,24 @@ export async function updateAgentConfiguration(
   if (agentRes.ok) {
     const agent = (await agentRes.json()) as {
       response_engine?: { type: string; llm_id?: string };
+      voice_id?: string;
     };
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
       await updateRetellLlmConfig(llmId, prompt, transferNumberFor(client), calendarIsConnected(client), beginMessage);
       llmUpdated = true;
+
+      // A tenant given a voice other than their plan's gets it here, so a
+      // rebuild is enough to apply or restore it. The voice lives on the agent's
+      // published version, so this goes through applyTierToAgent (branch,
+      // update, publish) and only when the live voice is actually wrong.
+      const override = await voiceOverrideFor(client.id);
+      if (override) {
+        const wanted = tierFor(client.plan, override);
+        if (agent.voice_id !== wanted.voiceId) {
+          await applyTierToAgent(client.retell_agent_id, llmId, client.plan, override);
+        }
+      }
     }
   }
 
