@@ -174,6 +174,7 @@ verification confirmed it.
 | **Why nobody noticed** | The dashboard reads Supabase directly under RLS, so these routes had no visible consumer — they were never exercised by the UI. |
 | **Standing hazard** | The server uses the **service-role key and bypasses RLS entirely**. There is **no default-deny and no database backstop**: a new route on `/clients` or `/calls` is world-readable until someone remembers to add a guard. |
 | **Deterministically checkable?** | **Yes.** Enumerate every mounted route, probe unauthenticated, assert 401/404. |
+| **Second incident (2026-10-09)** | The same class one layer down. `anon`/`authenticated` held Supabase's default full table grants, and the owner RLS policies limit **rows, not columns** — so a signed-in tenant could set their own `plan`, `is_active`, `subscription_status` and `retell_agent_id`, rewrite `system_prompt_override`, and insert or delete the `calls` rows plan usage is counted from. Cross-tenant isolation (`isolation.cross_tenant`) passed the whole time, because every write was to the tenant's own row. Proven against production in a rolled-back transaction, closed by migration 023 (column-level grants for exactly what the browser writes). Check: `isolation.own_row_privileges`. |
 
 ### C12 — Time, timezone and format normalisation 🟡
 | | |
