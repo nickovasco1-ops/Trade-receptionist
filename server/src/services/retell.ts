@@ -729,7 +729,22 @@ export async function applyTierToAgent(
   // the customer's phone is answered by whatever was live before, or by
   // nothing at all if the agent has never had a published version.
   // Was POST /publish-agent/{id}; Retell serves /publish-agent-version/{id}.
-  await client.agent.publish(agentId, { version });
+  //
+  // Read as a raw response, not parsed: Retell answers a successful publish
+  // with an empty body labelled application/json, and the SDK's JSON parse of
+  // that throws "Unexpected end of JSON input" after the publish has already
+  // happened (Orrell Park, 2026-10-09: the first rebuild to take this path). A
+  // non-2xx still throws inside the SDK before the response is handed back.
+  await client.agent.publish(agentId, { version }).asResponse();
+
+  // Read the live version back: a publish that silently did nothing would
+  // otherwise be reported as applied, which is the failure this function exists
+  // to stop.
+  const live = await getPublishedRetellAgent(agentId);
+  if (!live) throw new Error(`Retell agent ${agentId} has no published version after publishing v${version}`);
+  if (live.voice_id !== tier.voiceId) {
+    throw new Error(`Retell agent ${agentId} published v${version} but is live on ${String(live.voice_id)}, not ${tier.voiceId}`);
+  }
 
   logEvent('info', 'retell.tier_applied', {
     agentId, version, tier: tier.label, voiceId: tier.voiceId, fastTier: tier.highPriority,
