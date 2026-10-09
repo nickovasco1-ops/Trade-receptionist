@@ -445,7 +445,8 @@ export async function updateRetellLlmConfig(
   prompt: string,
   ownerNumber?: string | null,
   calendarBookingEnabled = false,
-  beginMessage?: string | null
+  beginMessage?: string | null,
+  llmVersion?: number | null,
 ): Promise<void> {
   if (isE2ETestMode()) {
     return;
@@ -458,7 +459,10 @@ export async function updateRetellLlmConfig(
   // See createRetellLlm — begin_message belongs on the LLM, not the agent.
   if (beginMessage) body.begin_message = beginMessage;
 
-  const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}`, {
+  // A published LLM version is read-only, so an agent that has been published
+  // is edited through a new draft, and the caller names that draft's LLM version.
+  const query = typeof llmVersion === 'number' ? `?version=${llmVersion}` : '';
+  const res = await fetch(`${BASE_URL}/update-retell-llm/${llmId}${query}`, {
     method: 'PATCH',
     headers: headers(),
     body: JSON.stringify(body),
@@ -678,6 +682,47 @@ export async function getRetellAgent(agentId: string): Promise<Record<string, un
 }
 
 /**
+ * Branch an editable draft from an agent version. Returns the draft's version
+ * and the version of the LLM it points at, which is the LLM version to edit.
+ */
+async function branchDraft(
+  agentId: string,
+  baseVersion: number,
+): Promise<{ version: number; llmVersion: number | null }> {
+  const draft = await retellSdk().agent.createVersion(agentId, { base_version: baseVersion }) as unknown as {
+    version?: number;
+    response_engine?: { type?: string; version?: number | null };
+  };
+  if (typeof draft?.version !== 'number') {
+    throw new Error(`Retell createVersion for ${agentId} returned no version`);
+  }
+  const engine = draft.response_engine;
+  const llmVersion = engine?.type === 'retell-llm' && typeof engine.version === 'number' ? engine.version : null;
+  return { version: draft.version, llmVersion };
+}
+
+/**
+ * Publish an agent version and read the live one back.
+ *
+ * The publish is read as a raw response, not parsed: Retell answers a
+ * successful publish with an empty body labelled application/json, and the
+ * SDK's JSON parse of that throws "Unexpected end of JSON input" after the
+ * publish has already happened (Orrell Park, 2026-10-09). A non-2xx still
+ * throws inside the SDK. The read-back exists because a publish that silently
+ * did nothing would otherwise be reported as done.
+ */
+async function publishAndConfirm(agentId: string, version: number, expectedVoice?: string): Promise<void> {
+  // Was POST /publish-agent/{id}; Retell serves /publish-agent-version/{id}.
+  await retellSdk().agent.publish(agentId, { version }).asResponse();
+
+  const live = await getPublishedRetellAgent(agentId);
+  if (!live) throw new Error(`Retell agent ${agentId} has no published version after publishing v${version}`);
+  if (expectedVoice && live.voice_id !== expectedVoice) {
+    throw new Error(`Retell agent ${agentId} published v${version} but is live on ${String(live.voice_id)}, not ${expectedVoice}`);
+  }
+}
+
+/**
  * Bring an existing agent up to the tier its plan entitles it to.
  *
  * Provisioning applies the tier at creation, but agents created before tiering
@@ -706,18 +751,20 @@ export async function applyTierToAgent(
   // caller is told the tier was applied.
   const client = retellSdk();
 
-  // The LLM has no published/draft split — patch it directly.
+  // Branch first. A published version is read-only, and that includes the LLM
+  // version it points at: patching the LLM after a publish answers "Cannot
+  // update published LLM" (Orrell Park, 2026-10-09). The draft carries its own
+  // LLM version, which is the one to edit.
+  const current = await getRetellAgent(agentId);
+  const baseVersion = typeof current?.version === 'number' ? current.version : 0;
+  const draft = await branchDraft(agentId, baseVersion);
+  const version = draft.version;
+
   await client.llm.update(llmId, {
+    ...(draft.llmVersion !== null ? { version: draft.llmVersion } : {}),
     model: tier.model,
     model_high_priority: tier.highPriority,
   } as Parameters<typeof client.llm.update>[1]);
-
-  const current = await getRetellAgent(agentId);
-  const baseVersion = typeof current?.version === 'number' ? current.version : 0;
-
-  // Branch a draft, since a published version cannot be edited in place.
-  const draft = await client.agent.createVersion(agentId, { base_version: baseVersion });
-  const version = typeof draft?.version === 'number' ? draft.version : baseVersion;
 
   await client.agent.update(agentId, {
     version,
@@ -728,23 +775,7 @@ export async function applyTierToAgent(
   // Publish, or the number keeps routing to the old version — which is to say
   // the customer's phone is answered by whatever was live before, or by
   // nothing at all if the agent has never had a published version.
-  // Was POST /publish-agent/{id}; Retell serves /publish-agent-version/{id}.
-  //
-  // Read as a raw response, not parsed: Retell answers a successful publish
-  // with an empty body labelled application/json, and the SDK's JSON parse of
-  // that throws "Unexpected end of JSON input" after the publish has already
-  // happened (Orrell Park, 2026-10-09: the first rebuild to take this path). A
-  // non-2xx still throws inside the SDK before the response is handed back.
-  await client.agent.publish(agentId, { version }).asResponse();
-
-  // Read the live version back: a publish that silently did nothing would
-  // otherwise be reported as applied, which is the failure this function exists
-  // to stop.
-  const live = await getPublishedRetellAgent(agentId);
-  if (!live) throw new Error(`Retell agent ${agentId} has no published version after publishing v${version}`);
-  if (live.voice_id !== tier.voiceId) {
-    throw new Error(`Retell agent ${agentId} published v${version} but is live on ${String(live.voice_id)}, not ${tier.voiceId}`);
-  }
+  await publishAndConfirm(agentId, version, tier.voiceId);
 
   logEvent('info', 'retell.tier_applied', {
     agentId, version, tier: tier.label, voiceId: tier.voiceId, fastTier: tier.highPriority,
@@ -1021,6 +1052,41 @@ export function transferNumberFor(client: Pick<Client, 'transfer_number' | 'owne
   return toE164(client.transfer_number) ?? toE164(client.owner_mobile) ?? client.owner_mobile ?? null;
 }
 
+/**
+ * Rebuild an agent whose latest version is published (or needs a voice change
+ * published): branch a draft, update its LLM version and agent settings,
+ * publish it, and confirm the live voice.
+ */
+async function rebuildThroughDraft(
+  agentId: string,
+  baseVersion: number | undefined,
+  llmId: string,
+  next: {
+    prompt: string;
+    transferNumber: string | null;
+    calendarBookingEnabled: boolean;
+    beginMessage: string | null | undefined;
+    voice: AgentTier | null;
+  },
+): Promise<void> {
+  const draft = await branchDraft(agentId, typeof baseVersion === 'number' ? baseVersion : 0);
+  await updateRetellLlmConfig(
+    llmId, next.prompt, next.transferNumber, next.calendarBookingEnabled, next.beginMessage, draft.llmVersion,
+  );
+
+  const sdk = retellSdk();
+  await sdk.agent.update(agentId, {
+    version: draft.version,
+    interruption_sensitivity:  AGENT_INTERRUPTION_SENSITIVITY,
+    end_call_after_silence_ms: AGENT_END_CALL_AFTER_SILENCE_MS,
+    ...(next.voice
+      ? { voice_id: next.voice.voiceId, ...(next.voice.voiceModel ? { voice_model: next.voice.voiceModel } : {}) }
+      : {}),
+  } as Parameters<typeof sdk.agent.update>[1]);
+
+  await publishAndConfirm(agentId, draft.version, next.voice?.voiceId);
+}
+
 export async function updateAgentConfiguration(
   client: Client,
   config: BusinessConfig
@@ -1041,23 +1107,34 @@ export async function updateAgentConfiguration(
     const agent = (await agentRes.json()) as {
       response_engine?: { type: string; llm_id?: string };
       voice_id?: string;
+      version?: number;
+      is_published?: boolean;
     };
     const llmId = agent.response_engine?.llm_id;
     if (llmId) {
+      // A tenant given a voice other than their plan's gets it here, so a
+      // rebuild is enough to apply or restore it.
+      const override = await voiceOverrideFor(client.id);
+      const wanted = override ? tierFor(client.plan, override) : null;
+      const voiceWrong = wanted !== null && agent.voice_id !== wanted.voiceId;
+
+      // A published version is read-only, LLM included ("Cannot update
+      // published LLM"), and a voice change has to be published to reach the
+      // phone. Either way the edit goes through a draft that is then published.
+      // Agents that have never been published keep the in-place update below.
+      if (agent.is_published === true || voiceWrong) {
+        await rebuildThroughDraft(client.retell_agent_id, agent.version, llmId, {
+          prompt,
+          transferNumber: transferNumberFor(client),
+          calendarBookingEnabled: calendarIsConnected(client),
+          beginMessage,
+          voice: wanted,
+        });
+        return;
+      }
+
       await updateRetellLlmConfig(llmId, prompt, transferNumberFor(client), calendarIsConnected(client), beginMessage);
       llmUpdated = true;
-
-      // A tenant given a voice other than their plan's gets it here, so a
-      // rebuild is enough to apply or restore it. The voice lives on the agent's
-      // published version, so this goes through applyTierToAgent (branch,
-      // update, publish) and only when the live voice is actually wrong.
-      const override = await voiceOverrideFor(client.id);
-      if (override) {
-        const wanted = tierFor(client.plan, override);
-        if (agent.voice_id !== wanted.voiceId) {
-          await applyTierToAgent(client.retell_agent_id, llmId, client.plan, override);
-        }
-      }
     }
   }
 
