@@ -1,0 +1,9 @@
+# Intermediate render output: regenerate with `node work/render.mjs frames`
+work/frames/
+work/stills/
+work/*.wav
+work/*.png
+!work/logo-mark.png
+!work/logo.png
+work/render.log
+work/seq/

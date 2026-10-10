@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Trade Receptionist brag</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --void:#020D18; --navy:#051426; --navy-mid:#0A2340; --navy-high:#0F3060;
+    --orange:#FF6B2B; --orange-glow:#FF8C55; --orange-soft:#ffb59a;
+    --accent:#99cbff; --offwhite:#F0F4F8;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:1920px; height:1080px; overflow:hidden; background:var(--void); }
+  body { font-family:'Manrope',sans-serif; color:var(--offwhite); -webkit-font-smoothing:antialiased; }
+  #stage { position:absolute; inset:0; overflow:hidden; background:var(--navy); }
+  .bg-glow { position:absolute; inset:-200px; }
+  .grid { position:absolute; inset:0;
+    background-image:linear-gradient(rgba(153,203,255,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(153,203,255,0.045) 1px,transparent 1px);
+    background-size:40px 40px; mask-image:radial-gradient(ellipse at 60% 50%, #000 0%, transparent 75%); -webkit-mask-image:radial-gradient(ellipse at 60% 50%, #000 0%, transparent 75%); }
+  .vignette { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(2,13,24,0.7) 100%); }
+  .abs { position:absolute; will-change:transform,opacity; }
+
+  /* left copy column */
+  .copy { left:130px; top:0; height:1080px; width:920px; display:flex; flex-direction:column; justify-content:center; }
+  .eyebrow { font-weight:700; font-size:20px; letter-spacing:0.16em; text-transform:uppercase; color:var(--orange-soft); }
+  .h { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:90px; line-height:0.98; letter-spacing:-0.045em; color:var(--offwhite); }
+  .kw { font-style:italic; background:linear-gradient(135deg,#FF6B2B 0%,#FF8C55 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; padding-right:0.06em; }
+  .sub { font-size:28px; line-height:1.5; color:rgba(240,244,248,0.72); max-width:640px; }
+  .slot { position:absolute; left:0; width:920px; }
+
+  /* glass device */
+  .device { left:1140px; top:150px; width:620px; height:780px; border-radius:44px;
+    background:linear-gradient(180deg, rgba(15,48,96,0.55) 0%, rgba(10,35,64,0.55) 100%);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.12), 0 40px 80px rgba(2,13,24,0.6), 0 16px 40px rgba(2,13,24,0.4);
+    backdrop-filter:blur(32px); overflow:hidden; }
+  .device-inner { position:absolute; inset:0; padding:56px 48px; }
+  .avatar { width:120px; height:120px; border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk'; font-weight:600; font-size:52px; color:var(--void);
+    background:linear-gradient(135deg,#99cbff 0%,#60A5FA 100%); position:relative; }
+  .ring { position:absolute; left:50%; top:50%; width:120px; height:120px; margin:-60px 0 0 -60px; border-radius:50%;
+    box-shadow:0 0 0 3px rgba(255,107,43,0.9); }
+  .caller-name { text-align:center; font-family:'Space Grotesk'; font-weight:600; font-size:44px; letter-spacing:-0.02em; margin-top:26px; }
+  .caller-meta { text-align:center; font-size:22px; color:rgba(240,244,248,0.66); margin-top:6px; font-family:'JetBrains Mono',monospace; }
+  .status { text-align:center; font-size:20px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; margin-top:18px; }
+  .btns { position:absolute; left:0; right:0; bottom:60px; display:flex; justify-content:space-around; padding:0 90px; }
+  .btn { width:112px; height:112px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .btn svg { width:48px; height:48px; }
+  .decline { background:rgba(255,181,154,0.14); box-shadow:0 0 0 1px rgba(255,181,154,0.3); }
+  .accept { background:linear-gradient(135deg,#FF6B2B,#FF8C55); box-shadow:0 0 24px rgba(255,107,43,0.45),0 4px 16px rgba(255,107,43,0.25); }
+  .tap { position:absolute; width:112px; height:112px; border-radius:50%; box-shadow:0 0 0 4px rgba(240,244,248,0.85); }
+
+  .bubble { position:absolute; left:48px; right:48px; border-radius:26px; padding:22px 26px; font-size:25px; line-height:1.42; }
+  .b-agent { background:rgba(255,107,43,0.13); box-shadow:inset 0 0 0 1px rgba(255,107,43,0.28); border-top-left-radius:8px; }
+  .b-caller { background:rgba(153,203,255,0.10); box-shadow:inset 0 0 0 1px rgba(153,203,255,0.22); border-top-right-radius:8px; left:120px; }
+  .who { font-size:15px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:6px; }
+  .caret { display:inline-block; width:3px; height:26px; background:var(--orange-glow); vertical-align:-4px; margin-left:2px; }
+  .chips { position:absolute; left:48px; right:48px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .chip { border-radius:18px; padding:14px 18px; background:rgba(255,255,255,0.07); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.10); }
+  .chip .k { font-size:14px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:8px; }
+  .chip .v { font-size:24px; font-weight:600; margin-top:4px; }
+  .tick { width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg,#FF6B2B,#FF8C55); display:inline-flex; align-items:center; justify-content:center; }
+  .tick svg { width:12px; height:12px; }
+
+  .wave { position:absolute; left:60px; right:60px; top:560px; height:110px; display:flex; align-items:center; gap:7px; }
+  .wave i { flex:1; border-radius:4px; background:linear-gradient(180deg,#FF8C55,#FF6B2B); }
+  /* lock screen */
+  .lock-time { text-align:center; font-family:'Space Grotesk'; font-weight:500; font-size:150px; letter-spacing:-0.04em; margin-top:40px; line-height:1; }
+  .lock-date { text-align:center; font-size:26px; color:rgba(240,244,248,0.72); margin-top:14px; font-weight:600; }
+  .notif { position:absolute; left:32px; right:32px; top:360px; border-radius:30px; padding:26px 28px;
+    background:rgba(240,244,248,0.12); backdrop-filter:blur(40px);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.16), 0 20px 60px rgba(2,13,24,0.5); }
+  .notif-head { display:flex; align-items:center; gap:14px; font-size:19px; font-weight:700; color:rgba(240,244,248,0.72); letter-spacing:0.04em; }
+  .notif-head img { width:40px; height:40px; border-radius:10px; background:var(--offwhite); padding:3px; }
+  .notif-head .now { margin-left:auto; font-weight:600; }
+  .sms { font-family:'JetBrains Mono',monospace; font-size:24px; line-height:1.6; margin-top:16px; white-space:pre; color:var(--offwhite); }
+  .sms b { color:var(--orange-glow); font-weight:500; }
+
+  /* diary */
+  .diary-head { display:flex; align-items:baseline; justify-content:space-between; }
+  .diary-title { font-family:'Space Grotesk'; font-weight:600; font-size:36px; letter-spacing:-0.02em; }
+  .diary-week { font-size:19px; color:rgba(240,244,248,0.66); font-weight:600; }
+  .days { position:absolute; left:100px; right:36px; top:150px; display:grid; grid-template-columns:repeat(5,1fr); gap:10px; text-align:center;
+    font-size:16px; font-weight:800; letter-spacing:0.14em; color:rgba(240,244,248,0.66); }
+  .cols { position:absolute; left:100px; right:36px; top:190px; bottom:40px; display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .col { border-radius:14px; background:rgba(255,255,255,0.035); position:relative; }
+  .col.today { background:rgba(255,107,43,0.06); }
+  .hours { position:absolute; left:30px; top:190px; bottom:40px; width:60px; font-family:'JetBrains Mono'; font-size:15px; color:rgba(240,244,248,0.58); }
+  .hours div { position:absolute; left:0; }
+  .ev { position:absolute; left:6px; right:6px; border-radius:10px; padding:8px 10px; font-size:15px; font-weight:700; line-height:1.25;
+    background:rgba(153,203,255,0.16); color:rgba(240,244,248,0.85); }
+  .ev small { display:block; font-weight:500; font-size:13px; color:rgba(240,244,248,0.66); margin-top:2px; }
+  .ev.new { font-size:19px; padding:10px 12px; background:linear-gradient(135deg,#FF6B2B,#FF8C55); color:var(--void); box-shadow:0 0 30px rgba(255,107,43,0.45); }
+  .ev.new small { font-size:15px; color:rgba(2,13,24,0.8); }
+
+  /* outro */
+  .outro { left:0; right:0; top:0; height:1080px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+  .outro-mark { width:170px; height:170px; }
+  .outro-name { font-family:'Space Grotesk'; font-weight:700; font-size:104px; letter-spacing:-0.045em; margin-top:22px; line-height:1; }
+  .cta { margin-top:44px; display:inline-flex; align-items:center; gap:14px; padding:26px 46px; border-radius:16px;
+    background:linear-gradient(135deg,#FF6B2B 0%,#FF8C55 100%); color:var(--void); font-weight:700; font-size:30px; letter-spacing:-0.01em;
+    box-shadow:0 0 40px rgba(255,107,43,0.4),0 6px 20px rgba(255,107,43,0.25); }
+  .fine { margin-top:30px; font-size:26px; color:rgba(240,244,248,0.72); font-weight:500; }
+  .url { margin-top:14px; font-family:'JetBrains Mono'; font-size:24px; color:var(--accent); }
+  .fade-black { position:absolute; inset:0; background:var(--void); pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-glow" id="glow"></div>
+  <div class="grid" id="grid"></div>
+  <div class="vignette"></div>
+
+  <!-- LEFT COPY -->
+  <div class="abs copy" id="copy">
+    <div class="slot" id="s1" style="top:360px">
+      <div class="eyebrow" id="s1e">Tuesday, 10:42</div>
+      <div class="h" style="margin-top:28px"><div id="s1a">You're under a sink.</div><div id="s1b" style="margin-top:10px">Your phone's <span class="kw">ringing.</span></div></div>
+    </div>
+    <div class="slot" id="s2" style="top:340px">
+      <div class="eyebrow">Trade Receptionist</div>
+      <div class="h" style="margin-top:28px">Answers when<br>you <span class="kw">can't.</span></div>
+      <div class="sub" style="margin-top:30px">In your business's name, on your number.</div>
+    </div>
+    <div class="slot" id="s3" style="top:350px">
+      <div class="eyebrow">While you keep working</div>
+      <div class="h" style="margin-top:28px">Takes the<br>customer's <span class="kw">details.</span></div>
+    </div>
+    <div class="slot" id="s4" style="top:350px">
+      <div class="eyebrow">The moment the call ends</div>
+      <div class="h" style="margin-top:28px">Sent straight<br>to your <span class="kw">phone.</span></div>
+    </div>
+    <div class="slot" id="s5" style="top:330px">
+      <div class="eyebrow">Or booked in for you</div>
+      <div class="h" style="margin-top:28px">Straight into<br>your <span class="kw">diary.</span></div>
+      <div class="sub" style="margin-top:30px">Google, Outlook or iCloud.</div>
+    </div>
+  </div>
+
+  <!-- DEVICE: CALL -->
+  <div class="abs device" id="call">
+    <div class="device-inner">
+      <div style="position:relative; margin-top:10px" id="callTop">
+        <div class="ring" id="ring1"></div><div class="ring" id="ring2"></div>
+        <div class="avatar" id="avatar">S</div>
+      </div>
+      <div class="caller-name">Sarah</div>
+      <div class="caller-meta">Mobile · 07700 900123</div>
+      <div class="status" id="status" style="color:var(--orange-soft)">Incoming call</div>
+
+      <div class="bubble b-agent" id="bAgent" style="top:400px">
+        <div class="who" style="color:var(--orange-soft)">Your receptionist</div>
+        <div id="greet"></div>
+      </div>
+      <div class="bubble b-caller" id="bCaller" style="top:590px">
+        <div class="who" style="color:var(--accent)">Sarah</div>
+        Boiler's packed in. No hot water.
+      </div>
+      <div class="chips" id="chips" style="top:400px">
+        <div class="chip" id="c0"><div class="k"><span class="tick"><svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#020D18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Name</div><div class="v">Sarah</div></div>
+        <div class="chip" id="c1"><div class="k"><span class="tick"><svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#020D18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Job</div><div class="v">Boiler repair</div></div>
+        <div class="chip" id="c2"><div class="k"><span class="tick"><svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#020D18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Postcode</div><div class="v">M14</div></div>
+        <div class="chip" id="c3"><div class="k"><span class="tick"><svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#020D18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Best time</div><div class="v">Thursday am</div></div>
+      </div>
+
+      <div class="wave" id="wave"></div>
+      <div class="btns" id="btns">
+        <div class="btn decline"><svg viewBox="0 0 24 24"><path d="M3 15.5c5-4.2 13-4.2 18 0l-2.2 2.6-3.3-1.3v-2.6c-2.2-.8-4.8-.8-7 0v2.6l-3.3 1.3z" fill="#ffb59a"/></svg></div>
+        <div class="btn accept" id="acceptBtn"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" fill="#020D18"/></svg></div>
+      </div>
+      <div class="tap" id="tap"></div>
+    </div>
+  </div>
+
+  <!-- DEVICE: LOCK SCREEN -->
+  <div class="abs device" id="lock">
+    <div class="device-inner">
+      <div class="lock-time">10:47</div>
+      <div class="lock-date">Tuesday 13 October</div>
+      <div class="notif" id="notif">
+        <div class="notif-head"><img src="logo-mark.png" alt=""><span>MESSAGES</span><span class="now">now</span></div>
+<div class="sms"><b>Trade Receptionist: Job booked ✓</b>
+From: 07700 900123
+Name: Sarah
+Job: Boiler repair, M14
+— Hughes Plumbing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVICE: DIARY -->
+  <div class="abs device" id="diary">
+    <div class="device-inner">
+      <div class="diary-head"><div class="diary-title">Diary</div><div class="diary-week">12–16 Oct</div></div>
+    </div>
+    <div class="days"><div>MON</div><div>TUE</div><div>WED</div><div style="color:var(--orange-soft)">THU</div><div>FRI</div></div>
+    <div class="hours" id="hours"></div>
+    <div class="cols">
+      <div class="col"><div class="ev" style="top:2%;height:30%">Bathroom refit<small>All morning</small></div><div class="ev" style="top:46%;height:30%">Bathroom refit<small>Afternoon</small></div></div>
+      <div class="col"><div class="ev" style="top:12%;height:18%">Radiator swap</div><div class="ev" style="top:58%;height:18%">Quote visit</div></div>
+      <div class="col"><div class="ev" style="top:2%;height:44%">Boiler install<small>Day 1</small></div></div>
+      <div class="col today"><div class="ev new" id="newEv" style="top:20%;height:26%">Boiler repair<small>10:00 · Sarah, M14</small></div><div class="ev" style="top:62%;height:16%">Leak check</div></div>
+      <div class="col"><div class="ev" style="top:30%;height:20%">Service</div></div>
+    </div>
+  </div>
+
+  <!-- OUTRO -->
+  <div class="abs outro" id="outro">
+    <img class="outro-mark" id="o1" src="logo-mark.png" alt="">
+    <div class="outro-name" id="o2">Trade Receptionist</div>
+    <div class="cta" id="o3">Start Free Trial
+      <svg width="28" height="28" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="#020D18" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="fine" id="o4">14-day free trial. No charge today. Plans from £49/month.</div>
+    <div class="url" id="o5">tradereceptionist.com</div>
+  </div>
+
+  <div class="fade-black" id="fb"></div>
+</div>
+
+<script>
+// ---------- easing ----------
+function bezier(x1, y1, x2, y2) {
+  return function (x) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 8; i++) {
+      const cx = 3*x1*t*(1-t)*(1-t) + 3*x2*t*t*(1-t) + t*t*t - x;
+      const dx = 3*x1*(1-t)*(1-t) + 6*(x2-x1)*t*(1-t) + 3*(1-x2)*t*t;
+      if (Math.abs(dx) < 1e-6) break; t -= cx / dx; t = Math.min(1, Math.max(0, t));
+    }
+    return 3*y1*t*(1-t)*(1-t) + 3*y2*t*t*(1-t) + t*t*t;
+  };
+}
+const smooth = bezier(0.16, 1, 0.3, 1);
+const mech   = bezier(0.34, 1.2, 0.64, 1);
+const exitE  = bezier(0.4, 0, 1, 1);
+const clamp = (v, a=0, b=1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const $ = (id) => document.getElementById(id);
+
+// enter at `a` over `d`, exit at `e` over `od`. Returns {o, y}
+function life(t, a, e, d = 0.5, od = 0.3, dy = 32, oy = -24) {
+  const i = smooth(seg(t, a, a + d));
+  const o = exitE(seg(t, e - od, e));
+  return { o: i * (1 - o), y: (1 - i) * dy + o * oy };
+}
+function apply(el, o, y = 0, x = 0, s = 1, extra = '') {
+  el.style.opacity = o.toFixed(4);
+  el.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) scale(${s.toFixed(4)}) ${extra}`;
+  el.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+}
+
+const GREETING = "Hello, this is Hughes Plumbing, Amy speaking. Calls are recorded. How can I help?";
+
+// hour labels
+(() => { const h = $('hours'); for (let i = 0; i <= 4; i++) { const d = document.createElement('div'); d.style.top = (i * 23 - 1) + '%'; d.textContent = String(8 + i*2).padStart(2, '0') + ':00'; h.appendChild(d); } })();
+
+(() => { const w = $('wave'); for (let i = 0; i < 36; i++) w.appendChild(document.createElement('i')); })();
+window.renderAt = function (t) {
+  // background glow drifts slowly; warms toward orange on payoffs
+  const gx = 20 + 10 * Math.sin(t * 0.25), gy = 50 + 8 * Math.cos(t * 0.2);
+  const warm = 0.08 + 0.05 * smooth(seg(t, 11, 12)) - 0.03 * smooth(seg(t, 15, 16)) + 0.06 * smooth(seg(t, 18, 19));
+  $('glow').style.background =
+    `radial-gradient(ellipse at ${gx}% ${gy}%, rgba(255,107,43,${warm.toFixed(3)}) 0%, transparent 55%),` +
+    `radial-gradient(ellipse at 80% 20%, rgba(153,203,255,0.07) 0%, transparent 50%), #051426`;
+  $('grid').style.transform = `translateY(${(-t * 6).toFixed(2)}px)`;
+
+  // ---------- copy slots ----------
+  let L = life(t, 0.15, 3.0); apply($('s1e'), L.o, L.y);
+  L = life(t, 0.25, 3.0); apply($('s1a'), L.o, L.y);
+  L = life(t, 1.05, 3.0); apply($('s1b'), L.o, L.y);
+  $('s1').style.opacity = 1;
+  L = life(t, 3.05, 7.0);  apply($('s2'), L.o, L.y);
+  L = life(t, 7.05, 11.0); apply($('s3'), L.o, L.y);
+  L = life(t, 11.05, 15.0); apply($('s4'), L.o, L.y);
+  L = life(t, 15.05, 18.0); apply($('s5'), L.o, L.y);
+
+  // ---------- call device (0 – 11) ----------
+  const callIn = smooth(seg(t, 0.0, 0.6));
+  const callOut = exitE(seg(t, 10.7, 11.0));
+  const ringing = t < 2.75;
+  const shake = ringing ? Math.sin(t * 2 * Math.PI * 9) * 3 * (Math.sin(t * Math.PI * 2) > 0 ? 1 : 0.15) : 0;
+  apply($('call'), callIn * (1 - callOut), (1 - callIn) * 48 - callOut * 30, shake, 1 - callOut * 0.03);
+
+  // ring pulses
+  ['ring1', 'ring2'].forEach((id, k) => {
+    const ph = ((t + k * 0.5) % 1.0);
+    const on = ringing ? 1 : 0;
+    $(id).style.opacity = (on * (1 - ph) * 0.8).toFixed(3);
+    $(id).style.transform = `scale(${(1 + ph * 0.9).toFixed(3)})`;
+  });
+
+  // status
+  const st = $('status');
+  if (t < 2.85) { st.textContent = 'Incoming call'; st.style.color = 'var(--orange-soft)'; }
+  else { const secs = Math.max(1, Math.floor(t - 2.85) + 1); st.textContent = 'Connected · 00:' + String(secs).padStart(2, '0'); st.style.color = 'var(--accent)'; }
+
+  // tap on accept
+  const tp = seg(t, 2.45, 2.95);
+  const ab = $('acceptBtn').getBoundingClientRect(), cb = $('call').getBoundingClientRect();
+  $('tap').style.left = (ab.left - cb.left) + 'px'; $('tap').style.top = (ab.top - cb.top) + 'px';
+  $('tap').style.opacity = (tp > 0 && tp < 1 ? (1 - tp) : 0).toFixed(3);
+  $('tap').style.transform = `scale(${(0.6 + tp * 0.8).toFixed(3)})`;
+  $('acceptBtn').style.transform = `scale(${(1 - 0.1 * Math.sin(Math.PI * seg(t, 2.5, 2.8))).toFixed(3)})`;
+  const btnOut = exitE(seg(t, 2.8, 3.1));
+  apply($('btns'), 1 - btnOut, btnOut * 40);
+
+  // greeting typing 3.3 – 5.5
+  L = life(t, 3.2, 11.0, 0.5, 0.01); apply($('bAgent'), L.o, L.y);
+  const n = Math.floor(GREETING.length * seg(t, 3.35, 5.5));
+  const typing = t > 3.3 && t < 5.6;
+  $('greet').innerHTML = GREETING.slice(0, n) + (typing ? '<span class="caret"></span>' : '');
+
+  // agent bubble shifts up in scene 3 to make room
+  const shift = smooth(seg(t, 7.0, 7.5));
+  $('bAgent').style.top = (400 - shift * 0) + 'px';
+  L = life(t, 7.2, 11.0, 0.5, 0.01); apply($('bCaller'), L.o, L.y);
+
+  // scene 3: the greeting gives way to captured chips, under the caller line
+  const agentOut = exitE(seg(t, 8.0, 8.3));
+  if (t >= 8.0) apply($('bAgent'), 1 - agentOut, -agentOut * 24);
+  const callerUp = smooth(seg(t, 8.25, 8.75));
+  $('bCaller').style.top = (590 - callerUp * 190) + 'px';
+  ['c0', 'c1', 'c2', 'c3'].forEach((id, i) => {
+    const a = 8.7 + i * 0.4;
+    const k = mech(seg(t, a, a + 0.45));
+    apply($(id), clamp(k * 1.2), (1 - k) * 22, 0, 0.94 + 0.06 * k);
+  });
+  $('chips').style.top = '560px';
+
+  // live voice waveform while the receptionist speaks (scene 2), clears for the chips
+  L = life(t, 3.3, 7.15, 0.5, 0.3, 20, 0); apply($('wave'), L.o * 0.9, L.y);
+  const speaking = t > 3.35 && t < 5.7 ? 1 : 0.25;
+  [...$('wave').children].forEach((b, i) => {
+    const v = 0.5 + 0.5 * Math.sin(t * 11 + i * 0.7) * Math.sin(t * 4.3 + i * 0.31);
+    const env = Math.sin(Math.PI * (i + 0.5) / 36);
+    b.style.height = (8 + 92 * v * env * speaking).toFixed(1) + 'px';
+    b.style.opacity = (0.35 + 0.65 * env).toFixed(2);
+  });
+
+  // ---------- lock screen (11 – 15) ----------
+  const lockIn = smooth(seg(t, 11.0, 11.5));
+  const lockOut = exitE(seg(t, 14.7, 15.0));
+  apply($('lock'), lockIn * (1 - lockOut), (1 - lockIn) * 48 - lockOut * 30, 0, 1 - lockOut * 0.03);
+  const nf = smooth(seg(t, 11.45, 12.05));
+  apply($('notif'), clamp(nf * 1.4), (1 - nf) * -70, 0, 0.96 + 0.04 * nf);
+
+  // ---------- diary (15 – 18) ----------
+  const dIn = smooth(seg(t, 15.0, 15.5));
+  const dOut = exitE(seg(t, 17.7, 18.0));
+  apply($('diary'), dIn * (1 - dOut), (1 - dIn) * 48 - dOut * 30, 0, 1 - dOut * 0.03);
+  const ev = mech(seg(t, 15.6, 16.2));
+  apply($('newEv'), clamp(ev * 1.5), (1 - ev) * -60, 0, 0.9 + 0.1 * ev);
+
+  // ---------- outro (18 – 21) ----------
+  ['o1', 'o2', 'o3', 'o4', 'o5'].forEach((id, i) => {
+    const a = 18.05 + i * 0.12;
+    const k = smooth(seg(t, a, a + 0.6));
+    apply($(id), k, (1 - k) * 32, 0, id === 'o1' ? 0.92 + 0.08 * k : 1);
+  });
+  $('fb').style.opacity = (smooth(seg(t, 0, 0.35)) < 1 ? 1 - smooth(seg(t, 0, 0.35)) : 0) * 0;
+};
+
+window.ready = (async () => {
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  window.renderAt(0);
+  return true;
+})();
+</script>
+</body>
+</html>
